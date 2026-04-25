@@ -15,7 +15,7 @@ import {
   updateTournament,
   getDb,
 } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { matches, teams, tournaments } from "../drizzle/schema";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -451,19 +451,19 @@ const seedRouter = router({
     return t;
   }),
 
-  checkAndSeed: publicProcedure.mutation(async () => {
-    const all = await getAllTournaments();
-    if (all.length === 0) {
-      await createTournament("Sub-9 MASC", "Sub-9 Masculino");
-      const updated = await getAllTournaments();
-      const t = updated[updated.length - 1];
-      if (!t) return { seeded: false };
-      for (const team of DEFAULT_TEAMS) {
-        await createTeam(t.id, team.name, team.shortName, team.color);
-      }
-      return { seeded: true, tournamentId: t.id };
-    }
     return { seeded: false };
+  }),
+
+  fixDatabase: publicProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("DB not available");
+    try {
+      // Forçar a criação da coluna logo se ela não existir
+      await db.execute(sql`ALTER TABLE teams ADD COLUMN logo TEXT NULL`);
+      return { success: true, message: "Coluna logo adicionada!" };
+    } catch (e: any) {
+      return { success: false, message: "Coluna já existe ou erro: " + e.message };
+    }
   }),
 });
 

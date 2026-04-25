@@ -731,6 +731,8 @@ export default function TournamentDetail() {
     }
   });
 
+  const fixDb = trpc.system.fixDatabase.useMutation();
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -757,7 +759,14 @@ export default function TournamentDetail() {
         <p className="text-slate-500 max-w-sm mb-8 text-sm">
           Não conseguimos carregar os dados deste torneio. Verifique se o banco de dados está atualizado.
         </p>
-        <Button onClick={() => navigate("/admin")} className="bg-red text-white font-bold px-8">
+        <Button 
+          onClick={() => fixDb.mutate(undefined, { onSuccess: () => window.location.reload() })} 
+          className="bg-amber-500 text-white font-bold px-8 mb-3 w-full sm:w-auto"
+          disabled={fixDb.isPending}
+        >
+          {fixDb.isPending ? "Reparando..." : "Reparar Banco de Dados"}
+        </Button>
+        <Button onClick={() => navigate("/admin")} variant="outline" className="px-8 w-full sm:w-auto">
           Voltar ao Painel
         </Button>
       </div>
