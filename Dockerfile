@@ -38,5 +38,5 @@ COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 # Expõe a porta padrão
 EXPOSE 3000
 
-# Comando para iniciar o servidor
-CMD ["node", "server/index.js"]
+# Comando para iniciar a aplicação
+CMD ["npm", "start"]
