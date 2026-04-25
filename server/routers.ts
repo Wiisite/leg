@@ -451,9 +451,6 @@ const seedRouter = router({
     return t;
   }),
 
-    return { seeded: false };
-  }),
-
   fixDatabase: publicProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
