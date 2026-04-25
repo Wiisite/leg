@@ -180,7 +180,8 @@ const tournamentRouter = router({
         input.modality,
         input.pointsPerWin,
         input.pointsPerDraw,
-        input.pointsPerLoss
+        input.pointsPerLoss,
+        input.rounds
       );
       
       for (const t of input.teams) {
@@ -196,14 +197,10 @@ const tournamentRouter = router({
         name: z.string().min(1),
         category: z.string().min(1),
         modality: z.enum(["futsal", "basquete", "volei", "handebol"]),
-        teams: z.array(
-          z.object({
-            id: z.number().optional(), // id presente = editar, ausente = novo
-            name: z.string().min(1),
-            shortName: z.string().min(1).max(10),
             color: z.string(),
           })
         ),
+        rounds: z.number().default(5),
       })
     )
     .mutation(async ({ input }) => {
@@ -215,6 +212,7 @@ const tournamentRouter = router({
         name: input.name,
         category: input.category,
         modality: input.modality,
+        rounds: input.rounds,
       });
 
       // 2. Gerencia equipes

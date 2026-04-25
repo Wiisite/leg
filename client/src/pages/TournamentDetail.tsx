@@ -500,6 +500,7 @@ function EditTournamentModal({
   const [name, setName] = useState(tournament.name);
   const [category, setCategory] = useState(tournament.category);
   const [modality, setModality] = useState(tournament.modality as any);
+  const [rounds, setRounds] = useState(tournament.rounds ?? 5);
   const [teamList, setTeamList] = useState(teams);
 
   const handleUpdateTeam = (index: number, field: string, value: string) => {
@@ -559,6 +560,16 @@ function EditTournamentModal({
               <option value="handebol">Handebol</option>
             </select>
           </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Número de Rodadas</label>
+            <input
+              type="number"
+              min={1}
+              value={rounds}
+              onChange={(e) => setRounds(parseInt(e.target.value) || 1)}
+              className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-sm focus:ring-2 focus:ring-red/20"
+            />
+          </div>
         </div>
 
         <div className="mb-8">
@@ -603,7 +614,7 @@ function EditTournamentModal({
           <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button 
             className="flex-1 bg-red text-white font-bold hover:opacity-90 shadow-brand"
-            onClick={() => onSave({ name, category, modality, teams: teamList })}
+            onClick={() => onSave({ name, category, modality, rounds, teams: teamList })}
           >
             Salvar Alterações
           </Button>

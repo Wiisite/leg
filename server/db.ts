@@ -79,7 +79,8 @@ export async function createTournament(
   modality: "futsal" | "basquete" | "volei" | "handebol" = "futsal",
   pointsPerWin: number = 3,
   pointsPerDraw: number = 1,
-  pointsPerLoss: number = 0
+  pointsPerLoss: number = 0,
+  rounds: number = 5
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -90,6 +91,7 @@ export async function createTournament(
     pointsPerWin,
     pointsPerDraw,
     pointsPerLoss,
+    rounds,
     status: "pending",
   });
   return result[0].insertId;
@@ -110,7 +112,7 @@ export async function updateTournamentStatus(
 
 export async function updateTournament(
   id: number,
-  data: { name?: string; category?: string; modality?: "futsal" | "basquete" | "volei" | "handebol" }
+  data: { name?: string; category?: string; modality?: "futsal" | "basquete" | "volei" | "handebol"; rounds?: number }
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
