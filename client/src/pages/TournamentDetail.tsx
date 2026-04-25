@@ -14,6 +14,8 @@ import {
   Clock,
   MapPin,
   Trash2,
+  Shield,
+  Shuffle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -65,7 +67,7 @@ function ScoreModal({
   match: MatchForModal;
   teams: { id: number; name: string; shortName: string; color: string }[];
   onClose: () => void;
-  onSave: (matchId: number, home: number, away: number) => void;
+  onSave: (matchId: number, home: number, away: number, time: string, location: string) => void;
 }) {
   const homeTeam = teams.find((t) => t.id === match.homeTeamId);
   const awayTeam = teams.find((t) => t.id === match.awayTeamId);
@@ -489,13 +491,7 @@ export default function TournamentDetail() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("groups");
-  const [editingMatch, setEditingMatch] = useState<null | {
-    id: number;
-    homeTeamId: number;
-    awayTeamId: number;
-    homeScore: number | null;
-    awayScore: number | null;
-  }>(null);
+  const [editingMatch, setEditingMatch] = useState<null | MatchForModal>(null);
 
   const { data, refetch, isLoading, error } = trpc.tournament.getById.useQuery({ id: tournamentId });
   const { data: standings } = trpc.tournament.getStandings.useQuery({ tournamentId });
@@ -607,7 +603,7 @@ export default function TournamentDetail() {
           match={editingMatch}
           teams={teams}
           onClose={() => setEditingMatch(null)}
-          onSave={(matchId, home, away, time, location) =>
+          onSave={(matchId: number, home: number, away: number, time: string, location: string) =>
             updateScore.mutate({ matchId, homeScore: home, awayScore: away, time, location })
           }
         />
@@ -632,24 +628,26 @@ export default function TournamentDetail() {
               {status.label}
             </span>
             {isAuthenticated && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-border hover:border-red/50 hover:text-red text-xs"
-                onClick={() => navigate("/admin")}
-              >
-                <Shield className="w-3.5 h-3.5 mr-1" />
-                Admin
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-border hover:bg-red/5 hover:text-red hover:border-red/30 text-xs"
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-border hover:border-red/50 hover:text-red text-xs"
+                  onClick={() => navigate("/admin")}
+                >
+                  <Shield className="w-3.5 h-3.5 mr-1" />
+                  Admin
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-border hover:bg-red/5 hover:text-red hover:border-red/30 text-xs"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -905,22 +903,4 @@ export default function TournamentDetail() {
   );
 }
 
-// Missing import
-function Shield(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  );
-}
+

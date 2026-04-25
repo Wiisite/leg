@@ -12,7 +12,10 @@ import {
   getTournamentById,
   updateMatchScore,
   updateTournamentStatus,
+  getDb,
 } from "./db";
+import { eq, and } from "drizzle-orm";
+import { matches, teams, tournaments } from "../drizzle/schema";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -222,9 +225,9 @@ const tournamentRouter = router({
     }),
 
   getStandings: publicProcedure
-    .input(z.object({ tournamentId: z.number() }),)
+    .input(z.object({ tournamentId: z.number() }))
     .query(async ({ input }) => {
-      const tournament = await getTournamentById(input.id);
+      const tournament = await getTournamentById(input.tournamentId);
       if (!tournament) throw new TRPCError({ code: "NOT_FOUND" });
       const teamList = await getTeamsByTournament(input.tournamentId);
       const groupMatches = await getMatchesByPhase(input.tournamentId, "group");
