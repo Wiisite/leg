@@ -35,12 +35,15 @@ export default function Home() {
       <header className="bg-primary border-b border-white/10 sticky top-0 z-50 shadow-md">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-red flex items-center justify-center shadow-lg">
-              <Trophy className="w-5 h-5 text-white" />
+            <img src="/logo.png" alt="Logo LEG" className="w-12 h-12 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <div className="flex flex-col">
+              <span className="font-display font-bold text-lg text-white tracking-tight leading-none">
+                LIGA ESCOLAR
+              </span>
+              <span className="font-display font-bold text-sm text-red tracking-widest">
+                GUARULHENSE
+              </span>
             </div>
-            <span className="font-display font-bold text-lg text-white tracking-tight">
-              LIGA ESCOLAR GUARULHENSE
-            </span>
           </div>
           <nav className="flex items-center gap-3">
             {isAuthenticated ? (

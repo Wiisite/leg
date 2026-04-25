@@ -496,7 +496,7 @@ export default function TournamentDetail() {
     awayScore: number | null;
   }>(null);
 
-  const { data, refetch } = trpc.tournament.getById.useQuery({ id: tournamentId });
+  const { data, refetch, isLoading, error } = trpc.tournament.getById.useQuery({ id: tournamentId });
   const { data: standings } = trpc.tournament.getStandings.useQuery({ tournamentId });
   const { data: bracket, refetch: refetchBracket } = trpc.tournament.getBracket.useQuery({
     tournamentId,
@@ -529,10 +529,30 @@ export default function TournamentDetail() {
     onError: (e) => toast.error(e.message),
   });
 
-  if (!data) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-full border-4 border-red border-t-transparent animate-spin" />
+          <p className="text-slate-400 font-bold text-sm animate-pulse">Carregando dados da Liga...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-red/10 flex items-center justify-center mb-6">
+          <Trophy className="w-8 h-8 text-red opacity-20" />
+        </div>
+        <h2 className="font-display text-2xl font-bold text-primary mb-2">Ops! Algo deu errado.</h2>
+        <p className="text-slate-500 max-w-sm mb-8">
+          Não conseguimos carregar os dados deste torneio. Isso pode acontecer se o banco de dados estiver em manutenção.
+        </p>
+        <Button onClick={() => navigate("/admin")} className="bg-red text-white font-bold px-8">
+          Voltar ao Painel
+        </Button>
       </div>
     );
   }
@@ -609,12 +629,12 @@ export default function TournamentDetail() {
       {/* Tournament Header */}
       <div className="border-b border-border/40 py-8">
         <div className="container">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-red flex items-center justify-center shadow-brand shrink-0">
-              <Trophy className="w-7 h-7 text-white" />
+          <div className="flex items-start gap-5">
+            <div className="w-20 h-20 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm shrink-0 overflow-hidden p-1">
+              <img src="/logo.png" alt="Logo LEG" className="w-full h-full object-contain" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+            <div className="flex-1 min-w-0 pt-1">
+              <h1 className="font-display text-2xl sm:text-4xl font-bold text-primary leading-tight">
                 {tournament.name}
               </h1>
               <p className="text-muted-foreground mt-1">{tournament.category}</p>
