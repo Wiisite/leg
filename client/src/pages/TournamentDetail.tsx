@@ -562,8 +562,13 @@ export default function TournamentDetail() {
           <Trophy className="w-8 h-8 text-red opacity-20" />
         </div>
         <h2 className="font-display text-2xl font-bold text-primary mb-2">Ops! Algo deu errado.</h2>
-        <p className="text-slate-500 max-w-sm mb-8">
-          Não conseguimos carregar os dados deste torneio. Isso pode acontecer se o banco de dados estiver em manutenção.
+        <div className="bg-red/5 p-4 rounded-xl mb-8 max-w-sm mx-auto">
+          <p className="text-red text-xs font-mono break-all">
+            Erro: {error?.message || "Falha na conexão com os dados"}
+          </p>
+        </div>
+        <p className="text-slate-500 max-w-sm mb-8 text-sm">
+          Não conseguimos carregar os dados deste torneio. Verifique se o banco de dados está atualizado.
         </p>
         <Button onClick={() => navigate("/admin")} className="bg-red text-white font-bold px-8">
           Voltar ao Painel
