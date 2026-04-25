@@ -204,7 +204,8 @@ export default function CreateTournament() {
                   <option value="volei">Vôlei</option>
                   <option value="handebol">Handebol</option>
                 </select>
-                      <div className="grid grid-cols-2 gap-3">
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 sm:col-span-1">
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Número de Rodadas
