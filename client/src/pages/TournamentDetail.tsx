@@ -612,36 +612,32 @@ function EditTournamentModal({
                         className="hidden" 
                         onChange={(e) => e.target.files?.[0] && handleLogoUpload(idx, e.target.files[0])}
                       />
-                      <Edit2 className="w-4 h-4 text-white" />
+                      <Edit2 className="w-5 h-5 text-white" />
                     </label>
                   </div>
-                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="sm:col-span-2">
+
+                  <div className="flex-1 space-y-3">
+                    <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Nome da Equipe"
+                        placeholder="Nome do Colégio / Equipe"
                         value={team.name}
                         onChange={(e) => handleUpdateTeam(idx, "name", e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-border rounded-lg text-sm font-medium"
+                        className="flex-1 px-4 py-2.5 bg-white border border-border rounded-xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-red/20"
                       />
+                      <Button size="icon" variant="ghost" className="h-10 w-10 text-slate-400 hover:text-red hover:bg-red/5 shrink-0" onClick={() => handleRemoveTeam(idx)}>
+                        <X className="w-5 h-5" />
+                      </Button>
                     </div>
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Sigla"
+                        placeholder="Sigla (Ex: COL)"
                         value={team.shortName}
                         onChange={(e) => handleUpdateTeam(idx, "shortName", e.target.value)}
-                        className="flex-1 px-3 py-2 bg-white border border-border rounded-lg text-sm uppercase font-bold text-center"
+                        className="w-32 px-4 py-2 bg-white border border-border rounded-xl text-xs uppercase font-black tracking-widest text-center shadow-sm"
                       />
-                      <input
-                        type="color"
-                        value={team.color}
-                        onChange={(e) => handleUpdateTeam(idx, "color", e.target.value)}
-                        className="w-10 h-10 p-1 bg-white border border-border rounded-lg cursor-pointer"
-                      />
-                      <Button size="icon" variant="ghost" className="h-10 w-10 text-slate-400 hover:text-red shrink-0" onClick={() => handleRemoveTeam(idx)}>
-                        <X className="w-4 h-4" />
-                      </Button>
+                      <div className="flex-1" /> {/* Espaçador */}
                     </div>
                   </div>
                 </div>
