@@ -15,6 +15,13 @@
       "when": 1775933984617,
       "tag": "0001_curious_power_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1777130544887,
+      "tag": "0002_superb_ink",
+      "breakpoints": true
     }
   ]
 }
