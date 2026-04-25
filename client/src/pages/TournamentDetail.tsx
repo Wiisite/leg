@@ -30,21 +30,27 @@ function TeamBadge({
   color,
   short,
   name,
+  logo,
   size = "md",
 }: {
   color: string;
   short: string;
   name?: string;
+  logo?: string | null;
   size?: "sm" | "md" | "lg";
 }) {
   const sizes = { sm: "w-7 h-7 text-xs", md: "w-9 h-9 text-sm", lg: "w-12 h-12 text-base" };
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`${sizes[size]} rounded-lg flex items-center justify-center font-bold text-white shrink-0`}
-        style={{ background: color }}
+        className={`${sizes[size]} rounded-lg flex items-center justify-center font-bold text-white shrink-0 overflow-hidden border border-border/50`}
+        style={{ background: logo ? 'white' : color }}
       >
-        {short.slice(0, 3)}
+        {logo ? (
+          <img src={logo} alt={short} className="w-full h-full object-contain" />
+        ) : (
+          short.slice(0, 3)
+        )}
       </div>
       {name && <span className="text-sm font-medium text-foreground truncate">{name}</span>}
     </div>
@@ -68,7 +74,7 @@ function ScoreModal({
   onSave,
 }: {
   match: MatchForModal;
-  teams: { id: number; name: string; shortName: string; color: string }[];
+  teams: { id: number; name: string; shortName: string; color: string; logo?: string | null }[];
   onClose: () => void;
   onSave: (matchId: number, home: number, away: number, time: string, location: string) => void;
 }) {
@@ -194,7 +200,7 @@ function MatchCard({
               <span className="text-sm font-bold text-foreground text-right truncate max-w-[120px]">
                 {homeTeam.name}
               </span>
-              <TeamBadge color={homeTeam.color} short={homeTeam.shortName} size="sm" />
+              <TeamBadge color={homeTeam.color} short={homeTeam.shortName} logo={(homeTeam as any).logo} size="sm" />
             </>
           )}
         </div>
@@ -218,7 +224,7 @@ function MatchCard({
         <div className="flex-1 flex items-center gap-2">
           {awayTeam && (
             <>
-              <TeamBadge color={awayTeam.color} short={awayTeam.shortName} size="sm" />
+              <TeamBadge color={awayTeam.color} short={awayTeam.shortName} logo={(awayTeam as any).logo} size="sm" />
               <span className="text-sm font-bold text-foreground truncate max-w-[120px]">
                 {awayTeam.name}
               </span>
@@ -320,7 +326,7 @@ function StandingsTable({
                 </span>
               </td>
               <td className="py-3 px-4">
-                <TeamBadge color={s.color} short={s.shortName} name={s.teamName} size="sm" />
+                <TeamBadge color={s.color} short={s.shortName} name={s.teamName} logo={(s as any).logo} size="sm" />
               </td>
               <td className="py-3 px-3 text-center text-slate-700 font-medium">{s.played}</td>
               <td className="py-3 px-3 text-center text-green-600 font-semibold">{s.won}</td>
@@ -492,8 +498,8 @@ function EditTournamentModal({
   onClose,
   onSave,
 }: {
-  tournament: { id: number; name: string; category: string; modality: string };
-  teams: { id: number; name: string; shortName: string; color: string }[];
+  tournament: { id: number; name: string; category: string; modality: string; rounds: number };
+  teams: { id: number; name: string; shortName: string; color: string; logo: string | null }[];
   onClose: () => void;
   onSave: (data: any) => void;
 }) {
@@ -509,8 +515,16 @@ function EditTournamentModal({
     setTeamList(newTeams);
   };
 
+  const handleLogoUpload = (index: number, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      handleUpdateTeam(index, "logo", reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddTeam = () => {
-    setTeamList([...teamList, { id: undefined as any, name: "", shortName: "", color: "#1e40af" }]);
+    setTeamList([...teamList, { id: undefined as any, name: "", shortName: "", color: "#1e40af", logo: "" }]);
   };
 
   const handleRemoveTeam = (index: number) => {
@@ -581,30 +595,56 @@ function EditTournamentModal({
           </div>
           <div className="space-y-3">
             {teamList.map((team, idx) => (
-              <div key={idx} className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <input
-                  type="color"
-                  value={team.color}
-                  onChange={(e) => handleUpdateTeam(idx, "color", e.target.value)}
-                  className="w-8 h-8 rounded-lg cursor-pointer overflow-hidden border-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Nome da Equipe"
-                  value={team.name}
-                  onChange={(e) => handleUpdateTeam(idx, "name", e.target.value)}
-                  className="flex-1 px-3 py-1.5 bg-white border border-border rounded-lg text-sm"
-                />
-                <input
-                  type="text"
-                  placeholder="Sigla"
-                  value={team.shortName}
-                  onChange={(e) => handleUpdateTeam(idx, "shortName", e.target.value)}
-                  className="w-20 px-3 py-1.5 bg-white border border-border rounded-lg text-sm uppercase"
-                />
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red" onClick={() => handleRemoveTeam(idx)}>
-                  <X className="w-4 h-4" />
-                </Button>
+              <div key={idx} className="flex flex-col gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="relative group shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shadow-sm">
+                      {team.logo ? (
+                        <img src={team.logo} className="w-full h-full object-contain" />
+                      ) : (
+                        <Shield className="w-5 h-5 text-slate-300" />
+                      )}
+                    </div>
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity rounded-xl">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => e.target.files?.[0] && handleLogoUpload(idx, e.target.files[0])}
+                      />
+                      <Edit2 className="w-4 h-4 text-white" />
+                    </label>
+                  </div>
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <input
+                        type="text"
+                        placeholder="Nome da Equipe"
+                        value={team.name}
+                        onChange={(e) => handleUpdateTeam(idx, "name", e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-border rounded-lg text-sm font-medium"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Sigla"
+                        value={team.shortName}
+                        onChange={(e) => handleUpdateTeam(idx, "shortName", e.target.value)}
+                        className="flex-1 px-3 py-2 bg-white border border-border rounded-lg text-sm uppercase font-bold text-center"
+                      />
+                      <input
+                        type="color"
+                        value={team.color}
+                        onChange={(e) => handleUpdateTeam(idx, "color", e.target.value)}
+                        className="w-10 h-10 p-1 bg-white border border-border rounded-lg cursor-pointer"
+                      />
+                      <Button size="icon" variant="ghost" className="h-10 w-10 text-slate-400 hover:text-red shrink-0" onClick={() => handleRemoveTeam(idx)}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -751,7 +791,7 @@ export default function TournamentDetail() {
     <div className="min-h-screen bg-background">
       {isEditingTournament && (
         <EditTournamentModal
-          tournament={tournament}
+          tournament={tournament as any}
           teams={teams}
           onClose={() => setIsEditingTournament(false)}
           onSave={(data) => updateTournament.mutate({ id: tournamentId, ...data })}

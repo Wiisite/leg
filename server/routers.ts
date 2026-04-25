@@ -37,10 +37,11 @@ type StandingEntry = {
   goalsAgainst: number;
   goalDiff: number;
   points: number;
+  logo: string | null;
 };
 
 function computeStandings(
-  teamList: { id: number; name: string; shortName: string; color: string }[],
+  teamList: { id: number; name: string; shortName: string; color: string; logo: string | null }[],
   groupMatches: {
     homeTeamId: number;
     awayTeamId: number;
@@ -60,6 +61,7 @@ function computeStandings(
       teamName: t.name,
       shortName: t.shortName,
       color: t.color,
+      logo: t.logo,
       played: 0,
       won: 0,
       drawn: 0,
@@ -162,6 +164,7 @@ const tournamentRouter = router({
         pointsPerWin: z.number().default(3),
         pointsPerDraw: z.number().default(1),
         pointsPerLoss: z.number().default(0),
+        rounds: z.number().default(5),
         teams: z
           .array(
             z.object({
@@ -197,7 +200,13 @@ const tournamentRouter = router({
         name: z.string().min(1),
         category: z.string().min(1),
         modality: z.enum(["futsal", "basquete", "volei", "handebol"]),
+        teams: z.array(
+          z.object({
+            id: z.number().optional(),
+            name: z.string().min(1),
+            shortName: z.string().min(1).max(10),
             color: z.string(),
+            logo: z.string().optional(),
           })
         ),
         rounds: z.number().default(5),
@@ -230,10 +239,10 @@ const tournamentRouter = router({
       for (const t of input.teams) {
         if (t.id) {
           await db.update(teams)
-            .set({ name: t.name, shortName: t.shortName, color: t.color })
+            .set({ name: t.name, shortName: t.shortName, color: t.color, logo: t.logo })
             .where(eq(teams.id, t.id));
         } else {
-          await createTeam(input.id, t.name, t.shortName, t.color);
+          await createTeam(input.id, t.name, t.shortName, t.color, t.logo);
         }
       }
 
@@ -264,13 +273,27 @@ const tournamentRouter = router({
       // Sorteio (shuffle) das equipes
       const shuffledTeams = [...teamList].sort(() => Math.random() - 0.5);
 
-      // Round-robin single round (all vs all, once)
-      let round = 1;
-      for (let i = 0; i < shuffledTeams.length; i++) {
-        for (let j = i + 1; j < shuffledTeams.length; j++) {
-          await createMatch(input.tournamentId, "group", shuffledTeams[i].id, shuffledTeams[j].id, round);
-          round++;
+      // Round-robin algorithm
+      const teams = [...shuffledTeams];
+      if (teams.length % 2 !== 0) {
+        teams.push({ id: -1, name: "BYE", shortName: "BYE", color: "#000", tournamentId: input.tournamentId, createdAt: new Date(), logo: null });
+      }
+
+      const numTeams = teams.length;
+      const numRounds = numTeams - 1;
+      const matchesPerRound = numTeams / 2;
+
+      for (let round = 1; round <= numRounds; round++) {
+        for (let match = 0; match < matchesPerRound; match++) {
+          const home = teams[match];
+          const away = teams[numTeams - 1 - match];
+
+          if (home.id !== -1 && away.id !== -1) {
+            await createMatch(input.tournamentId, "group", home.id, away.id, round);
+          }
         }
+        // Rotate teams (keep first team fixed)
+        teams.splice(1, 0, teams.pop()!);
       }
       await updateTournamentStatus(input.tournamentId, "group_stage");
       return { ok: true };

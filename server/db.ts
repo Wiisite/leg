@@ -134,11 +134,12 @@ export async function createTeam(
   tournamentId: number,
   name: string,
   shortName: string,
-  color: string
+  color: string,
+  logo?: string
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.insert(teams).values({ tournamentId, name, shortName, color });
+  await db.insert(teams).values({ tournamentId, name, shortName, color, logo });
 }
 
 // ─── Matches ───────────────────────────────────────────────────────────────────
