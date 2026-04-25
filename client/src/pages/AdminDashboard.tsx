@@ -14,7 +14,9 @@ import {
   ChevronRight,
   LogOut,
   Plus,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
@@ -28,9 +30,24 @@ export default function AdminDashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
 
-  const { data: tournaments } = trpc.tournament.list.useQuery(undefined, {
+  const { data: tournaments, refetch } = trpc.tournament.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
+
+  const utils = trpc.useUtils();
+  const deleteMutation = trpc.tournament.delete.useMutation({
+    onSuccess: () => {
+      utils.tournament.list.invalidate();
+      toast.success("Torneio excluído permanentemente.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleDelete = (id: number, name: string) => {
+    if (confirm(`Tem certeza que deseja excluir permanentemente o torneio "${name}"? Esta ação não pode ser desfeita.`)) {
+      deleteMutation.mutate({ tournamentId: id });
+    }
+  };
 
   if (loading) {
     return (
@@ -218,6 +235,15 @@ export default function AdminDashboard() {
                     >
                       Gerenciar
                       <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-border hover:bg-red/5 hover:text-red hover:border-red/30"
+                      onClick={() => handleDelete(t.id, t.name)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>

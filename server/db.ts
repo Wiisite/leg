@@ -92,7 +92,7 @@ export async function createTournament(
     pointsPerLoss,
     status: "pending",
   });
-  return result[0];
+  return result[0].insertId;
 }
 
 export async function updateTournamentStatus(

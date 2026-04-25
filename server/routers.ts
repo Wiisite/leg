@@ -170,7 +170,7 @@ const tournamentRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      await createTournament(
+      const tournamentId = await createTournament(
         input.name,
         input.category,
         input.modality,
@@ -178,13 +178,11 @@ const tournamentRouter = router({
         input.pointsPerDraw,
         input.pointsPerLoss
       );
-      const all = await getAllTournaments();
-      const created = all[all.length - 1];
-      if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
       for (const t of input.teams) {
-        await createTeam(created.id, t.name, t.shortName, t.color);
+        await createTeam(Number(tournamentId), t.name, t.shortName, t.color);
       }
-      return created;
+      return { id: Number(tournamentId) };
     }),
 
   createDefault: protectedProcedure
@@ -238,6 +236,20 @@ const tournamentRouter = router({
         tournament.pointsPerLoss,
         tournament.modality
       );
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ tournamentId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB not available");
+
+      // Delete matches, teams, and finally the tournament
+      await db.delete(matches).where(eq(matches.tournamentId, input.tournamentId));
+      await db.delete(teams).where(eq(teams.tournamentId, input.tournamentId));
+      await db.delete(tournaments).where(eq(tournaments.id, input.tournamentId));
+      
+      return { ok: true };
     }),
 
   generateSemifinals: protectedProcedure

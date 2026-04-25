@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Clock,
   MapPin,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -529,6 +530,20 @@ export default function TournamentDetail() {
     onError: (e) => toast.error(e.message),
   });
 
+  const deleteMutation = trpc.tournament.delete.useMutation({
+    onSuccess: () => {
+      navigate("/admin");
+      toast.success("Torneio excluído.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleDelete = () => {
+    if (confirm(`Excluir permanentemente o torneio "${tournament.name}"?`)) {
+      deleteMutation.mutate({ tournamentId });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -620,6 +635,15 @@ export default function TournamentDetail() {
               >
                 <Shield className="w-3.5 h-3.5 mr-1" />
                 Admin
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-border hover:bg-red/5 hover:text-red hover:border-red/30 text-xs"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
               </Button>
             )}
           </div>
