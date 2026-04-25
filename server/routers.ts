@@ -171,6 +171,7 @@ const tournamentRouter = router({
               name: z.string().min(1),
               shortName: z.string().min(1).max(10),
               color: z.string().default("#1e40af"),
+              logo: z.string().nullable().optional(),
             }),
           )
           .min(2),
@@ -188,7 +189,7 @@ const tournamentRouter = router({
       );
       
       for (const t of input.teams) {
-        await createTeam(Number(tournamentId), t.name, t.shortName, t.color);
+        await createTeam(Number(tournamentId), t.name, t.shortName, t.color, t.logo);
       }
       return { id: Number(tournamentId) };
     }),
@@ -206,7 +207,7 @@ const tournamentRouter = router({
             name: z.string().min(1),
             shortName: z.string().min(1).max(10),
             color: z.string(),
-            logo: z.string().optional(),
+            logo: z.string().nullable().optional(),
           })
         ),
         rounds: z.number().default(5),
