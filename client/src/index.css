@@ -142,7 +142,8 @@
   }
 
   .font-display {
-    font-family: "Playfair Display", serif;
+    font-family: "Inter", system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 
   .text-red {
@@ -158,27 +159,38 @@
   }
 
   .gradient-brand {
-    background: linear-gradient(135deg, oklch(0.35 0.12 240), oklch(0.45 0.15 240));
+    background: linear-gradient(135deg, oklch(0.35 0.12 240), oklch(0.25 0.1 240));
   }
 
   .glass {
-    background: oklch(1 0 0 / 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid oklch(0.35 0.12 240 / 0.05);
+    background: oklch(1 0 0 / 0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid oklch(0.35 0.12 240 / 0.08);
   }
 
   .shadow-brand {
-    box-shadow: 0 10px 25px -5px oklch(0.35 0.12 240 / 0.1), 0 8px 10px -6px oklch(0.35 0.12 240 / 0.1);
+    box-shadow: 0 4px 14px 0 oklch(0.6 0.2 25 / 0.15);
   }
 
   .shadow-premium {
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .shadow-premium:hover {
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+    box-shadow: 0 12px 24px -8px rgb(0 0 0 / 0.1);
     transform: translateY(-2px);
+    border-color: oklch(0.35 0.12 240 / 0.2);
+  }
+
+  .match-card {
+    @apply relative overflow-hidden rounded-2xl border bg-card transition-all duration-300;
+    border-color: oklch(0.9 0.02 220);
+  }
+
+  .match-card:hover {
+    @apply shadow-xl -translate-y-1;
+    border-color: oklch(0.35 0.12 240 / 0.2);
   }
 }
 

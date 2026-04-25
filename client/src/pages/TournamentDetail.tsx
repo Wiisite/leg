@@ -183,11 +183,7 @@ function MatchCard({
   const finished = match.status === "finished";
 
   return (
-    <div
-      className={`bg-card border rounded-xl p-4 transition-all shadow-sm ${
-        finished ? "border-border/40 opacity-80" : "border-border hover:border-gold/30 hover:shadow-md"
-      }`}
-    >
+    <div className="match-card p-5">
       <div className="flex items-center gap-3">
         <div className="flex-1 flex items-center gap-2 justify-end">
           {homeTeam && (
@@ -290,17 +286,17 @@ function StandingsTable({
     <div className="overflow-x-auto rounded-xl border border-border/50">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border/50 bg-secondary/50">
-            <th className="text-left py-3 px-4 text-muted-foreground font-medium w-8">#</th>
-            <th className="text-left py-3 px-4 text-muted-foreground font-medium">Equipe</th>
-            <th className="text-center py-3 px-3 text-muted-foreground font-medium">J</th>
-            <th className="text-center py-3 px-3 text-muted-foreground font-medium">V</th>
-            <th className="text-center py-3 px-3 text-muted-foreground font-medium">E</th>
-            <th className="text-center py-3 px-3 text-muted-foreground font-medium">D</th>
-            <th className="text-center py-3 px-3 text-muted-foreground font-medium">GP</th>
-            <th className="text-center py-3 px-3 text-muted-foreground font-medium">GC</th>
-            <th className="text-center py-3 px-3 text-muted-foreground font-medium">SG</th>
-            <th className="text-center py-3 px-4 text-red font-bold">Pts</th>
+          <tr className="border-b border-border/50 bg-slate-50/50">
+            <th className="text-left py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-10">#</th>
+            <th className="text-left py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Equipe</th>
+            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">J</th>
+            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">V</th>
+            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">E</th>
+            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">D</th>
+            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">GP</th>
+            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">GC</th>
+            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">SG</th>
+            <th className="text-center py-4 px-4 text-xs font-bold text-red uppercase tracking-wider">Pts</th>
           </tr>
         </thead>
         <tbody>
@@ -341,10 +337,12 @@ function StandingsTable({
       </table>
       {standings.length >= 2 && (
         <div className="px-4 py-2 border-t border-border/30 bg-amber-50/20">
-          <p className="text-xs text-amber-800/70 font-medium">
-            <span className="inline-block w-3 h-3 rounded-sm bg-amber-200 mr-1.5 align-middle" />
-            Classificados para semifinal
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm animate-pulse" />
+            <p className="text-[11px] text-amber-900/60 font-bold uppercase tracking-wider">
+              Zona de Classificação (Semifinal)
+            </p>
+          </div>
         </div>
       )}
     </div>
@@ -612,16 +610,34 @@ export default function TournamentDetail() {
       {/* Header */}
       <header className="border-b border-border/50 sticky top-0 z-40 glass">
         <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-red"
               onClick={() => navigate("/")}
             >
-              <ArrowLeft className="w-4 h-4 mr-1.5" />
-              Voltar
+              <ArrowLeft className="w-4 h-4" />
             </Button>
+            <div className="w-10 h-10 rounded-xl bg-red/5 flex items-center justify-center border border-red/10 shadow-sm overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="LEG" 
+                className="w-full h-full object-contain p-1"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>';
+                }}
+              />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="font-display text-sm font-black text-primary leading-none uppercase tracking-tight">
+                {tournament.name}
+              </h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                {tournament.category} • {tournament.modality}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}>
