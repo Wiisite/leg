@@ -947,20 +947,33 @@ export default function TournamentDetail() {
                 <Swords className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm">
                   {isAuthenticated
-                    ? 'Clique em "Gerar Fase de Grupos" para criar os confrontos'
-                    : "Confrontos ainda não gerados"}
+                    ? 'Clique em "Sortear Confrontos" para criar os jogos'
+                    : "Confrontos ainda não sorteados"}
                 </p>
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {groupMatches.map((m) => (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    teams={teams}
-                    isAdmin={isAuthenticated}
-                    onEdit={setEditingMatch}
-                  />
+              <div className="space-y-12">
+                {Array.from(new Set(groupMatches.map(m => m.round))).sort((a, b) => a - b).map(roundNum => (
+                  <div key={roundNum}>
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="h-px flex-1 bg-slate-200" />
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50 px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                        {roundNum}ª Rodada
+                      </h3>
+                      <div className="h-px flex-1 bg-slate-200" />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {groupMatches.filter(m => m.round === roundNum).map((m) => (
+                        <MatchCard
+                          key={m.id}
+                          match={m}
+                          teams={teams}
+                          isAdmin={isAuthenticated}
+                          onEdit={setEditingMatch}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
