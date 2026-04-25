@@ -28,24 +28,17 @@ export function useAuth(options?: UseAuthOptions) {
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
-      if (
-        error instanceof TRPCClientError &&
-        error.data?.code === "UNAUTHORIZED"
-      ) {
-        return;
-      }
-      throw error;
+      console.error("Logout failed", error);
     } finally {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
+      localStorage.removeItem("manus-runtime-user-info");
+      // Forçar recarregamento para limpar cache do React e tRPC
+      window.location.href = "/";
     }
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,

@@ -21,7 +21,7 @@ const MODALITY_ICONS: Record<string, any> = {
 };
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
@@ -48,14 +48,23 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <nav className="flex items-center gap-4">
             {isAuthenticated ? (
-              <Button
-                onClick={() => navigate("/admin")}
-                className="bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl h-12 px-8 shadow-xl shadow-red-600/20"
-              >
-                Painel Administrativo
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={() => navigate("/admin")}
+                  className="bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl h-10 px-6 shadow-xl shadow-red-600/20"
+                >
+                  Painel Administrativo
+                </Button>
+                <button
+                  onClick={() => logout()}
+                  className="text-slate-400 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Sair
+                </button>
+              </div>
             ) : (
               <Button
                 onClick={() => (window.location.href = getLoginUrl())}
