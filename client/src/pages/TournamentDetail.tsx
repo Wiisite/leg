@@ -26,37 +26,6 @@ import { Badge } from "@/components/ui/badge";
 
 type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final";
 
-function TeamBadge({
-  color,
-  short,
-  name,
-  logo,
-  size = "md",
-}: {
-  color: string;
-  short: string;
-  name?: string;
-  logo?: string | null;
-  size?: "sm" | "md" | "lg";
-}) {
-  const sizes = { sm: "w-7 h-7 text-xs", md: "w-9 h-9 text-sm", lg: "w-12 h-12 text-base" };
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`${sizes[size]} rounded-lg flex items-center justify-center font-bold text-white shrink-0 overflow-hidden border border-border/50`}
-        style={{ background: logo ? 'white' : color }}
-      >
-        {logo ? (
-          <img src={logo} alt={short} className="w-full h-full object-contain" />
-        ) : (
-          short.slice(0, 3)
-        )}
-      </div>
-      {name && <span className="text-sm font-medium text-foreground truncate">{name}</span>}
-    </div>
-  );
-}
-
 type MatchForModal = { 
   id: number; 
   homeTeamId: number; 
@@ -65,7 +34,35 @@ type MatchForModal = {
   awayScore: number | null;
   time?: string | null;
   location?: string | null;
+  status?: string;
+  round?: number;
 };
+
+function TeamBadge({ team, size = "md", showName = false }: { team: any; size?: "sm" | "md" | "lg"; showName?: boolean }) {
+  const sizes = { 
+    sm: "w-8 h-8", 
+    md: "w-12 h-12", 
+    lg: "w-20 h-20" 
+  };
+  
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className={`${sizes[size]} rounded-2xl bg-white border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm`}>
+        {team?.logo ? (
+          <img src={team.logo} alt={team.shortName} className="w-full h-full object-contain p-1" />
+        ) : (
+          <div 
+            className="w-full h-full flex items-center justify-center text-white font-black"
+            style={{ backgroundColor: team?.color || "#cbd5e1", fontSize: size === 'lg' ? '24px' : '10px' }}
+          >
+            {team?.shortName?.slice(0, 3) || "?"}
+          </div>
+        )}
+      </div>
+      {showName && <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[80px] text-center">{team?.shortName}</span>}
+    </div>
+  );
+}
 
 function ScoreModal({
   match,
@@ -86,80 +83,85 @@ function ScoreModal({
   const [location, setLocation] = useState(match.location ?? "");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-premium">
-        <h3 className="font-display font-semibold text-lg text-center mb-6">Registrar Placar</h3>
-        <div className="flex items-center gap-4 justify-center mb-6">
-          <div className="flex-1 text-center">
-            {homeTeam && (
-              <TeamBadge color={homeTeam.color} short={homeTeam.shortName} size="lg" />
-            )}
-            <p className="text-xs text-muted-foreground mt-2 truncate">{homeTeam?.name}</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
+      <div className="relative bg-white border border-slate-100 rounded-[32px] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-300">
+        <h3 className="font-black text-2xl text-center mb-8 text-slate-800 tracking-tight uppercase">Registrar Placar</h3>
+        
+        <div className="flex items-center gap-6 justify-between mb-10">
+          <div className="flex-1 flex flex-col items-center gap-3">
+            <TeamBadge team={homeTeam} size="lg" />
+            <p className="text-[11px] font-black text-slate-400 uppercase text-center leading-tight min-h-[2.5rem] flex items-center">{homeTeam?.name}</p>
           </div>
-          <div className="flex items-center gap-3">
+          
+          <div className="flex items-center gap-2">
             <input
               type="number"
               min={0}
               value={home}
               onChange={(e) => setHome(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-14 h-14 text-center text-2xl font-bold bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all"
             />
-            <span className="text-muted-foreground font-bold">×</span>
+            <span className="text-slate-200 font-black text-xl">×</span>
             <input
               type="number"
               min={0}
               value={away}
               onChange={(e) => setAway(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-14 h-14 text-center text-2xl font-bold bg-input border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all"
             />
           </div>
-          <div className="flex-1 text-center">
-            {awayTeam && (
-              <TeamBadge color={awayTeam.color} short={awayTeam.shortName} size="lg" />
-            )}
-            <p className="text-xs text-muted-foreground mt-2 truncate">{awayTeam?.name}</p>
+          
+          <div className="flex-1 flex flex-col items-center gap-3">
+            <TeamBadge team={awayTeam} size="lg" />
+            <p className="text-[11px] font-black text-slate-400 uppercase text-center leading-tight min-h-[2.5rem] flex items-center">{awayTeam?.name}</p>
           </div>
         </div>
-        <div className="space-y-4 mb-6">
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5 ml-1">Horário</label>
-            <div className="relative">
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                placeholder="Ex: 14:30"
-                className="w-full pl-9 pr-4 py-2 bg-input border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
+
+        <div className="space-y-4 mb-8">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Horário</label>
+              <div className="relative">
+                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                <input
+                  type="text"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  placeholder="14:30"
+                  className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm"
+                />
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5 ml-1">Local</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Ex: Ginásio Municipal"
-                className="w-full pl-9 pr-4 py-2 bg-input border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Local</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Ginásio"
+                  className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm"
+                />
+              </div>
             </div>
           </div>
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" className="flex-1" onClick={onClose}>
+          <button 
+            className="flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all" 
+            onClick={onClose}
+          >
             Cancelar
-          </Button>
-          <Button
-            className="flex-1 bg-red text-white font-semibold hover:opacity-90 shadow-brand"
+          </button>
+          <button
+            className="flex-[2] bg-red hover:bg-red-600 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl shadow-xl shadow-red/20 transition-all active:scale-95"
             onClick={() => onSave(match.id, home, away, time, location)}
           >
-            Salvar
-          </Button>
+            SALVAR RESULTADO
+          </button>
         </div>
       </div>
     </div>
@@ -172,98 +174,61 @@ function MatchCard({
   isAdmin,
   onEdit,
 }: {
-  match: {
-    id: number;
-    homeTeamId: number;
-    awayTeamId: number;
-    homeScore: number | null;
-    awayScore: number | null;
-    status: string;
-    round: number;
-    time?: string | null;
-    location?: string | null;
-  };
-  teams: { id: number; name: string; shortName: string; color: string }[];
+  match: MatchForModal;
+  teams: any[];
   isAdmin: boolean;
   onEdit?: (m: MatchForModal) => void;
 }) {
-  const homeTeam = teams.find((t) => t.id === match.homeTeamId);
-  const awayTeam = teams.find((t) => t.id === match.awayTeamId);
-  const finished = match.status === "finished";
+  const home = teams.find((t) => t.id === match.homeTeamId);
+  const away = teams.find((t) => t.id === match.awayTeamId);
+  const finished = match.homeScore !== null;
 
   return (
-    <div className="match-card p-5">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 flex items-center gap-2 justify-end">
-          {homeTeam && (
-            <>
-              <span className="text-sm font-bold text-foreground text-right truncate max-w-[120px]">
-                {homeTeam.name}
-              </span>
-              <TeamBadge color={homeTeam.color} short={homeTeam.shortName} logo={(homeTeam as any).logo} size="sm" />
-            </>
-          )}
+    <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm hover:shadow-xl transition-all group border-b-4 border-b-slate-100">
+      <div className="flex items-center justify-between gap-4 mb-8">
+        <div className="flex-1 flex flex-col items-center gap-3">
+          <TeamBadge team={home} size="md" />
+          <span className="text-[11px] font-black text-slate-800 uppercase text-center leading-tight min-h-[2.5rem] flex items-center justify-center px-2">{home?.name}</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {finished ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200">
-              <span className="text-lg font-bold text-primary w-5 text-center">
-                {match.homeScore}
-              </span>
-              <span className="text-red/50 text-sm font-bold">–</span>
-              <span className="text-lg font-bold text-primary w-5 text-center">
-                {match.awayScore}
-              </span>
-            </div>
-          ) : (
-            <div className="px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-              <span className="text-xs text-red font-bold uppercase tracking-wider">VS</span>
-            </div>
-          )}
+        
+        <div className="flex flex-col items-center gap-2 px-4">
+          <div className="flex items-center gap-4">
+            <span className={`text-4xl font-black ${finished ? 'text-slate-800' : 'text-slate-200'}`}>
+              {match.homeScore ?? "0"}
+            </span>
+            <span className="text-slate-200 font-black text-xl">×</span>
+            <span className={`text-4xl font-black ${finished ? 'text-slate-800' : 'text-slate-200'}`}>
+              {match.awayScore ?? "0"}
+            </span>
+          </div>
+          <div className="px-3 py-1 bg-red/5 rounded-full border border-red/10">
+            <span className="text-[9px] font-black text-red uppercase tracking-widest">VS</span>
+          </div>
         </div>
-        <div className="flex-1 flex items-center gap-2">
-          {awayTeam && (
-            <>
-              <TeamBadge color={awayTeam.color} short={awayTeam.shortName} logo={(awayTeam as any).logo} size="sm" />
-              <span className="text-sm font-bold text-foreground truncate max-w-[120px]">
-                {awayTeam.name}
-              </span>
-            </>
-          )}
+
+        <div className="flex-1 flex flex-col items-center gap-3">
+          <TeamBadge team={away} size="md" />
+          <span className="text-[11px] font-black text-slate-800 uppercase text-center leading-tight min-h-[2.5rem] flex items-center justify-center px-2">{away?.name}</span>
         </div>
       </div>
-      {(match.time || match.location) && (
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground border-t border-border/30 pt-2 px-1">
-          {match.time && (
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-red/60" /> {match.time}
-            </span>
-          )}
-          {match.location && (
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-red/60" /> {match.location}
-            </span>
-          )}
+
+      <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-black uppercase tracking-wider">{match.time || "A DEFINIR"}</span>
+          </div>
+          <div className="flex items-center gap-2 text-slate-400">
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-black uppercase tracking-wider truncate max-w-[120px]">{match.location || "A DEFINIR"}</span>
+          </div>
         </div>
-      )}
-      <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center gap-1.5">
-          {finished ? (
-            <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-              <CheckCircle2 className="w-3 h-3" /> Encerrado
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-xs text-slate-400">
-              <Clock className="w-3 h-3" /> Aguardando
-            </span>
-          )}
-        </div>
+        
         {isAdmin && onEdit && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs border-border hover:border-red/50 hover:text-red hover:bg-red/5"
+          <Button 
+            size="sm" 
             onClick={() => onEdit(match)}
+            className="bg-slate-50 hover:bg-red hover:text-white text-slate-400 text-[10px] font-black uppercase px-6 rounded-2xl transition-all shadow-sm active:scale-95"
           >
             {finished ? "Editar" : "Registrar"}
           </Button>
@@ -273,84 +238,54 @@ function MatchCard({
   );
 }
 
-function StandingsTable({
-  standings,
-}: {
-  standings: {
-    teamId: number;
-    teamName: string;
-    shortName: string;
-    color: string;
-    played: number;
-    won: number;
-    drawn: number;
-    lost: number;
-    goalsFor: number;
-    goalsAgainst: number;
-    goalDiff: number;
-    points: number;
-  }[];
-}) {
+function StandingsTable({ standings }: { standings: any[] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border/50">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-[32px] border border-slate-100 shadow-sm bg-white">
+      <table className="w-full border-collapse">
         <thead>
-          <tr className="border-b border-border/50 bg-slate-50/50">
-            <th className="text-left py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-10">#</th>
-            <th className="text-left py-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Equipe</th>
-            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">J</th>
-            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">V</th>
-            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">E</th>
-            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">D</th>
-            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">GP</th>
-            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">GC</th>
-            <th className="text-center py-4 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">SG</th>
-            <th className="text-center py-4 px-4 text-xs font-bold text-red uppercase tracking-wider">Pts</th>
+          <tr className="bg-slate-50/50">
+            <th className="py-6 px-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">#</th>
+            <th className="py-6 px-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Equipe</th>
+            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">J</th>
+            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">V</th>
+            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">E</th>
+            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">D</th>
+            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">SG</th>
+            <th className="py-6 px-6 text-center text-[10px] font-black text-red uppercase tracking-widest w-20">Pts</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-50">
           {standings.map((s, i) => (
-            <tr
-              key={s.teamId}
-              className={`border-b border-border/30 transition-colors hover:bg-slate-50 ${
-                i < 2 ? "bg-amber-50/30" : ""
-              }`}
-            >
-              <td className="py-3 px-4">
-                <span
-                  className={`text-xs font-bold ${
-                    i < 2 ? "text-red" : "text-muted-foreground"
-                  }`}
-                >
-                  {i + 1}
-                </span>
+            <tr key={s.teamId} className={`group transition-colors hover:bg-slate-50/80 ${i < 2 ? 'bg-amber-50/20' : ''}`}>
+              <td className="py-5 px-6">
+                <span className={`text-xs font-black ${i < 2 ? 'text-red' : 'text-slate-400'}`}>{i + 1}</span>
               </td>
-              <td className="py-3 px-4">
-                <TeamBadge color={s.color} short={s.shortName} name={s.teamName} logo={(s as any).logo} size="sm" />
+              <td className="py-5 px-4">
+                <div className="flex items-center gap-4">
+                  <TeamBadge team={s} size="sm" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-black text-slate-800 uppercase leading-none mb-1">{s.teamName}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{s.shortName}</span>
+                  </div>
+                </div>
               </td>
-              <td className="py-3 px-3 text-center text-slate-700 font-medium">{s.played}</td>
-              <td className="py-3 px-3 text-center text-green-600 font-semibold">{s.won}</td>
-              <td className="py-3 px-3 text-center text-amber-600 font-semibold">{s.drawn}</td>
-              <td className="py-3 px-3 text-center text-red-600 font-semibold">{s.lost}</td>
-              <td className="py-3 px-3 text-center text-slate-600">{s.goalsFor}</td>
-              <td className="py-3 px-3 text-center text-slate-600">{s.goalsAgainst}</td>
-              <td className="py-3 px-3 text-center text-foreground">
-                {s.goalDiff > 0 ? `+${s.goalDiff}` : s.goalDiff}
-              </td>
-              <td className="py-3 px-4 text-center">
-                <span className="font-bold text-red text-base">{s.points}</span>
+              <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.played}</td>
+              <td className="py-5 px-3 text-center text-sm font-black text-green-600">{s.won}</td>
+              <td className="py-5 px-3 text-center text-sm font-black text-amber-500">{s.drawn}</td>
+              <td className="py-5 px-3 text-center text-sm font-black text-red-500">{s.lost}</td>
+              <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.goalDiff > 0 ? `+${s.goalDiff}` : s.goalDiff}</td>
+              <td className="py-5 px-6 text-center">
+                <span className="text-lg font-black text-red">{s.points}</span>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
       {standings.length >= 2 && (
-        <div className="px-4 py-2 border-t border-border/30 bg-amber-50/20">
+        <div className="px-6 py-4 bg-amber-50/30 border-t border-slate-100">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm animate-pulse" />
-            <p className="text-[11px] text-amber-900/60 font-bold uppercase tracking-wider">
-              Zona de Classificação (Semifinal)
-            </p>
+            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-sm" />
+            <p className="text-[10px] font-black text-amber-900/40 uppercase tracking-widest">Zona de Classificação (Semifinal)</p>
           </div>
         </div>
       )}
@@ -362,73 +297,42 @@ function BracketView({
   bracket,
   teams,
 }: {
-  bracket: {
-    group: { id: number; homeTeamId: number; awayTeamId: number; homeScore: number | null; awayScore: number | null; status: string; round: number }[];
-    semifinal: { id: number; homeTeamId: number; awayTeamId: number; homeScore: number | null; awayScore: number | null; status: string; round: number }[];
-    final: { id: number; homeTeamId: number; awayTeamId: number; homeScore: number | null; awayScore: number | null; status: string; round: number }[];
-  };
-  teams: { id: number; name: string; shortName: string; color: string }[];
+  bracket: any;
+  teams: any[];
 }) {
-  const getTeam = (id: number) => teams.find((t) => t.id === id);
-  const getWinner = (m: { homeTeamId: number; awayTeamId: number; homeScore: number | null; awayScore: number | null; status: string }) => {
-    if (m.status !== "finished") return null;
-    if (m.homeScore! > m.awayScore!) return m.homeTeamId;
-    if (m.awayScore! > m.homeScore!) return m.awayTeamId;
+  const getWinner = (m: any) => {
+    if (m.homeScore === null) return null;
+    if (m.homeScore > m.awayScore) return m.homeTeamId;
+    if (m.awayScore > m.homeScore) return m.awayTeamId;
     return m.homeTeamId;
   };
 
-  const BracketMatch = ({
-    match,
-    label,
-  }: {
-    match: typeof bracket.semifinal[0];
-    label?: string;
-  }) => {
-    const home = getTeam(match.homeTeamId);
-    const away = getTeam(match.awayTeamId);
+  const BracketMatch = ({ match, label }: { match: any; label?: string }) => {
+    const home = teams.find(t => t.id === match.homeTeamId);
+    const away = teams.find(t => t.id === match.awayTeamId);
     const winner = getWinner(match);
+
     return (
-      <div className="bg-card border border-border rounded-xl overflow-hidden w-56 shadow-premium">
-        {label && (
-          <div className="px-3 py-1.5 bg-secondary/60 border-b border-border/40">
-            <span className="text-xs text-muted-foreground font-medium">{label}</span>
-          </div>
-        )}
-        {[
-          { team: home, score: match.homeScore, teamId: match.homeTeamId },
-          { team: away, score: match.awayScore, teamId: match.awayTeamId },
-        ].map(({ team, score, teamId }, idx) => (
-          <div
-            key={idx}
-            className={`flex items-center justify-between px-3 py-2.5 ${
-              idx === 0 ? "border-b border-border/30" : ""
-            } ${winner === teamId ? "bg-amber-50" : ""}`}
-          >
-            <div className="flex items-center gap-2">
-              {team ? (
-                <TeamBadge color={team.color} short={team.shortName} size="sm" />
-              ) : (
-                <div className="w-7 h-7 rounded-lg bg-secondary/50 flex items-center justify-center">
-                  <span className="text-xs text-muted-foreground">?</span>
-                </div>
-              )}
-              <span
-                className={`text-sm truncate max-w-[90px] ${
-                  winner === teamId ? "text-gold font-semibold" : "text-foreground"
-                }`}
-              >
-                {team?.name ?? "A definir"}
+      <div className="flex flex-col gap-2 w-64">
+        {label && <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest text-center">{label}</span>}
+        <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm shadow-slate-200/50">
+          {[
+            { team: home, score: match.homeScore, id: match.homeTeamId },
+            { team: away, score: match.awayScore, id: match.awayTeamId }
+          ].map((t, idx) => (
+            <div key={idx} className={`flex items-center justify-between px-4 py-3 ${idx === 0 ? 'border-b border-slate-50' : ''} ${winner === t.id ? 'bg-amber-50/30' : ''}`}>
+              <div className="flex items-center gap-3">
+                <TeamBadge team={t.team} size="sm" />
+                <span className={`text-[11px] font-black uppercase truncate max-w-[100px] ${winner === t.id ? 'text-red' : 'text-slate-600'}`}>
+                  {t.team?.name || "A DEFINIR"}
+                </span>
+              </div>
+              <span className={`text-sm font-black ${winner === t.id ? 'text-red' : 'text-slate-300'}`}>
+                {t.score ?? "-"}
               </span>
             </div>
-            <span
-              className={`text-sm font-bold ${
-                winner === teamId ? "text-red" : "text-muted-foreground"
-              }`}
-            >
-              {score ?? "-"}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   };
