@@ -16,10 +16,17 @@ export async function getDb() {
       
       // Rodar migrações programaticamente (apenas uma vez)
       if (!_migrated) {
-        console.log("[Database] Running migrations...");
-        await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
-        _migrated = true;
-        console.log("[Database] Migrations applied successfully!");
+        try {
+          console.log("[Database] Running auto-migrations...");
+          // Tenta rodar migrações se a pasta existir
+          await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+          _migrated = true;
+          console.log("[Database] Migrations applied successfully!");
+        } catch (migError) {
+          console.warn("[Database] Auto-migration skipped or failed:", migError);
+          // Não trava o processo, deixa o servidor subir
+          _migrated = true; 
+        }
       }
     } catch (error) {
       console.warn("[Database] Failed to connect or migrate:", error);
