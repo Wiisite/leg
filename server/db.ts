@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, matches, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -14,17 +14,19 @@ export async function getDb() {
     try {
       _db = drizzle(process.env.DATABASE_URL);
       
-      // Rodar migrações programaticamente (apenas uma vez)
+      // Rodar migrações programaticamente
       if (!_migrated) {
         try {
-          console.log("[Database] Running auto-migrations...");
-          // Tenta rodar migrações se a pasta existir
+          console.log("[Database] Running auto-migrations and schema fixes...");
           await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+          
+          // FORÇA BRUTA: Tenta adicionar a coluna logo se a migração falhou silenciosamente
+          await _db.execute(sql`ALTER TABLE teams ADD COLUMN IF NOT EXISTS logo TEXT NULL`);
+          
           _migrated = true;
-          console.log("[Database] Migrations applied successfully!");
+          console.log("[Database] Schema updated successfully!");
         } catch (migError) {
-          console.warn("[Database] Auto-migration skipped or failed:", migError);
-          // Não trava o processo, deixa o servidor subir
+          console.warn("[Database] Schema fix attempt:", migError);
           _migrated = true; 
         }
       }
