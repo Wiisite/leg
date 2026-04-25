@@ -50,4 +50,40 @@ export function registerOAuthRoutes(app: Express) {
       res.status(500).json({ error: "OAuth callback failed" });
     }
   });
+
+  // Rota de Login Mestre para a Equipe LEG
+  // Para entrar, basta acessar: /api/auth/master?code=SUA_SENHA
+  app.get("/api/auth/master", async (req: Request, res: Response) => {
+    const code = req.query.code;
+    const MASTER_CODE = process.env.AUTH_SECRET || "LEG2026"; 
+
+    if (code !== MASTER_CODE) {
+      return res.status(401).send("Código Administrativo Inválido. Use /api/auth/master?code=SENHA");
+    }
+
+    const adminUser = {
+      openId: "admin-master",
+      name: "Administrador LEG",
+      email: "admin@ligaleg.com.br",
+      loginMethod: "master",
+      lastSignedIn: new Date(),
+    };
+
+    try {
+      await db.upsertUser(adminUser);
+
+      const sessionToken = await sdk.createSessionToken(adminUser.openId, {
+        name: adminUser.name,
+        expiresInMs: ONE_YEAR_MS,
+      });
+
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      
+      return res.redirect("/");
+    } catch (error) {
+      console.error("[Auth] Master login failed", error);
+      res.status(500).send("Erro no login mestre");
+    }
+  });
 }
