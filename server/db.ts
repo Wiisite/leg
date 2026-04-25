@@ -3,14 +3,26 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, matches, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
+import { migrate } from "drizzle-orm/mysql2/migrator";
+import path from "path";
+
 let _db: ReturnType<typeof drizzle> | null = null;
+let _migrated = false;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       _db = drizzle(process.env.DATABASE_URL);
+      
+      // Rodar migrações programaticamente (apenas uma vez)
+      if (!_migrated) {
+        console.log("[Database] Running migrations...");
+        await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+        _migrated = true;
+        console.log("[Database] Migrations applied successfully!");
+      }
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      console.warn("[Database] Failed to connect or migrate:", error);
       _db = null;
     }
   }

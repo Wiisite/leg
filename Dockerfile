@@ -38,5 +38,5 @@ COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 # Expõe a porta padrão
 EXPOSE 3000
 
-# Comando para rodar migrações e iniciar o servidor
-CMD npx drizzle-kit migrate && node server/index.js
+# Comando para iniciar o servidor
+CMD ["node", "server/index.js"]
