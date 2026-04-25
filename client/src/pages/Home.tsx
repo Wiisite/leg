@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
-import { Trophy, Plus, ChevronRight, Shield, Swords, Star, LayoutGrid, Basketball, Volleyball, Target } from "lucide-react";
+import { Trophy, Plus, ChevronRight, Shield, Swords, Star, LayoutGrid, Activity, Target } from "lucide-react";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
@@ -15,8 +15,8 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 
 const MODALITY_ICONS: Record<string, any> = {
   futsal: Swords,
-  basquete: Basketball,
-  volei: Volleyball,
+  basquete: Activity,
+  volei: Star,
   handebol: Target,
 };
 
