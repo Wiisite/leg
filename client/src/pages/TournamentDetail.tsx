@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final";
 
@@ -138,8 +139,8 @@ function MatchCard({
 
   return (
     <div
-      className={`bg-card border rounded-xl p-4 transition-all ${
-        finished ? "border-border/40" : "border-border/60 hover:border-gold/30"
+      className={`bg-card border rounded-xl p-4 transition-all shadow-sm ${
+        finished ? "border-border/40 opacity-80" : "border-border hover:border-gold/30 hover:shadow-md"
       }`}
     >
       <div className="flex items-center gap-3">
@@ -155,18 +156,18 @@ function MatchCard({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {finished ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary rounded-lg">
-              <span className="text-lg font-bold text-foreground w-5 text-center">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200">
+              <span className="text-lg font-bold text-slate-900 w-5 text-center">
                 {match.homeScore}
               </span>
-              <span className="text-muted-foreground text-sm">–</span>
-              <span className="text-lg font-bold text-foreground w-5 text-center">
+              <span className="text-slate-400 text-sm">–</span>
+              <span className="text-lg font-bold text-slate-900 w-5 text-center">
                 {match.awayScore}
               </span>
             </div>
           ) : (
-            <div className="px-3 py-1.5 bg-secondary rounded-lg">
-              <span className="text-xs text-muted-foreground font-medium">VS</span>
+            <div className="px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">VS</span>
             </div>
           )}
         </div>
@@ -184,11 +185,11 @@ function MatchCard({
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-1.5">
           {finished ? (
-            <span className="flex items-center gap-1 text-xs text-green-400">
+            <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
               <CheckCircle2 className="w-3 h-3" /> Encerrado
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1 text-xs text-slate-400">
               <Clock className="w-3 h-3" /> Aguardando
             </span>
           )}
@@ -247,8 +248,8 @@ function StandingsTable({
           {standings.map((s, i) => (
             <tr
               key={s.teamId}
-              className={`border-b border-border/30 transition-colors hover:bg-accent/30 ${
-                i < 2 ? "bg-amber-900/10" : ""
+              className={`border-b border-border/30 transition-colors hover:bg-slate-50 ${
+                i < 2 ? "bg-amber-50/30" : ""
               }`}
             >
               <td className="py-3 px-4">
@@ -263,12 +264,12 @@ function StandingsTable({
               <td className="py-3 px-4">
                 <TeamBadge color={s.color} short={s.shortName} name={s.teamName} size="sm" />
               </td>
-              <td className="py-3 px-3 text-center text-foreground">{s.played}</td>
-              <td className="py-3 px-3 text-center text-green-400 font-medium">{s.won}</td>
-              <td className="py-3 px-3 text-center text-yellow-400 font-medium">{s.drawn}</td>
-              <td className="py-3 px-3 text-center text-red-400 font-medium">{s.lost}</td>
-              <td className="py-3 px-3 text-center text-foreground">{s.goalsFor}</td>
-              <td className="py-3 px-3 text-center text-foreground">{s.goalsAgainst}</td>
+              <td className="py-3 px-3 text-center text-slate-700 font-medium">{s.played}</td>
+              <td className="py-3 px-3 text-center text-green-600 font-semibold">{s.won}</td>
+              <td className="py-3 px-3 text-center text-amber-600 font-semibold">{s.drawn}</td>
+              <td className="py-3 px-3 text-center text-red-600 font-semibold">{s.lost}</td>
+              <td className="py-3 px-3 text-center text-slate-600">{s.goalsFor}</td>
+              <td className="py-3 px-3 text-center text-slate-600">{s.goalsAgainst}</td>
               <td className="py-3 px-3 text-center text-foreground">
                 {s.goalDiff > 0 ? `+${s.goalDiff}` : s.goalDiff}
               </td>
@@ -280,9 +281,9 @@ function StandingsTable({
         </tbody>
       </table>
       {standings.length >= 2 && (
-        <div className="px-4 py-2 border-t border-border/30 bg-secondary/20">
-          <p className="text-xs text-muted-foreground">
-            <span className="inline-block w-3 h-3 rounded-sm bg-amber-900/40 mr-1.5 align-middle" />
+        <div className="px-4 py-2 border-t border-border/30 bg-amber-50/20">
+          <p className="text-xs text-amber-800/70 font-medium">
+            <span className="inline-block w-3 h-3 rounded-sm bg-amber-200 mr-1.5 align-middle" />
             Classificados para semifinal
           </p>
         </div>
@@ -335,7 +336,7 @@ function BracketView({
             key={idx}
             className={`flex items-center justify-between px-3 py-2.5 ${
               idx === 0 ? "border-b border-border/30" : ""
-            } ${winner === teamId ? "bg-amber-900/15" : ""}`}
+            } ${winner === teamId ? "bg-amber-50" : ""}`}
           >
             <div className="flex items-center gap-2">
               {team ? (
@@ -486,11 +487,11 @@ export default function TournamentDetail() {
   const finalMatches = matches.filter((m) => m.phase === "final");
 
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-    pending: { label: "Aguardando", color: "bg-zinc-700 text-zinc-300" },
-    group_stage: { label: "Fase de Grupos", color: "bg-blue-900/60 text-blue-300" },
-    semifinals: { label: "Semifinais", color: "bg-purple-900/60 text-purple-300" },
-    final: { label: "Final", color: "bg-amber-900/60 text-amber-300" },
-    finished: { label: "Encerrado", color: "bg-green-900/60 text-green-300" },
+    pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
+    group_stage: { label: "Fase de Grupos", color: "bg-blue-50 text-blue-700" },
+    semifinals: { label: "Semifinais", color: "bg-purple-50 text-purple-700" },
+    final: { label: "Final", color: "bg-amber-50 text-amber-700" },
+    finished: { label: "Encerrado", color: "bg-green-50 text-green-700" },
   };
 
   const status = STATUS_LABELS[tournament.status] ?? STATUS_LABELS.pending;
@@ -504,7 +505,7 @@ export default function TournamentDetail() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.1 0.015 260)" }}>
+    <div className="min-h-screen bg-background">
       {editingMatch && (
         <ScoreModal
           match={editingMatch}
@@ -573,11 +574,11 @@ export default function TournamentDetail() {
               </div>
             </div>
             {tournament.champion && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-900/30 border border-gold/40 shadow-gold">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-gold/20 shadow-sm">
                 <Trophy className="w-4 h-4 text-gold" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Campeão</p>
-                  <p className="text-sm font-semibold text-gold">{tournament.champion}</p>
+                  <p className="text-[10px] text-amber-800/60 uppercase font-bold tracking-tight">Campeão</p>
+                  <p className="text-sm font-bold text-amber-900">{tournament.champion}</p>
                 </div>
               </div>
             )}
@@ -774,21 +775,21 @@ export default function TournamentDetail() {
                     onEdit={setEditingMatch}
                   />
                 ))}
-                {tournament.champion && (
-                  <div className="mt-8 text-center">
-                    <div className="inline-flex flex-col items-center gap-3 px-8 py-6 rounded-2xl bg-amber-900/20 border border-gold/40 shadow-gold">
-                      <Trophy className="w-10 h-10 text-gold" />
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">
-                          Campeão
-                        </p>
-                        <p className="font-display text-2xl font-bold text-gold">
-                          {tournament.champion}
-                        </p>
-                      </div>
+                <div className="mt-8 text-center">
+                  <div className="inline-flex flex-col items-center gap-3 px-10 py-8 rounded-3xl bg-amber-50 border-2 border-gold/20 shadow-xl">
+                    <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-2">
+                      <Trophy className="w-8 h-8 text-gold" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-amber-800/60 uppercase font-bold tracking-widest mb-1">
+                        Grande Campeão
+                      </p>
+                      <p className="font-display text-3xl font-bold text-amber-900">
+                        {tournament.champion}
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>

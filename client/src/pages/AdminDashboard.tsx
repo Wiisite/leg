@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending: { label: "Aguardando", color: "bg-zinc-700/60 text-zinc-300" },
-  group_stage: { label: "Fase de Grupos", color: "bg-blue-900/60 text-blue-300" },
-  semifinals: { label: "Semifinais", color: "bg-purple-900/60 text-purple-300" },
-  final: { label: "Final", color: "bg-amber-900/60 text-amber-300" },
-  finished: { label: "Encerrado", color: "bg-green-900/60 text-green-300" },
+  pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
+  group_stage: { label: "Fase de Grupos", color: "bg-blue-50 text-blue-700" },
+  semifinals: { label: "Semifinais", color: "bg-purple-50 text-purple-700" },
+  final: { label: "Final", color: "bg-amber-50 text-amber-700" },
+  finished: { label: "Encerrado", color: "bg-green-50 text-green-700" },
 };
 
 export default function AdminDashboard() {
@@ -56,9 +56,9 @@ export default function AdminDashboard() {
           </p>
           <Button
             className="w-full gradient-gold text-amber-950 font-semibold hover:opacity-90 shadow-gold"
-            onClick={() => (window.location.href = getLoginUrl())}
+            onClick={() => (window.location.href = "/")}
           >
-            Entrar com Manus
+            Acessar Sistema
           </Button>
           <Button
             variant="ghost"
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
   ).length ?? 0;
 
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.1 0.015 260)" }}>
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 sticky top-0 z-50 glass">
         <div className="container flex items-center justify-between h-16">
@@ -138,13 +138,13 @@ export default function AdminDashboard() {
               icon: Swords,
               label: "Em Andamento",
               value: activeTournaments,
-              color: "text-blue-400",
+              color: "text-blue-600",
             },
             {
               icon: CheckCircle2,
               label: "Encerrados",
               value: tournaments?.filter((t) => t.status === "finished").length ?? 0,
-              color: "text-green-400",
+              color: "text-green-600",
             },
           ].map(({ icon: Icon, label, value, color }) => (
             <div
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
                   <h3 className="font-display font-semibold text-foreground mb-1">{t.name}</h3>
                   <p className="text-xs text-muted-foreground mb-4">{t.category}</p>
                   {t.champion && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-300 mb-3">
+                    <div className="flex items-center gap-1.5 text-xs text-amber-700 mb-3 font-medium">
                       <Trophy className="w-3 h-3 text-gold" />
                       {t.champion}
                     </div>

@@ -43,7 +43,9 @@ function computeStandings(
     homeScore: number | null;
     awayScore: number | null;
     status: string;
-  }[]
+  }[],
+  pointsPerWin: number = 3,
+  pointsPerDraw: number = 1
 ): StandingEntry[] {
   const map = new Map<number, StandingEntry>();
   for (const t of teamList) {
@@ -75,17 +77,17 @@ function computeStandings(
     away.goalsAgainst += m.homeScore;
     if (m.homeScore > m.awayScore) {
       home.won++;
-      home.points += 3;
+      home.points += pointsPerWin;
       away.lost++;
     } else if (m.homeScore < m.awayScore) {
       away.won++;
-      away.points += 3;
+      away.points += pointsPerWin;
       home.lost++;
     } else {
       home.drawn++;
       away.drawn++;
-      home.points++;
-      away.points++;
+      home.points += pointsPerDraw;
+      away.points += pointsPerDraw;
     }
   }
   const entries = Array.from(map.values());
@@ -130,6 +132,9 @@ const tournamentRouter = router({
       z.object({
         name: z.string().min(1),
         category: z.string().min(1),
+        modality: z.enum(["futsal", "basquete", "volei", "handebol"]).default("futsal"),
+        pointsPerWin: z.number().default(3),
+        pointsPerDraw: z.number().default(1),
         teams: z
           .array(
             z.object({
@@ -142,7 +147,13 @@ const tournamentRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      await createTournament(input.name, input.category);
+      await createTournament(
+        input.name,
+        input.category,
+        input.modality,
+        input.pointsPerWin,
+        input.pointsPerDraw
+      );
       const all = await getAllTournaments();
       const created = all[all.length - 1];
       if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -188,9 +199,11 @@ const tournamentRouter = router({
   getStandings: publicProcedure
     .input(z.object({ tournamentId: z.number() }))
     .query(async ({ input }) => {
+      const tournament = await getTournamentById(input.tournamentId);
+      if (!tournament) throw new TRPCError({ code: "NOT_FOUND" });
       const teamList = await getTeamsByTournament(input.tournamentId);
       const groupMatches = await getMatchesByPhase(input.tournamentId, "group");
-      return computeStandings(teamList, groupMatches);
+      return computeStandings(teamList, groupMatches, tournament.pointsPerWin, tournament.pointsPerDraw);
     }),
 
   generateSemifinals: protectedProcedure

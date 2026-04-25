@@ -8,11 +8,11 @@ import { Trophy, Plus, ChevronRight, Shield, Users, Calendar, Star } from "lucid
 import { useEffect } from "react";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending: { label: "Aguardando", color: "bg-zinc-700 text-zinc-300" },
-  group_stage: { label: "Fase de Grupos", color: "bg-blue-900/60 text-blue-300" },
-  semifinals: { label: "Semifinais", color: "bg-purple-900/60 text-purple-300" },
-  final: { label: "Final", color: "bg-amber-900/60 text-amber-300" },
-  finished: { label: "Encerrado", color: "bg-green-900/60 text-green-300" },
+  pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
+  group_stage: { label: "Fase de Grupos", color: "bg-blue-50 text-blue-700" },
+  semifinals: { label: "Semifinais", color: "bg-purple-50 text-purple-700" },
+  final: { label: "Final", color: "bg-amber-50 text-amber-700" },
+  finished: { label: "Encerrado", color: "bg-green-50 text-green-700" },
 };
 
 export default function Home() {
@@ -30,7 +30,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.1 0.015 260)" }}>
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 sticky top-0 z-50 glass">
         <div className="container flex items-center justify-between h-16">
@@ -38,8 +38,8 @@ export default function Home() {
             <div className="w-9 h-9 rounded-lg gradient-gold flex items-center justify-center shadow-gold">
               <Trophy className="w-5 h-5 text-amber-950" />
             </div>
-            <span className="font-display font-semibold text-lg text-foreground tracking-tight">
-              TournamentPro
+            <span className="font-display font-semibold text-lg text-primary tracking-tight">
+              LIGA ESCOLAR GUARULHENSE
             </span>
           </div>
           <nav className="flex items-center gap-3">
@@ -86,9 +86,9 @@ export default function Home() {
             Sistema de Gerenciamento de Torneios
           </div>
           <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-5 leading-tight">
-            Gerencie seus torneios
+            Plataforma Oficial de Torneios
             <br />
-            <span className="text-gold">com elegância</span>
+            <span className="text-gold">LEG 2026</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8 leading-relaxed">
             Crie torneios completos com fase de grupos, semifinais e final. Acompanhe
@@ -225,9 +225,9 @@ export default function Home() {
         <div className="container text-center text-sm text-muted-foreground">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Trophy className="w-4 h-4 text-gold" />
-            <span className="font-display font-semibold text-foreground">TournamentPro</span>
+            <span className="font-display font-semibold text-primary">LEG - LIGA ESCOLAR GUARULHENSE</span>
           </div>
-          <p>Sistema profissional de gerenciamento de torneios esportivos</p>
+          <p>Sistema oficial de gerenciamento de torneios esportivos escolares de Guarulhos</p>
         </div>
       </footer>
     </div>

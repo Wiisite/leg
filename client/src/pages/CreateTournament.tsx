@@ -28,6 +28,9 @@ export default function CreateTournament() {
   const [, navigate] = useLocation();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [modality, setModality] = useState<"futsal" | "basquete" | "volei" | "handebol">("futsal");
+  const [pointsPerWin, setPointsPerWin] = useState(3);
+  const [pointsPerDraw, setPointsPerDraw] = useState(1);
   const [teams, setTeams] = useState<TeamInput[]>(DEFAULT_TEAMS);
 
   const createMutation = trpc.tournament.create.useMutation({
@@ -58,7 +61,14 @@ export default function CreateTournament() {
     if (teams.length < 2) return toast.error("Adicione pelo menos 2 equipes");
     const invalid = teams.find((t) => !t.name.trim() || !t.shortName.trim());
     if (invalid) return toast.error("Preencha nome e sigla de todas as equipes");
-    createMutation.mutate({ name, category, teams });
+    createMutation.mutate({ 
+      name, 
+      category, 
+      modality, 
+      pointsPerWin, 
+      pointsPerDraw, 
+      teams 
+    });
   };
 
   if (loading) {
@@ -82,9 +92,9 @@ export default function CreateTournament() {
           </p>
           <Button
             className="w-full gradient-gold text-amber-950 font-semibold hover:opacity-90 shadow-gold"
-            onClick={() => (window.location.href = getLoginUrl())}
+            onClick={() => (window.location.href = "/")}
           >
-            Entrar com Manus
+            Acessar Sistema
           </Button>
           <Button
             variant="ghost"
@@ -100,7 +110,7 @@ export default function CreateTournament() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "oklch(0.1 0.015 260)" }}>
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/50 sticky top-0 z-50 glass">
         <div className="container flex items-center justify-between h-16">
@@ -147,7 +157,7 @@ export default function CreateTournament() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Sub-9 MASC"
-                  className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                 />
               </div>
               <div>
@@ -159,8 +169,47 @@ export default function CreateTournament() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="Ex: Sub-9 Masculino"
-                  className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Modalidade
+                </label>
+                <select
+                  value={modality}
+                  onChange={(e) => setModality(e.target.value as any)}
+                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                >
+                  <option value="futsal">Futsal</option>
+                  <option value="basquete">Basquete</option>
+                  <option value="volei">Vôlei</option>
+                  <option value="handebol">Handebol</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Vitória (Pts)
+                  </label>
+                  <input
+                    type="number"
+                    value={pointsPerWin}
+                    onChange={(e) => setPointsPerWin(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Empate (Pts)
+                  </label>
+                  <input
+                    type="number"
+                    value={pointsPerDraw}
+                    onChange={(e) => setPointsPerDraw(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -73,10 +73,23 @@ export async function getTournamentById(id: number) {
   return result[0];
 }
 
-export async function createTournament(name: string, category: string) {
+export async function createTournament(
+  name: string,
+  category: string,
+  modality: "futsal" | "basquete" | "volei" | "handebol" = "futsal",
+  pointsPerWin: number = 3,
+  pointsPerDraw: number = 1
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const result = await db.insert(tournaments).values({ name, category, status: "pending" });
+  const result = await db.insert(tournaments).values({
+    name,
+    category,
+    modality,
+    pointsPerWin,
+    pointsPerDraw,
+    status: "pending",
+  });
   return result[0];
 }
 
