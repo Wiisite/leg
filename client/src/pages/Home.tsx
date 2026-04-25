@@ -1,236 +1,218 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
-import { Trophy, Plus, ChevronRight, Shield, Users, Calendar, Star } from "lucide-react";
-import { useEffect } from "react";
+import { Trophy, Plus, ChevronRight, Shield, Swords, Star, LayoutGrid, Basketball, Volleyball, Target } from "lucide-react";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
-  group_stage: { label: "Fase de Grupos", color: "bg-blue-50 text-blue-700" },
-  semifinals: { label: "Semifinais", color: "bg-purple-50 text-purple-700" },
-  final: { label: "Final", color: "bg-amber-50 text-amber-700" },
-  finished: { label: "Encerrado", color: "bg-green-50 text-green-700" },
+  group_stage: { label: "Fase de Grupos", color: "bg-blue-100 text-blue-700" },
+  semifinals: { label: "Semifinais", color: "bg-purple-100 text-purple-700" },
+  final: { label: "Final", color: "bg-amber-100 text-amber-700" },
+  finished: { label: "Encerrado", color: "bg-green-100 text-green-700" },
+};
+
+const MODALITY_ICONS: Record<string, any> = {
+  futsal: Swords,
+  basquete: Basketball,
+  volei: Volleyball,
+  handebol: Target,
 };
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
 
-  const { data: tournaments, refetch } = trpc.tournament.list.useQuery();
-  const seedMutation = trpc.seed.checkAndSeed.useMutation({
-    onSuccess: () => refetch(),
-  });
+  const { data: tournaments } = trpc.tournament.list.useQuery();
 
-  useEffect(() => {
-    seedMutation.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const groupedTournaments = tournaments?.reduce((acc, t) => {
+    const mod = t.modality || "outros";
+    if (!acc[mod]) acc[mod] = [];
+    acc[mod].push(t);
+    return acc;
+  }, {} as Record<string, typeof tournaments>);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-primary border-b border-white/10 sticky top-0 z-50 shadow-md">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Logo LEG" className="w-12 h-12 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+    <div className="min-h-screen bg-slate-50">
+      {/* Navbar Premium */}
+      <nav className="bg-slate-900 border-b border-white/5 sticky top-0 z-50 shadow-2xl">
+        <div className="container flex items-center justify-between h-20">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-lg shadow-white/5 rotate-[-2deg]">
+              <img src="/logo.png" alt="LEG" className="w-full h-full object-contain" />
+            </div>
             <div className="flex flex-col">
-              <span className="font-display font-bold text-lg text-white tracking-tight leading-none">
-                LIGA ESCOLAR
-              </span>
-              <span className="font-display font-bold text-sm text-red tracking-widest">
-                GUARULHENSE
-              </span>
+              <span className="font-black text-xl text-white tracking-tighter leading-none">LIGA ESCOLAR</span>
+              <span className="font-black text-sm text-red-500 tracking-[0.2em] leading-none mt-1">GUARULHENSE</span>
             </div>
           </div>
-          <nav className="flex items-center gap-3">
+
+          <div className="flex items-center gap-4">
             {isAuthenticated ? (
-              <>
-                <span className="text-sm text-muted-foreground hidden sm:block">
-                  {user?.name}
-                </span>
-                <Button
-                  size="sm"
-                  className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
-                  onClick={() => navigate("/admin")}
-                >
-                  <Shield className="w-4 h-4 mr-1.5" />
-                  Admin
-                </Button>
-              </>
+              <Button
+                onClick={() => navigate("/admin")}
+                className="bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl h-12 px-8 shadow-xl shadow-red-600/20"
+              >
+                Painel Administrativo
+              </Button>
             ) : (
               <Button
-                size="sm"
-                variant="outline"
-                className="border-border/60 text-foreground hover:bg-accent"
                 onClick={() => (window.location.href = getLoginUrl())}
+                variant="ghost"
+                className="text-white hover:bg-white/5 font-black text-xs uppercase tracking-widest"
               >
-                Entrar
+                Área Restrita
               </Button>
             )}
-          </nav>
+          </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden py-20 sm:py-28">
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% -10%, oklch(0.82 0.14 85 / 0.25), transparent)",
-          }}
-        />
+      {/* Hero Section */}
+      <section className="relative bg-slate-900 pt-20 pb-40 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-20 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-600 blur-[200px] rounded-full" />
+        </div>
+        
         <div className="container relative text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border/60 bg-card/50 text-xs text-muted-foreground mb-6 tracking-widest uppercase">
-            <Star className="w-3 h-3 text-gold" />
-            Sistema de Gerenciamento de Torneios
+          <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-white/60 text-[10px] font-black uppercase tracking-[0.3em]">Temporada LEG 2026</span>
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-5 leading-tight">
-            Plataforma Oficial de Torneios
-            <br />
-            <span className="text-red">LEG 2026</span>
+          
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-[0.9]">
+            Acompanhe a sua<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-amber-400 to-red-500 bg-[length:200%_auto] animate-gradient-x">Modalidade Favorita</span>
           </h1>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8 leading-relaxed">
-            Crie torneios completos com fase de grupos, semifinais e final. Acompanhe
-            classificações, resultados e o campeão em tempo real.
+          
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-12 font-medium">
+            Resultados em tempo real, classificações oficiais e toda a emoção do esporte escolar guarulhense em um só lugar.
           </p>
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            {isAuthenticated ? (
-              <Button
-                size="lg"
-                className="bg-red text-white font-bold shadow-brand hover:opacity-90"
-                onClick={() => navigate("/create")}
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Novo Torneio
-              </Button>
-            ) : (
-              <Button
-                size="lg"
-                className="bg-red text-white font-bold shadow-brand hover:opacity-90"
-                onClick={() => (window.location.href = "/")}
-              >
-                Começar agora
-                <ChevronRight className="w-5 h-5 ml-1" />
-              </Button>
-            )}
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-border/60 text-foreground hover:bg-accent"
-              onClick={() => {
-                document.getElementById("tournaments")?.scrollIntoView({ behavior: "smooth" });
-              }}
-            >
-              Ver torneios
-            </Button>
-          </div>
-        </div>
-      </section>
 
-      {/* Stats */}
-      <section className="border-y border-border/40 py-10">
-        <div className="container">
-          <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto text-center">
-            {[
-              { icon: Trophy, label: "Torneios", value: tournaments?.length ?? 0 },
-              { icon: Users, label: "Equipes", value: (tournaments?.length ?? 0) * 6 },
-              { icon: Calendar, label: "Partidas", value: (tournaments?.length ?? 0) * 15 },
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label}>
-                <div className="text-3xl font-display font-bold text-gold mb-1">{value}</div>
-                <div className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </div>
-              </div>
+          <div className="flex justify-center gap-4 flex-wrap">
+            {Object.keys(MODALITY_ICONS).map((mod) => (
+              <Button
+                key={mod}
+                variant="outline"
+                className="h-14 px-8 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white hover:text-slate-900 transition-all font-black text-xs uppercase tracking-widest border-b-4 border-b-white/5 active:translate-y-1"
+                onClick={() => {
+                  document.getElementById(mod)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+              >
+                {mod}
+              </Button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Tournament List */}
-      <section id="tournaments" className="py-16">
+      {/* Content */}
+      <main className="container -mt-24 relative z-10 pb-32">
+        {tournaments?.length === 0 ? (
+          <div className="bg-white rounded-[40px] p-20 text-center border border-slate-100 shadow-2xl">
+            <Trophy className="w-20 h-20 text-slate-200 mx-auto mb-6" />
+            <h2 className="text-2xl font-black text-slate-400 uppercase tracking-widest">Nenhum torneio ativo no momento</h2>
+          </div>
+        ) : (
+          <div className="space-y-32">
+            {groupedTournaments && Object.entries(groupedTournaments).map(([mod, list]) => {
+              const Icon = MODALITY_ICONS[mod] || LayoutGrid;
+              return (
+                <div key={mod} id={mod} className="scroll-mt-32">
+                  <div className="flex items-center gap-6 mb-12">
+                    <div className="w-16 h-16 rounded-[24px] bg-red-600 flex items-center justify-center shadow-2xl shadow-red-600/30 rotate-3">
+                      <Icon className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">{mod}</h2>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="w-8 h-1 bg-red-600 rounded-full" />
+                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{list.length} Torneios Ativos</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {list.map((t) => {
+                      const status = STATUS_LABELS[t.status] ?? STATUS_LABELS.pending;
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() => navigate(`/tournament/${t.id}`)}
+                          className="group cursor-pointer bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative overflow-hidden"
+                        >
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 group-hover:scale-[3] transition-transform duration-700" />
+                          
+                          <div className="relative">
+                            <div className="flex items-center justify-between mb-8">
+                              <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center shadow-xl group-hover:rotate-12 transition-transform">
+                                <Icon className="w-6 h-6 text-white" />
+                              </div>
+                              <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full ${status.color}`}>
+                                {status.label}
+                              </span>
+                            </div>
+
+                            <h3 className="text-2xl font-black text-slate-900 mb-2 leading-[1.1] group-hover:text-red-600 transition-colors uppercase">
+                              {t.name}
+                            </h3>
+                            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-8">{t.category}</p>
+
+                            {t.champion ? (
+                              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center shrink-0">
+                                  <Trophy className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                  <span className="block text-[8px] font-black text-amber-900/40 uppercase tracking-widest">Campeão Atual</span>
+                                  <span className="block text-xs font-black text-amber-900 uppercase leading-none mt-0.5">{t.champion}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 group-hover:gap-4 transition-all">
+                                <span className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em]">Ver Classificação</span>
+                                <ChevronRight className="w-4 h-4 text-red-600" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      {/* Footer Pro */}
+      <footer className="bg-slate-900 pt-32 pb-16">
         <div className="container">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="font-display text-2xl font-bold text-foreground">Torneios</h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Acompanhe todos os torneios em andamento
-              </p>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-12 border-b border-white/5 pb-16 mb-16">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1">
+                <img src="/logo.png" alt="LEG" className="w-full h-full object-contain" />
+              </div>
+              <div className="text-left">
+                <span className="block font-black text-white text-lg leading-none">LIGA ESCOLAR</span>
+                <span className="block font-black text-red-500 text-xs tracking-widest leading-none mt-1 uppercase">Guarulhense</span>
+              </div>
             </div>
-            {isAuthenticated && (
-              <Button
-                size="sm"
-                className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
-                onClick={() => navigate("/create")}
-              >
-                <Plus className="w-4 h-4 mr-1.5" />
-                Novo
-              </Button>
-            )}
+
+            <div className="flex gap-8">
+              {Object.keys(MODALITY_ICONS).map(mod => (
+                <button key={mod} className="text-slate-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest">
+                  {mod}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {!tournaments || tournaments.length === 0 ? (
-            <div className="text-center py-20 border border-dashed border-border/40 rounded-2xl">
-              <Trophy className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground">Nenhum torneio encontrado</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {tournaments.map((t) => {
-                const status = STATUS_LABELS[t.status] ?? STATUS_LABELS.pending;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => navigate(`/tournament/${t.id}`)}
-                    className="group text-left bg-card border border-border/50 rounded-2xl p-6 hover:border-red/40 hover:shadow-brand transition-all duration-300 shadow-premium"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-11 h-11 rounded-xl bg-red flex items-center justify-center shadow-brand group-hover:scale-110 transition-transform">
-                        <Trophy className="w-5 h-5 text-white" />
-                      </div>
-                      <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}
-                      >
-                        {status.label}
-                      </span>
-                    </div>
-                    <h3 className="font-display font-semibold text-foreground text-lg leading-snug mb-1">
-                      {t.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">{t.category}</p>
-                    {t.champion && (
-                      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-900/20 border border-amber-700/30">
-                        <Trophy className="w-3.5 h-3.5 text-gold shrink-0" />
-                        <span className="text-xs text-amber-300 font-medium truncate">
-                          {t.champion}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3 group-hover:text-red font-bold transition-colors">
-                      Ver detalhes
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/40 py-8 mt-8">
-        <div className="container text-center text-sm text-muted-foreground">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Trophy className="w-4 h-4 text-red" />
-            <span className="font-display font-bold text-white">LEG - LIGA ESCOLAR GUARULHENSE</span>
+          <div className="text-center">
+            <p className="text-slate-600 text-[10px] font-bold uppercase tracking-[0.4em]">© 2026 LIGA ESCOLAR GUARULHENSE - Todos os direitos reservados</p>
           </div>
-          <p>Sistema oficial de gerenciamento de torneios esportivos escolares de Guarulhos</p>
         </div>
       </footer>
     </div>
