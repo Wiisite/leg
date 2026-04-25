@@ -64,11 +64,11 @@
   --border: oklch(0.9 0.02 220);
   --input: oklch(0.9 0.02 220);
   --ring: oklch(0.35 0.12 240);
-  --gold: oklch(0.75 0.15 85); /* Premium Gold */
-  --gold-muted: oklch(0.8 0.1 85);
+  --red: oklch(0.6 0.2 25); /* Red from Logo */
+  --red-muted: oklch(0.7 0.15 25);
   
   --chart-1: oklch(0.35 0.12 240);
-  --chart-2: oklch(0.75 0.15 85);
+  --chart-2: oklch(0.6 0.2 25);
   --chart-3: oklch(0.65 0.15 200);
   --chart-4: oklch(0.65 0.18 25);
   --chart-5: oklch(0.7 0.15 280);
@@ -144,20 +144,20 @@
     font-family: "Playfair Display", serif;
   }
 
-  .text-gold {
-    color: var(--gold);
+  .text-red {
+    color: var(--red);
   }
 
-  .bg-gold {
-    background-color: var(--gold);
+  .bg-red {
+    background-color: var(--red);
   }
 
-  .border-gold {
-    border-color: var(--gold);
+  .border-red {
+    border-color: var(--red);
   }
 
-  .gradient-gold {
-    background: linear-gradient(135deg, oklch(0.82 0.14 85), oklch(0.72 0.1 75));
+  .gradient-brand {
+    background: linear-gradient(135deg, oklch(0.35 0.12 240), oklch(0.45 0.15 240));
   }
 
   .glass {
@@ -166,8 +166,8 @@
     border: 1px solid oklch(0.2 0.02 220 / 0.1);
   }
 
-  .shadow-gold {
-    box-shadow: 0 0 20px oklch(0.82 0.14 85 / 0.15);
+  .shadow-brand {
+    box-shadow: 0 0 20px oklch(0.35 0.12 240 / 0.15);
   }
 
   .shadow-premium {

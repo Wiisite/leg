@@ -32,13 +32,13 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border/50 sticky top-0 z-50 glass">
+      <header className="bg-primary border-b border-white/10 sticky top-0 z-50 shadow-md">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg gradient-gold flex items-center justify-center shadow-gold">
-              <Trophy className="w-5 h-5 text-amber-950" />
+            <div className="w-9 h-9 rounded-lg bg-red flex items-center justify-center shadow-lg">
+              <Trophy className="w-5 h-5 text-white" />
             </div>
-            <span className="font-display font-semibold text-lg text-primary tracking-tight">
+            <span className="font-display font-bold text-lg text-white tracking-tight">
               LIGA ESCOLAR GUARULHENSE
             </span>
           </div>
@@ -50,7 +50,7 @@ export default function Home() {
                 </span>
                 <Button
                   size="sm"
-                  className="gradient-gold text-amber-950 font-semibold hover:opacity-90 transition-opacity"
+                  className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
                   onClick={() => navigate("/admin")}
                 >
                   <Shield className="w-4 h-4 mr-1.5" />
@@ -88,7 +88,7 @@ export default function Home() {
           <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-5 leading-tight">
             Plataforma Oficial de Torneios
             <br />
-            <span className="text-gold">LEG 2026</span>
+            <span className="text-red">LEG 2026</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8 leading-relaxed">
             Crie torneios completos com fase de grupos, semifinais e final. Acompanhe
@@ -98,7 +98,7 @@ export default function Home() {
             {isAuthenticated ? (
               <Button
                 size="lg"
-                className="gradient-gold text-amber-950 font-semibold shadow-gold hover:opacity-90 transition-opacity"
+                className="bg-red text-white font-bold shadow-brand hover:opacity-90"
                 onClick={() => navigate("/create")}
               >
                 <Plus className="w-5 h-5 mr-2" />
@@ -107,8 +107,8 @@ export default function Home() {
             ) : (
               <Button
                 size="lg"
-                className="gradient-gold text-amber-950 font-semibold shadow-gold hover:opacity-90 transition-opacity"
-                onClick={() => (window.location.href = getLoginUrl())}
+                className="bg-red text-white font-bold shadow-brand hover:opacity-90"
+                onClick={() => (window.location.href = "/")}
               >
                 Começar agora
                 <ChevronRight className="w-5 h-5 ml-1" />
@@ -162,7 +162,7 @@ export default function Home() {
             {isAuthenticated && (
               <Button
                 size="sm"
-                className="gradient-gold text-amber-950 font-semibold hover:opacity-90"
+                className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
                 onClick={() => navigate("/create")}
               >
                 <Plus className="w-4 h-4 mr-1.5" />
@@ -184,11 +184,11 @@ export default function Home() {
                   <button
                     key={t.id}
                     onClick={() => navigate(`/tournament/${t.id}`)}
-                    className="group text-left bg-card border border-border/50 rounded-2xl p-6 hover:border-gold/40 hover:shadow-gold transition-all duration-300 shadow-premium"
+                    className="group text-left bg-card border border-border/50 rounded-2xl p-6 hover:border-red/40 hover:shadow-brand transition-all duration-300 shadow-premium"
                   >
                     <div className="flex items-start justify-between mb-4">
-                      <div className="w-11 h-11 rounded-xl gradient-gold flex items-center justify-center shadow-gold group-hover:scale-110 transition-transform">
-                        <Trophy className="w-5 h-5 text-amber-950" />
+                      <div className="w-11 h-11 rounded-xl bg-red flex items-center justify-center shadow-brand group-hover:scale-110 transition-transform">
+                        <Trophy className="w-5 h-5 text-white" />
                       </div>
                       <span
                         className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}
@@ -208,7 +208,7 @@ export default function Home() {
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3 group-hover:text-gold transition-colors">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-3 group-hover:text-red font-bold transition-colors">
                       Ver detalhes
                       <ChevronRight className="w-3.5 h-3.5" />
                     </div>
@@ -224,8 +224,8 @@ export default function Home() {
       <footer className="border-t border-border/40 py-8 mt-8">
         <div className="container text-center text-sm text-muted-foreground">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Trophy className="w-4 h-4 text-gold" />
-            <span className="font-display font-semibold text-primary">LEG - LIGA ESCOLAR GUARULHENSE</span>
+            <Trophy className="w-4 h-4 text-red" />
+            <span className="font-display font-bold text-white">LEG - LIGA ESCOLAR GUARULHENSE</span>
           </div>
           <p>Sistema oficial de gerenciamento de torneios esportivos escolares de Guarulhos</p>
         </div>

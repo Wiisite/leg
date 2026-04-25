@@ -93,7 +93,7 @@ export default function CreateTournament() {
             Faça login para criar novos torneios.
           </p>
           <Button
-            className="w-full gradient-gold text-amber-950 font-semibold hover:opacity-90 shadow-gold"
+            className="w-full bg-red text-white font-bold hover:opacity-90 shadow-brand"
             onClick={() => (window.location.href = "/")}
           >
             Acessar Sistema

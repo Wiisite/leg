@@ -208,11 +208,14 @@ const tournamentRouter = router({
       const existing = await getMatchesByPhase(input.tournamentId, "group");
       if (existing.length > 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Confrontos já gerados" });
 
+      // Sorteio (shuffle) das equipes
+      const shuffledTeams = [...teamList].sort(() => Math.random() - 0.5);
+
       // Round-robin single round (all vs all, once)
       let round = 1;
-      for (let i = 0; i < teamList.length; i++) {
-        for (let j = i + 1; j < teamList.length; j++) {
-          await createMatch(input.tournamentId, "group", teamList[i].id, teamList[j].id, round);
+      for (let i = 0; i < shuffledTeams.length; i++) {
+        for (let j = i + 1; j < shuffledTeams.length; j++) {
+          await createMatch(input.tournamentId, "group", shuffledTeams[i].id, shuffledTeams[j].id, round);
           round++;
         }
       }
@@ -309,17 +312,31 @@ const matchRouter = router({
     .input(
       z.object({
         matchId: z.number(),
-        homeScore: z.number().min(0),
-        awayScore: z.number().min(0),
+        homeScore: z.number().min(0).optional(),
+        awayScore: z.number().min(0).optional(),
+        time: z.string().max(20).optional(),
+        location: z.string().max(255).optional(),
       })
     )
     .mutation(async ({ input }) => {
       const match = await getMatchById(input.matchId);
       if (!match) throw new TRPCError({ code: "NOT_FOUND", message: "Partida não encontrada" });
-      await updateMatchScore(input.matchId, input.homeScore, input.awayScore);
+
+      const db = await getDb();
+      if (!db) throw new Error("DB not available");
+
+      await db
+        .update(matches)
+        .set({
+          ...(input.homeScore !== undefined ? { homeScore: input.homeScore, status: "finished" } : {}),
+          ...(input.awayScore !== undefined ? { awayScore: input.awayScore, status: "finished" } : {}),
+          ...(input.time !== undefined ? { time: input.time } : {}),
+          ...(input.location !== undefined ? { location: input.location } : {}),
+        })
+        .where(eq(matches.id, input.matchId));
 
       // If final match finished, set champion
-      if (match.phase === "final") {
+      if (match.phase === "final" && input.homeScore !== undefined && input.awayScore !== undefined) {
         const winner =
           input.homeScore >= input.awayScore ? match.homeTeamId : match.awayTeamId;
         const teamList = await getTeamsByTournament(match.tournamentId);

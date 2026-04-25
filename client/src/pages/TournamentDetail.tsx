@@ -12,6 +12,7 @@ import {
   Star,
   CheckCircle2,
   Clock,
+  MapPin,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -44,7 +45,15 @@ function TeamBadge({
   );
 }
 
-type MatchForModal = { id: number; homeTeamId: number; awayTeamId: number; homeScore: number | null; awayScore: number | null };
+type MatchForModal = { 
+  id: number; 
+  homeTeamId: number; 
+  awayTeamId: number; 
+  homeScore: number | null; 
+  awayScore: number | null;
+  time?: string | null;
+  location?: string | null;
+};
 
 function ScoreModal({
   match,
@@ -61,6 +70,8 @@ function ScoreModal({
   const awayTeam = teams.find((t) => t.id === match.awayTeamId);
   const [home, setHome] = useState(match.homeScore ?? 0);
   const [away, setAway] = useState(match.awayScore ?? 0);
+  const [time, setTime] = useState(match.time ?? "");
+  const [location, setLocation] = useState(match.location ?? "");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -98,13 +109,42 @@ function ScoreModal({
             <p className="text-xs text-muted-foreground mt-2 truncate">{awayTeam?.name}</p>
           </div>
         </div>
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5 ml-1">Horário</label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                placeholder="Ex: 14:30"
+                className="w-full pl-9 pr-4 py-2 bg-input border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5 ml-1">Local</label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Ex: Ginásio Municipal"
+                className="w-full pl-9 pr-4 py-2 bg-input border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="flex gap-3">
           <Button variant="outline" className="flex-1" onClick={onClose}>
             Cancelar
           </Button>
           <Button
-            className="flex-1 gradient-gold text-amber-950 font-semibold hover:opacity-90"
-            onClick={() => onSave(match.id, home, away)}
+            className="flex-1 bg-red text-white font-semibold hover:opacity-90 shadow-brand"
+            onClick={() => onSave(match.id, home, away, time, location)}
           >
             Salvar
           </Button>
@@ -128,6 +168,8 @@ function MatchCard({
     awayScore: number | null;
     status: string;
     round: number;
+    time?: string | null;
+    location?: string | null;
   };
   teams: { id: number; name: string; shortName: string; color: string }[];
   isAdmin: boolean;
@@ -147,7 +189,7 @@ function MatchCard({
         <div className="flex-1 flex items-center gap-2 justify-end">
           {homeTeam && (
             <>
-              <span className="text-sm font-medium text-foreground text-right truncate max-w-[120px]">
+              <span className="text-sm font-bold text-foreground text-right truncate max-w-[120px]">
                 {homeTeam.name}
               </span>
               <TeamBadge color={homeTeam.color} short={homeTeam.shortName} size="sm" />
@@ -157,17 +199,17 @@ function MatchCard({
         <div className="flex items-center gap-2 shrink-0">
           {finished ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200">
-              <span className="text-lg font-bold text-slate-900 w-5 text-center">
+              <span className="text-lg font-bold text-primary w-5 text-center">
                 {match.homeScore}
               </span>
-              <span className="text-slate-400 text-sm">–</span>
-              <span className="text-lg font-bold text-slate-900 w-5 text-center">
+              <span className="text-red/50 text-sm font-bold">–</span>
+              <span className="text-lg font-bold text-primary w-5 text-center">
                 {match.awayScore}
               </span>
             </div>
           ) : (
             <div className="px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">VS</span>
+              <span className="text-xs text-red font-bold uppercase tracking-wider">VS</span>
             </div>
           )}
         </div>
@@ -175,13 +217,27 @@ function MatchCard({
           {awayTeam && (
             <>
               <TeamBadge color={awayTeam.color} short={awayTeam.shortName} size="sm" />
-              <span className="text-sm font-medium text-foreground truncate max-w-[120px]">
+              <span className="text-sm font-bold text-foreground truncate max-w-[120px]">
                 {awayTeam.name}
               </span>
             </>
           )}
         </div>
       </div>
+      {(match.time || match.location) && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground border-t border-border/30 pt-2 px-1">
+          {match.time && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3 text-red/60" /> {match.time}
+            </span>
+          )}
+          {match.location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-red/60" /> {match.location}
+            </span>
+          )}
+        </div>
+      )}
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-1.5">
           {finished ? (
@@ -198,7 +254,7 @@ function MatchCard({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs border-border/60 hover:border-gold/50 hover:text-gold"
+            className="h-7 text-xs border-border hover:border-red/50 hover:text-red hover:bg-red/5"
             onClick={() => onEdit(match)}
           >
             {finished ? "Editar" : "Registrar"}
@@ -241,7 +297,7 @@ function StandingsTable({
             <th className="text-center py-3 px-3 text-muted-foreground font-medium">GP</th>
             <th className="text-center py-3 px-3 text-muted-foreground font-medium">GC</th>
             <th className="text-center py-3 px-3 text-muted-foreground font-medium">SG</th>
-            <th className="text-center py-3 px-4 text-gold font-semibold">Pts</th>
+            <th className="text-center py-3 px-4 text-red font-bold">Pts</th>
           </tr>
         </thead>
         <tbody>
@@ -255,7 +311,7 @@ function StandingsTable({
               <td className="py-3 px-4">
                 <span
                   className={`text-xs font-bold ${
-                    i < 2 ? "text-gold" : "text-muted-foreground"
+                    i < 2 ? "text-red" : "text-muted-foreground"
                   }`}
                 >
                   {i + 1}
@@ -274,7 +330,7 @@ function StandingsTable({
                 {s.goalDiff > 0 ? `+${s.goalDiff}` : s.goalDiff}
               </td>
               <td className="py-3 px-4 text-center">
-                <span className="font-bold text-gold text-base">{s.points}</span>
+                <span className="font-bold text-red text-base">{s.points}</span>
               </td>
             </tr>
           ))}
@@ -322,7 +378,7 @@ function BracketView({
     const away = getTeam(match.awayTeamId);
     const winner = getWinner(match);
     return (
-      <div className="bg-card border border-border/60 rounded-xl overflow-hidden w-56 shadow-premium">
+      <div className="bg-card border border-border rounded-xl overflow-hidden w-56 shadow-premium">
         {label && (
           <div className="px-3 py-1.5 bg-secondary/60 border-b border-border/40">
             <span className="text-xs text-muted-foreground font-medium">{label}</span>
@@ -356,7 +412,7 @@ function BracketView({
             </div>
             <span
               className={`text-sm font-bold ${
-                winner === teamId ? "text-gold" : "text-muted-foreground"
+                winner === teamId ? "text-red" : "text-muted-foreground"
               }`}
             >
               {score ?? "-"}
@@ -414,9 +470,9 @@ function BracketView({
           {champion && (
             <div className="flex flex-col items-center gap-2 mt-4">
               <div className="w-px h-6 bg-gold/40" />
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-900/30 border border-gold/40 shadow-gold">
-                <Trophy className="w-4 h-4 text-gold" />
-                <span className="text-sm font-semibold text-gold">{champion.name}</span>
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 border border-red/20 shadow-brand">
+                <Trophy className="w-4 h-4 text-red" />
+                <span className="text-sm font-bold text-primary">{champion.name}</span>
               </div>
             </div>
           )}
@@ -453,7 +509,7 @@ export default function TournamentDetail() {
       refetchBracket();
       utils.tournament.getStandings.invalidate({ tournamentId });
       setEditingMatch(null);
-      toast.success("Placar registrado com sucesso!");
+      toast.success("Dados da partida atualizados!");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -511,8 +567,8 @@ export default function TournamentDetail() {
           match={editingMatch}
           teams={teams}
           onClose={() => setEditingMatch(null)}
-          onSave={(matchId, home, away) =>
-            updateScore.mutate({ matchId, homeScore: home, awayScore: away })
+          onSave={(matchId, home, away, time, location) =>
+            updateScore.mutate({ matchId, homeScore: home, awayScore: away, time, location })
           }
         />
       )}
@@ -539,7 +595,7 @@ export default function TournamentDetail() {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-border/60 hover:border-gold/50 hover:text-gold text-xs"
+                className="border-border hover:border-red/50 hover:text-red text-xs"
                 onClick={() => navigate("/admin")}
               >
                 <Shield className="w-3.5 h-3.5 mr-1" />
@@ -554,8 +610,8 @@ export default function TournamentDetail() {
       <div className="border-b border-border/40 py-8">
         <div className="container">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl gradient-gold flex items-center justify-center shadow-gold shrink-0">
-              <Trophy className="w-7 h-7 text-amber-950" />
+            <div className="w-14 h-14 rounded-2xl bg-red flex items-center justify-center shadow-brand shrink-0">
+              <Trophy className="w-7 h-7 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground leading-tight">
@@ -574,11 +630,11 @@ export default function TournamentDetail() {
               </div>
             </div>
             {tournament.champion && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-gold/20 shadow-sm">
-                <Trophy className="w-4 h-4 text-gold" />
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-red/20 shadow-sm">
+                <Trophy className="w-4 h-4 text-red" />
                 <div>
-                  <p className="text-[10px] text-amber-800/60 uppercase font-bold tracking-tight">Campeão</p>
-                  <p className="text-sm font-bold text-amber-900">{tournament.champion}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">Campeão</p>
+                  <p className="text-sm font-bold text-primary">{tournament.champion}</p>
                 </div>
               </div>
             )}
@@ -593,17 +649,18 @@ export default function TournamentDetail() {
             {tournament.status === "pending" && (
               <Button
                 size="sm"
-                className="gradient-gold text-amber-950 font-semibold hover:opacity-90"
+                className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
                 onClick={() => generateGroups.mutate({ tournamentId })}
                 disabled={generateGroups.isPending}
               >
-                Gerar Fase de Grupos
+                <Shuffle className="w-4 h-4 mr-1.5" />
+                Sortear Confrontos
               </Button>
             )}
             {tournament.status === "group_stage" && (
               <Button
                 size="sm"
-                className="gradient-gold text-amber-950 font-semibold hover:opacity-90"
+                className="bg-primary text-white font-bold hover:opacity-90"
                 onClick={() => generateSemis.mutate({ tournamentId })}
                 disabled={generateSemis.isPending}
               >
@@ -613,7 +670,7 @@ export default function TournamentDetail() {
             {tournament.status === "semifinals" && (
               <Button
                 size="sm"
-                className="gradient-gold text-amber-950 font-semibold hover:opacity-90"
+                className="bg-primary text-white font-bold hover:opacity-90"
                 onClick={() => generateFinal.mutate({ tournamentId })}
                 disabled={generateFinal.isPending}
               >
@@ -632,10 +689,10 @@ export default function TournamentDetail() {
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === id
-                    ? "border-gold text-gold"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "border-red text-red"
+                    : "border-transparent text-slate-500 hover:text-primary"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -776,15 +833,15 @@ export default function TournamentDetail() {
                   />
                 ))}
                 <div className="mt-8 text-center">
-                  <div className="inline-flex flex-col items-center gap-3 px-10 py-8 rounded-3xl bg-amber-50 border-2 border-gold/20 shadow-xl">
-                    <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-2">
-                      <Trophy className="w-8 h-8 text-gold" />
+                  <div className="inline-flex flex-col items-center gap-3 px-10 py-8 rounded-3xl bg-slate-50 border-2 border-red/10 shadow-xl">
+                    <div className="w-16 h-16 rounded-full bg-red/10 flex items-center justify-center mb-2">
+                      <Trophy className="w-8 h-8 text-red" />
                     </div>
                     <div>
-                      <p className="text-xs text-amber-800/60 uppercase font-bold tracking-widest mb-1">
+                      <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mb-1">
                         Grande Campeão
                       </p>
-                      <p className="font-display text-3xl font-bold text-amber-900">
+                      <p className="font-display text-3xl font-bold text-primary">
                         {tournament.champion}
                       </p>
                     </div>

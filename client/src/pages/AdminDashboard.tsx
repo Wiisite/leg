@@ -81,22 +81,22 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border/50 sticky top-0 z-50 glass">
+      <header className="bg-primary border-b border-white/10 sticky top-0 z-50 shadow-md">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-foreground"
+              className="text-white/70 hover:text-white"
               onClick={() => navigate("/")}
             >
               <ArrowLeft className="w-4 h-4 mr-1.5" />
               Início
             </Button>
-            <div className="w-px h-5 bg-border/60" />
+            <div className="w-px h-5 bg-white/20" />
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-gold" />
-              <span className="font-medium text-sm text-foreground">Painel Admin</span>
+              <Shield className="w-4 h-4 text-red" />
+              <span className="font-bold text-sm text-white">Painel Admin</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
               icon: Trophy,
               label: "Total de Torneios",
               value: tournaments?.length ?? 0,
-              color: "text-gold",
+              color: "text-red",
             },
             {
               icon: Swords,
@@ -149,7 +149,7 @@ export default function AdminDashboard() {
           ].map(({ icon: Icon, label, value, color }) => (
             <div
               key={label}
-              className="bg-card border border-border/50 rounded-2xl p-5 shadow-premium"
+              className="bg-card border border-border/50 rounded-2xl p-5 shadow-premium hover:border-red/20 transition-colors"
             >
               <Icon className={`w-5 h-5 ${color} mb-3`} />
               <div className="text-2xl font-display font-bold text-foreground mb-1">{value}</div>
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
           <h2 className="font-display text-xl font-semibold text-foreground">Torneios</h2>
           <Button
             size="sm"
-            className="gradient-gold text-amber-950 font-semibold hover:opacity-90"
+            className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
             onClick={() => navigate("/create")}
           >
             <Plus className="w-4 h-4 mr-1.5" />
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground text-sm mb-4">Nenhum torneio criado ainda</p>
             <Button
               size="sm"
-              className="gradient-gold text-amber-950 font-semibold hover:opacity-90"
+              className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
               onClick={() => navigate("/create")}
             >
               <Plus className="w-4 h-4 mr-1.5" />
@@ -195,8 +195,8 @@ export default function AdminDashboard() {
                   className="bg-card border border-border/50 rounded-2xl p-5 shadow-premium hover:border-gold/30 transition-all"
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-10 h-10 rounded-xl gradient-gold flex items-center justify-center shadow-gold">
-                      <Trophy className="w-5 h-5 text-amber-950" />
+                    <div className="w-10 h-10 rounded-xl bg-red flex items-center justify-center shadow-brand">
+                      <Trophy className="w-5 h-5 text-white" />
                     </div>
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}>
                       {status.label}
@@ -205,15 +205,15 @@ export default function AdminDashboard() {
                   <h3 className="font-display font-semibold text-foreground mb-1">{t.name}</h3>
                   <p className="text-xs text-muted-foreground mb-4">{t.category}</p>
                   {t.champion && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-700 mb-3 font-medium">
-                      <Trophy className="w-3 h-3 text-gold" />
+                    <div className="flex items-center gap-1.5 text-xs text-red mb-3 font-bold">
+                      <Trophy className="w-3 h-3 text-red" />
                       {t.champion}
                     </div>
                   )}
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      className="flex-1 gradient-gold text-amber-950 font-semibold hover:opacity-90 text-xs"
+                      className="flex-1 bg-primary text-white font-bold hover:opacity-90 text-xs"
                       onClick={() => navigate(`/tournament/${t.id}`)}
                     >
                       Gerenciar
