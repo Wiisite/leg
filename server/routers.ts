@@ -12,6 +12,7 @@ import {
   getTournamentById,
   updateMatchScore,
   updateTournamentStatus,
+  updateTournament,
   getDb,
 } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -186,6 +187,59 @@ const tournamentRouter = router({
         await createTeam(Number(tournamentId), t.name, t.shortName, t.color);
       }
       return { id: Number(tournamentId) };
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1),
+        category: z.string().min(1),
+        modality: z.enum(["futsal", "basquete", "volei", "handebol"]),
+        teams: z.array(
+          z.object({
+            id: z.number().optional(), // id presente = editar, ausente = novo
+            name: z.string().min(1),
+            shortName: z.string().min(1).max(10),
+            color: z.string(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB not available");
+
+      // 1. Atualiza dados básicos do torneio
+      await updateTournament(input.id, {
+        name: input.name,
+        category: input.category,
+        modality: input.modality,
+      });
+
+      // 2. Gerencia equipes
+      const existingTeams = await getTeamsByTournament(input.id);
+      const inputTeamIds = input.teams.map(t => t.id).filter(Boolean);
+
+      // Remover equipes que não estão no input
+      for (const et of existingTeams) {
+        if (!inputTeamIds.includes(et.id)) {
+          await db.delete(teams).where(eq(teams.id, et.id));
+        }
+      }
+
+      // Atualizar ou Criar equipes
+      for (const t of input.teams) {
+        if (t.id) {
+          await db.update(teams)
+            .set({ name: t.name, shortName: t.shortName, color: t.color })
+            .where(eq(teams.id, t.id));
+        } else {
+          await createTeam(input.id, t.name, t.shortName, t.color);
+        }
+      }
+
+      return { ok: true };
     }),
 
   createDefault: protectedProcedure

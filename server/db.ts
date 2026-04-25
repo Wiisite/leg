@@ -108,6 +108,18 @@ export async function updateTournamentStatus(
     .where(eq(tournaments.id, id));
 }
 
+export async function updateTournament(
+  id: number,
+  data: { name?: string; category?: string; modality?: "futsal" | "basquete" | "volei" | "handebol" }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db
+    .update(tournaments)
+    .set(data)
+    .where(eq(tournaments.id, id));
+}
+
 // ─── Teams ─────────────────────────────────────────────────────────────────────
 
 export async function getTeamsByTournament(tournamentId: number) {

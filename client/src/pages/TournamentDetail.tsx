@@ -16,6 +16,9 @@ import {
   Trash2,
   Shield,
   Shuffle,
+  Edit2,
+  Plus,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -483,12 +486,140 @@ function BracketView({
   );
 }
 
+function EditTournamentModal({
+  tournament,
+  teams,
+  onClose,
+  onSave,
+}: {
+  tournament: { id: number; name: string; category: string; modality: string };
+  teams: { id: number; name: string; shortName: string; color: string }[];
+  onClose: () => void;
+  onSave: (data: any) => void;
+}) {
+  const [name, setName] = useState(tournament.name);
+  const [category, setCategory] = useState(tournament.category);
+  const [modality, setModality] = useState(tournament.modality as any);
+  const [teamList, setTeamList] = useState(teams);
+
+  const handleUpdateTeam = (index: number, field: string, value: string) => {
+    const newTeams = [...teamList];
+    (newTeams[index] as any)[field] = value;
+    setTeamList(newTeams);
+  };
+
+  const handleAddTeam = () => {
+    setTeamList([...teamList, { id: undefined as any, name: "", shortName: "", color: "#1e40af" }]);
+  };
+
+  const handleRemoveTeam = (index: number) => {
+    setTeamList(teamList.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-2xl shadow-premium max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-display text-2xl font-bold">Editar Torneio</h3>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 mb-8">
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Nome do Torneio</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-sm focus:ring-2 focus:ring-red/20"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Categoria</label>
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-sm focus:ring-2 focus:ring-red/20"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Modalidade</label>
+            <select
+              value={modality}
+              onChange={(e) => setModality(e.target.value)}
+              className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-sm focus:ring-2 focus:ring-red/20"
+            >
+              <option value="futsal">Futsal</option>
+              <option value="basquete">Basquete</option>
+              <option value="volei">Vôlei</option>
+              <option value="handebol">Handebol</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Equipes Participantes</label>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] uppercase font-bold" onClick={handleAddTeam}>
+              <Plus className="w-3 h-3 mr-1" /> Adicionar Equipe
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {teamList.map((team, idx) => (
+              <div key={idx} className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <input
+                  type="color"
+                  value={team.color}
+                  onChange={(e) => handleUpdateTeam(idx, "color", e.target.value)}
+                  className="w-8 h-8 rounded-lg cursor-pointer overflow-hidden border-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Nome da Equipe"
+                  value={team.name}
+                  onChange={(e) => handleUpdateTeam(idx, "name", e.target.value)}
+                  className="flex-1 px-3 py-1.5 bg-white border border-border rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Sigla"
+                  value={team.shortName}
+                  onChange={(e) => handleUpdateTeam(idx, "shortName", e.target.value)}
+                  className="w-20 px-3 py-1.5 bg-white border border-border rounded-lg text-sm uppercase"
+                />
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red" onClick={() => handleRemoveTeam(idx)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-4 border-t border-border/50">
+          <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+          <Button 
+            className="flex-1 bg-red text-white font-bold hover:opacity-90 shadow-brand"
+            onClick={() => onSave({ name, category, modality, teams: teamList })}
+          >
+            Salvar Alterações
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
   const tournamentId = parseInt(id ?? "0");
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("groups");
+  const [isEditingTournament, setIsEditingTournament] = useState(false);
   const [editingMatch, setEditingMatch] = useState<null | MatchForModal>(null);
 
   const { data, refetch, isLoading, error } = trpc.tournament.getById.useQuery({ id: tournamentId });
@@ -537,6 +668,17 @@ export default function TournamentDetail() {
       deleteMutation.mutate({ tournamentId });
     }
   };
+
+  const updateTournament = trpc.tournament.update.useMutation({
+    onSuccess: () => {
+      toast.success("Torneio atualizado com sucesso!");
+      setIsEditingTournament(false);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error("Erro ao atualizar: " + err.message);
+    }
+  });
 
   if (isLoading) {
     return (
@@ -596,6 +738,14 @@ export default function TournamentDetail() {
 
   return (
     <div className="min-h-screen bg-background">
+      {isEditingTournament && (
+        <EditTournamentModal
+          tournament={tournament}
+          teams={teams}
+          onClose={() => setIsEditingTournament(false)}
+          onSave={(data) => updateTournament.mutate({ id: tournamentId, ...data })}
+        />
+      )}
       {editingMatch && (
         <ScoreModal
           match={editingMatch}
@@ -639,57 +789,70 @@ export default function TournamentDetail() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}>
               {status.label}
             </span>
             {isAuthenticated && (
-              <>
+              <div className="flex items-center gap-1.5 ml-2 border-l border-border/50 pl-3">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-border hover:border-red/50 hover:text-red text-xs"
-                  onClick={() => navigate("/admin")}
+                  className="h-8 border-border hover:border-red/50 hover:text-red text-xs px-2.5"
+                  onClick={() => setIsEditingTournament(true)}
                 >
-                  <Shield className="w-3.5 h-3.5 mr-1" />
-                  Admin
+                  <Edit2 className="w-3.5 h-3.5 mr-1" />
+                  Editar
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-border hover:bg-red/5 hover:text-red hover:border-red/30 text-xs"
+                  className="h-8 border-border hover:bg-red/5 hover:text-red hover:border-red/30 text-xs px-2"
                   onClick={handleDelete}
                   disabled={deleteMutation.isPending}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>
       </header>
 
       {/* Tournament Header */}
-      <div className="border-b border-border/40 py-8">
+      <div className="border-b border-border/40 py-10 bg-slate-50/30">
         <div className="container">
-          <div className="flex items-start gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm shrink-0 overflow-hidden p-1">
-              <img src="/logo.png" alt="Logo LEG" className="w-full h-full object-contain" />
+          <div className="flex flex-col md:flex-row md:items-center gap-8">
+            <div className="w-28 h-28 rounded-3xl bg-white border-2 border-red/10 shadow-xl flex items-center justify-center overflow-hidden shrink-0">
+              <img 
+                src="/logo.png" 
+                alt="LEG" 
+                className="w-full h-full object-contain p-2"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>';
+                }}
+              />
             </div>
-            <div className="flex-1 min-w-0 pt-1">
-              <h1 className="font-display text-2xl sm:text-4xl font-bold text-primary leading-tight">
-                {tournament.name}
-              </h1>
-              <p className="text-muted-foreground mt-1">{tournament.category}</p>
-              <div className="flex flex-wrap gap-3 mt-3">
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5" />
-                  {teams.length} equipes
-                </span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Swords className="w-3.5 h-3.5" />
-                  {matches.length} partidas
-                </span>
+            <div className="flex-1">
+              <div className="flex flex-col gap-2">
+                <Badge variant="secondary" className="w-fit bg-red/5 text-red border-red/10 font-bold px-3 py-1 rounded-lg uppercase tracking-wider text-[10px]">
+                  {tournament.category}
+                </Badge>
+                <h2 className="font-display text-5xl font-black text-primary leading-none tracking-tighter">
+                  {tournament.name}
+                </h2>
+                <div className="flex items-center gap-5 mt-4 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-red/60" /> {teams.length} equipes
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Swords className="w-4 h-4 text-red/60" /> {matches.length} partidas
+                  </span>
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 text-[10px]">
+                    {tournament.modality}
+                  </span>
+                </div>
               </div>
             </div>
             {tournament.champion && (
