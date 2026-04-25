@@ -32,7 +32,10 @@ export default function CreateTournament() {
   const [pointsPerWin, setPointsPerWin] = useState(3);
   const [pointsPerDraw, setPointsPerDraw] = useState(1);
   const [pointsPerLoss, setPointsPerLoss] = useState(0);
-  const [teams, setTeams] = useState<TeamInput[]>(DEFAULT_TEAMS);
+  const [rounds, setRounds] = useState(5);
+  const [teams, setTeams] = useState<(TeamInput & { logo?: string })[]>(
+    DEFAULT_TEAMS.map(t => ({ ...t, logo: "" }))
+  );
 
   const createMutation = trpc.tournament.create.useMutation({
     onSuccess: (t) => {
@@ -43,16 +46,23 @@ export default function CreateTournament() {
   });
 
   const addTeam = () => {
-    const color = TEAM_COLORS[teams.length % TEAM_COLORS.length];
-    setTeams([...teams, { name: "", shortName: "", color }]);
+    setTeams([...teams, { name: "", shortName: "", color: "#1e3a8a", logo: "" }]);
   };
 
   const removeTeam = (i: number) => {
     setTeams(teams.filter((_, idx) => idx !== i));
   };
 
-  const updateTeam = (i: number, field: keyof TeamInput, value: string) => {
+  const updateTeam = (i: number, field: string, value: string) => {
     setTeams(teams.map((t, idx) => (idx === i ? { ...t, [field]: value } : t)));
+  };
+
+  const handleLogoUpload = (index: number, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      updateTeam(index, "logo", reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -66,10 +76,16 @@ export default function CreateTournament() {
       name, 
       category, 
       modality, 
+      rounds,
       pointsPerWin, 
       pointsPerDraw, 
       pointsPerLoss,
-      teams 
+      teams: teams.map(t => ({
+        name: t.name,
+        shortName: t.shortName,
+        color: t.color || "#1e3a8a",
+        logo: t.logo
+      }))
     });
   };
 
@@ -188,8 +204,19 @@ export default function CreateTournament() {
                   <option value="volei">Vôlei</option>
                   <option value="handebol">Handebol</option>
                 </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Número de Rodadas
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={rounds}
+                    onChange={(e) => setRounds(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Vitória (Pts)
@@ -232,69 +259,78 @@ export default function CreateTournament() {
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
                 <Shuffle className="w-4 h-4 text-gold" />
-                Equipes ({teams.length})
+                Equipes Participantes ({teams.length})
               </h2>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                className="border-border/60 hover:border-gold/50 hover:text-gold text-xs"
+                className="border-border/60 hover:border-gold/50 hover:text-gold text-xs font-bold uppercase"
                 onClick={addTeam}
               >
                 <Plus className="w-3.5 h-3.5 mr-1" />
-                Adicionar
+                Adicionar Equipe
               </Button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {teams.map((team, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl border border-border/30"
+                  className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-secondary/20 rounded-2xl border border-border/30"
                 >
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-muted-foreground w-5 text-center font-medium">
-                      {i + 1}
-                    </span>
+                  {/* Logo Upload */}
+                  <div className="relative group shrink-0">
+                    <div className="w-16 h-16 rounded-xl bg-white border-2 border-dashed border-border/60 flex items-center justify-center overflow-hidden shadow-sm transition-colors group-hover:border-gold/50">
+                      {team.logo ? (
+                        <img src={team.logo} className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                          <Plus className="w-4 h-4" />
+                          <span className="text-[10px] font-bold uppercase">Logo</span>
+                        </div>
+                      )}
+                    </div>
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity rounded-xl">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => e.target.files?.[0] && handleLogoUpload(i, e.target.files[0])}
+                      />
+                      <Plus className="w-5 h-5 text-white" />
+                    </label>
+                  </div>
+
+                  <div className="flex-1 flex flex-col sm:flex-row gap-3 w-full">
                     <input
-                      type="color"
-                      value={team.color}
-                      onChange={(e) => updateTeam(i, "color", e.target.value)}
-                      className="w-8 h-8 rounded-lg border border-border/60 cursor-pointer bg-transparent"
-                      title="Cor da equipe"
+                      type="text"
+                      value={team.name}
+                      onChange={(e) => updateTeam(i, "name", e.target.value)}
+                      placeholder="Nome do Colégio / Equipe"
+                      className="flex-1 px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold min-w-0"
                     />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={team.shortName}
+                        onChange={(e) =>
+                          updateTeam(i, "shortName", e.target.value.toUpperCase().slice(0, 10))
+                        }
+                        placeholder="Sigla"
+                        className="w-24 px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs text-center font-black tracking-widest"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-red shrink-0 h-10 w-10 p-0"
+                        onClick={() => removeTeam(i)}
+                        disabled={teams.length <= 2}
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
+                    </div>
                   </div>
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ background: team.color }}
-                  >
-                    {team.shortName.slice(0, 3) || "?"}
-                  </div>
-                  <input
-                    type="text"
-                    value={team.name}
-                    onChange={(e) => updateTeam(i, "name", e.target.value)}
-                    placeholder="Nome da equipe"
-                    className="flex-1 px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm min-w-0"
-                  />
-                  <input
-                    type="text"
-                    value={team.shortName}
-                    onChange={(e) =>
-                      updateTeam(i, "shortName", e.target.value.toUpperCase().slice(0, 10))
-                    }
-                    placeholder="Sigla"
-                    className="w-20 px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm text-center font-mono"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-destructive shrink-0 h-8 w-8 p-0"
-                    onClick={() => removeTeam(i)}
-                    disabled={teams.length <= 2}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
                 </div>
               ))}
             </div>

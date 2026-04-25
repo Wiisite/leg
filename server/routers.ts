@@ -265,6 +265,12 @@ const tournamentRouter = router({
   generateGroupMatches: protectedProcedure
     .input(z.object({ tournamentId: z.number() }),)
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB Error");
+      
+      const tournament = (await db.select().from(tournaments).where(eq(tournaments.id, input.tournamentId)))[0];
+      if (!tournament) throw new TRPCError({ code: "NOT_FOUND" });
+
       const teamList = await getTeamsByTournament(input.tournamentId);
       if (teamList.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "Mínimo 2 equipes" });
       const existing = await getMatchesByPhase(input.tournamentId, "group");
@@ -280,10 +286,14 @@ const tournamentRouter = router({
       }
 
       const numTeams = teams.length;
-      const numRounds = numTeams - 1;
+      const fullRounds = numTeams - 1;
       const matchesPerRound = numTeams / 2;
+      
+      // Usa o número de rodadas do torneio ou o padrão do algoritmo
+      const roundsToGenerate = tournament.rounds || fullRounds;
 
-      for (let round = 1; round <= numRounds; round++) {
+      for (let round = 1; round <= roundsToGenerate; round++) {
+        // Se exceder o número de rodadas únicas do round-robin, o algoritmo rotaciona mas repete
         for (let match = 0; match < matchesPerRound; match++) {
           const home = teams[match];
           const away = teams[numTeams - 1 - match];
