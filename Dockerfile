@@ -6,8 +6,9 @@ WORKDIR /app
 # Instala o pnpm
 RUN npm install -g pnpm
 
-# Copia os arquivos de dependências
+# Copia os arquivos de dependências e patches
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches/
 
 # Instala todas as dependências
 RUN pnpm install --frozen-lockfile
