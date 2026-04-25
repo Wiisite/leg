@@ -31,6 +31,7 @@ export default function CreateTournament() {
   const [modality, setModality] = useState<"futsal" | "basquete" | "volei" | "handebol">("futsal");
   const [pointsPerWin, setPointsPerWin] = useState(3);
   const [pointsPerDraw, setPointsPerDraw] = useState(1);
+  const [pointsPerLoss, setPointsPerLoss] = useState(0);
   const [teams, setTeams] = useState<TeamInput[]>(DEFAULT_TEAMS);
 
   const createMutation = trpc.tournament.create.useMutation({
@@ -67,6 +68,7 @@ export default function CreateTournament() {
       modality, 
       pointsPerWin, 
       pointsPerDraw, 
+      pointsPerLoss,
       teams 
     });
   };
@@ -207,6 +209,17 @@ export default function CreateTournament() {
                     type="number"
                     value={pointsPerDraw}
                     onChange={(e) => setPointsPerDraw(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Derrota (Pts)
+                  </label>
+                  <input
+                    type="number"
+                    value={pointsPerLoss}
+                    onChange={(e) => setPointsPerLoss(Number(e.target.value))}
                     className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                   />
                 </div>

@@ -37,6 +37,7 @@ export const tournaments = mysqlTable("tournaments", {
   champion: varchar("champion", { length: 255 }),
   pointsPerWin: int("pointsPerWin").default(3).notNull(),
   pointsPerDraw: int("pointsPerDraw").default(1).notNull(),
+  pointsPerLoss: int("pointsPerLoss").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

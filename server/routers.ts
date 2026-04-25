@@ -45,7 +45,9 @@ function computeStandings(
     status: string;
   }[],
   pointsPerWin: number = 3,
-  pointsPerDraw: number = 1
+  pointsPerDraw: number = 1,
+  pointsPerLoss: number = 0,
+  modality: string = "futsal"
 ): StandingEntry[] {
   const map = new Map<number, StandingEntry>();
   for (const t of teamList) {
@@ -75,14 +77,34 @@ function computeStandings(
     home.goalsAgainst += m.awayScore;
     away.goalsFor += m.awayScore;
     away.goalsAgainst += m.homeScore;
-    if (m.homeScore > m.awayScore) {
+    if (modality === "volei") {
+      const homeWon = m.homeScore! > m.awayScore!;
+      const winner = homeWon ? home : away;
+      const loser = homeWon ? away : home;
+      const winnerScore = homeWon ? m.homeScore! : m.awayScore!;
+      const loserScore = homeWon ? m.awayScore! : m.homeScore!;
+
+      if (winnerScore === 2 && loserScore === 0) {
+        winner.points += 3;
+        loser.points += 0;
+      } else if (winnerScore === 2 && loserScore === 1) {
+        winner.points += 2;
+        loser.points += 1;
+      } else {
+        // Fallback para outros placares (ex: 3x0, 3x1)
+        winner.points += pointsPerWin;
+        loser.points += pointsPerLoss;
+      }
+    } else if (m.homeScore! > m.awayScore!) {
       home.won++;
       home.points += pointsPerWin;
       away.lost++;
-    } else if (m.homeScore < m.awayScore) {
+      away.points += pointsPerLoss;
+    } else if (m.homeScore! < m.awayScore!) {
       away.won++;
       away.points += pointsPerWin;
       home.lost++;
+      home.points += pointsPerLoss;
     } else {
       home.drawn++;
       away.drawn++;
@@ -135,6 +157,7 @@ const tournamentRouter = router({
         modality: z.enum(["futsal", "basquete", "volei", "handebol"]).default("futsal"),
         pointsPerWin: z.number().default(3),
         pointsPerDraw: z.number().default(1),
+        pointsPerLoss: z.number().default(0),
         teams: z
           .array(
             z.object({
@@ -152,7 +175,8 @@ const tournamentRouter = router({
         input.category,
         input.modality,
         input.pointsPerWin,
-        input.pointsPerDraw
+        input.pointsPerDraw,
+        input.pointsPerLoss
       );
       const all = await getAllTournaments();
       const created = all[all.length - 1];
@@ -203,7 +227,14 @@ const tournamentRouter = router({
       if (!tournament) throw new TRPCError({ code: "NOT_FOUND" });
       const teamList = await getTeamsByTournament(input.tournamentId);
       const groupMatches = await getMatchesByPhase(input.tournamentId, "group");
-      return computeStandings(teamList, groupMatches, tournament.pointsPerWin, tournament.pointsPerDraw);
+      return computeStandings(
+        teamList,
+        groupMatches,
+        tournament.pointsPerWin,
+        tournament.pointsPerDraw,
+        tournament.pointsPerLoss,
+        tournament.modality
+      );
     }),
 
   generateSemifinals: protectedProcedure
