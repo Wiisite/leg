@@ -107,7 +107,7 @@ function computeStandings(
       home.points += pointsPerLoss;
     } else {
       home.drawn++;
-      away.drawn++;
+      home.drawn++;
       home.points += pointsPerDraw;
       away.points += pointsPerDraw;
     }
@@ -224,7 +224,7 @@ const tournamentRouter = router({
   getStandings: publicProcedure
     .input(z.object({ tournamentId: z.number() }))
     .query(async ({ input }) => {
-      const tournament = await getTournamentById(input.tournamentId);
+      const tournament = await getTournamentById(input.id);
       if (!tournament) throw new TRPCError({ code: "NOT_FOUND" });
       const teamList = await getTeamsByTournament(input.tournamentId);
       const groupMatches = await getMatchesByPhase(input.tournamentId, "group");
