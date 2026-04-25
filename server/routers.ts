@@ -164,7 +164,7 @@ const tournamentRouter = router({
               name: z.string().min(1),
               shortName: z.string().min(1).max(10),
               color: z.string().default("#1e40af"),
-            })
+            }),
           )
           .min(2),
       })
@@ -186,7 +186,7 @@ const tournamentRouter = router({
     }),
 
   createDefault: protectedProcedure
-    .input(z.object({ name: z.string().min(1), category: z.string().min(1) }))
+    .input(z.object({ name: z.string().min(1), category: z.string().min(1) }),)
     .mutation(async ({ input }) => {
       await createTournament(input.name, input.category);
       const all = await getAllTournaments();
@@ -199,7 +199,7 @@ const tournamentRouter = router({
     }),
 
   generateGroupMatches: protectedProcedure
-    .input(z.object({ tournamentId: z.number() }))
+    .input(z.object({ tournamentId: z.number() }),)
     .mutation(async ({ input }) => {
       const teamList = await getTeamsByTournament(input.tournamentId);
       if (teamList.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "Mínimo 2 equipes" });
@@ -222,7 +222,7 @@ const tournamentRouter = router({
     }),
 
   getStandings: publicProcedure
-    .input(z.object({ tournamentId: z.number() }))
+    .input(z.object({ tournamentId: z.number() }),)
     .query(async ({ input }) => {
       const tournament = await getTournamentById(input.id);
       if (!tournament) throw new TRPCError({ code: "NOT_FOUND" });
@@ -239,7 +239,7 @@ const tournamentRouter = router({
     }),
 
   delete: protectedProcedure
-    .input(z.object({ tournamentId: z.number() }))
+    .input(z.object({ tournamentId: z.number() }),)
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("DB not available");
@@ -253,7 +253,7 @@ const tournamentRouter = router({
     }),
 
   generateSemifinals: protectedProcedure
-    .input(z.object({ tournamentId: z.number() }))
+    .input(z.object({ tournamentId: z.number() }),)
     .mutation(async ({ input }) => {
       const teamList = await getTeamsByTournament(input.tournamentId);
       const groupMatches = await getMatchesByPhase(input.tournamentId, "group");
@@ -274,7 +274,7 @@ const tournamentRouter = router({
     }),
 
   generateFinal: protectedProcedure
-    .input(z.object({ tournamentId: z.number() }))
+    .input(z.object({ tournamentId: z.number() }),)
     .mutation(async ({ input }) => {
       const semis = await getMatchesByPhase(input.tournamentId, "semifinal");
       const unfinished = semis.filter((m) => m.status !== "finished");
@@ -407,3 +407,4 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
+
