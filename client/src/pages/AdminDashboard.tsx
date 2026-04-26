@@ -394,7 +394,3 @@ function StaffSection() {
     </div>
   );
 }
-      </main>
-    </div>
-  );
-}
