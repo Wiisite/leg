@@ -73,7 +73,7 @@ export default function AdminDashboard() {
           </p>
           <Button
             className="w-full gradient-gold text-amber-950 font-semibold hover:opacity-90 shadow-gold"
-            onClick={() => (window.location.href = "/")}
+            onClick={() => (window.location.href = "/login")}
           >
             Acessar Sistema
           </Button>
