@@ -481,6 +481,20 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
+    updateMe: protectedProcedure
+      .input(z.object({
+        name: z.string().optional(),
+        username: z.string().optional(),
+        password: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { upsertUser } = await import("./db");
+        await upsertUser({
+          openId: ctx.user!.openId,
+          ...input,
+        });
+        return { success: true };
+      }),
     login: publicProcedure
       .input(z.object({ username: z.string(), password: z.string() }))
       .mutation(async ({ input, ctx }) => {

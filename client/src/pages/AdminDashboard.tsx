@@ -144,18 +144,26 @@ export default function AdminDashboard() {
             </p>
           </div>
           
-          <div className="flex bg-slate-100 p-1 rounded-xl self-start">
+          <div className="flex bg-slate-100 p-1 rounded-xl self-start overflow-x-auto max-w-full">
             <button 
               onClick={() => setView("tournaments")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === "tournaments" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "tournaments" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
             >
               Torneios
             </button>
+            {user?.openId === "admin-master" && (
+              <button 
+                onClick={() => setView("staff")}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "staff" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Equipe
+              </button>
+            )}
             <button 
-              onClick={() => setView("staff")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === "staff" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
+              onClick={() => setView("profile")}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "profile" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
             >
-              Equipe
+              Perfil
             </button>
           </div>
         </div>
@@ -390,6 +398,64 @@ function StaffSection() {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfileSection() {
+  const { user } = useAuth();
+  const [name, setName] = useState(user?.name || "");
+  const [password, setPassword] = useState("");
+  
+  const updateMutation = trpc.auth.updateMe.useMutation({
+    onSuccess: () => {
+      toast.success("Perfil atualizado com sucesso!");
+      setPassword("");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div className="max-w-xl">
+      <h2 className="font-display text-xl font-semibold text-foreground mb-6">Meu Perfil</h2>
+      <div className="bg-white border border-slate-200 rounded-2xl p-8 space-y-6 shadow-sm">
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Nome de Exibição</label>
+          <input 
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 font-medium"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Nova Senha</label>
+          <input 
+            type="password"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 font-medium"
+            placeholder="Deixe em branco para não alterar"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <Button 
+          className="w-full h-12 bg-red text-white font-bold rounded-xl"
+          disabled={updateMutation.isPending}
+          onClick={() => updateMutation.mutate({ 
+            name, 
+            ...(password ? { password } : {}) 
+          })}
+        >
+          {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+        </Button>
+      </div>
+      
+      <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+        <p className="text-xs text-slate-500 leading-relaxed">
+          <strong>Atenção:</strong> Suas credenciais são pessoais. Evite compartilhar sua senha com outros membros da equipe para manter a integridade das ações no sistema.
+        </p>
       </div>
     </div>
   );
