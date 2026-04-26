@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
-import { Trophy, Plus, ChevronRight, Shield, Swords, Star, LayoutGrid, Activity, Target } from "lucide-react";
+import { Trophy, Plus, ChevronRight, Shield, Swords, Star, LayoutGrid, Activity, Target, LogOut, X } from "lucide-react";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
@@ -61,7 +61,7 @@ export default function Home() {
                   onClick={() => logout()}
                   className="text-slate-400 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
                 >
-                  <X className="w-4 h-4" />
+                  <LogOut className="w-4 h-4" />
                   Sair
                 </button>
               </div>
@@ -74,9 +74,9 @@ export default function Home() {
                 Área Restrita
               </Button>
             )}
+            </nav>
           </div>
-        </div>
-      </nav>
+        </nav>
 
       {/* Hero Section */}
       <section className="relative bg-slate-900 pt-20 pb-40 overflow-hidden">

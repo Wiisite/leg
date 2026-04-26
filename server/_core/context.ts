@@ -16,18 +16,7 @@ export async function createContext(
   try {
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
-    // Modo de Acesso Livre: Fornece um usuário admin padrão se o OAuth não estiver configurado
-    user = {
-      id: 999,
-      openId: "admin-standalone",
-      name: "Admin LEG",
-      email: "admin@ligaguorulhense.com.br",
-      role: "admin",
-      loginMethod: "standalone",
-      lastSignedIn: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    user = null;
   }
 
   return {
