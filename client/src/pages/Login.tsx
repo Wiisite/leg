@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Shield, Lock, ChevronRight, AlertCircle, Loader2 } from "lucide-react";
+import { Shield, Lock, ChevronRight, AlertCircle, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Login() {
