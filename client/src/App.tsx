@@ -8,11 +8,13 @@ import Home from "./pages/Home";
 import TournamentDetail from "./pages/TournamentDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import CreateTournament from "./pages/CreateTournament";
+import Login from "./pages/Login";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
       <Route path="/tournament/:id" component={TournamentDetail} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/create" component={CreateTournament} />

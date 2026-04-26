@@ -481,6 +481,41 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
+    loginWithCode: publicProcedure
+      .input(z.object({ code: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const MASTER_CODE = process.env.AUTH_SECRET || "LEG2026";
+        if (input.code !== MASTER_CODE) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Código Administrativo Inválido",
+          });
+        }
+
+        const adminUser = {
+          openId: "admin-master",
+          name: "Administrador LEG",
+          email: "admin@ligaleg.com.br",
+          loginMethod: "master",
+          lastSignedIn: new Date(),
+        };
+
+        const { upsertUser } = await import("./db");
+        await upsertUser(adminUser);
+
+        const { sdk } = await import("./_core/sdk");
+        const { ONE_YEAR_MS } = await import("@shared/const");
+        
+        const sessionToken = await sdk.createSessionToken(adminUser.openId, {
+          name: adminUser.name,
+          expiresInMs: ONE_YEAR_MS,
+        });
+
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+        return { success: true };
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       // Limpa com as opções exatas e também com opções genéricas para garantir
