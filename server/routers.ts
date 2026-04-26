@@ -484,8 +484,11 @@ export const appRouter = router({
     loginWithCode: publicProcedure
       .input(z.object({ code: z.string() }))
       .mutation(async ({ input, ctx }) => {
+        console.log(`[Auth] Tentativa de login mestre recebida.`);
         const MASTER_CODE = process.env.AUTH_SECRET || "LEG2026";
+        
         if (input.code !== MASTER_CODE) {
+          console.warn(`[Auth] Código inválido fornecido.`);
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "Código Administrativo Inválido",
@@ -497,8 +500,11 @@ export const appRouter = router({
           name: "Administrador LEG",
           email: "admin@ligaleg.com.br",
           loginMethod: "master",
+          role: "admin" as const,
           lastSignedIn: new Date(),
         };
+
+        console.log(`[Auth] Login mestre autorizado para: ${adminUser.name}`);
 
         const { upsertUser } = await import("./db");
         await upsertUser(adminUser);

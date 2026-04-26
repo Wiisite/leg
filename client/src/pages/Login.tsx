@@ -13,8 +13,8 @@ export default function Login() {
   const loginMutation = trpc.auth.loginWithCode.useMutation({
     onSuccess: () => {
       toast.success("Acesso autorizado!");
-      utils.auth.me.invalidate();
-      setLocation("/admin");
+      // Força um recarregamento total para garantir que o estado de auth seja capturado
+      window.location.href = "/admin";
     },
     onError: (error) => {
       toast.error(error.message || "Erro ao tentar acessar");
