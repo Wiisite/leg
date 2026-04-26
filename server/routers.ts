@@ -481,39 +481,58 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
-    loginWithCode: publicProcedure
-      .input(z.object({ code: z.string() }))
+    login: publicProcedure
+      .input(z.object({ username: z.string(), password: z.string() }))
       .mutation(async ({ input, ctx }) => {
-        console.log(`[Auth] Tentativa de login mestre recebida.`);
-        const MASTER_CODE = process.env.AUTH_SECRET || "LEG2026";
+        console.log(`[Auth] Tentativa de login para usuário: ${input.username}`);
         
-        if (input.code !== MASTER_CODE) {
-          console.warn(`[Auth] Código inválido fornecido.`);
+        const MASTER_CODE = process.env.AUTH_SECRET || "LEG2026";
+        let authenticatedUser: any = null;
+
+        // 1. Tenta Login Mestre (Legado)
+        if (input.username === "admin" && input.password === MASTER_CODE) {
+          authenticatedUser = {
+            openId: "admin-master",
+            name: "Administrador LEG",
+            email: "admin@ligaleg.com.br",
+            loginMethod: "master",
+            role: "admin",
+          };
+        } else {
+          // 2. Tenta buscar no Banco de Dados
+          const { getAdminByUsername } = await import("./db");
+          const dbUser = await getAdminByUsername(input.username);
+          
+          if (dbUser && dbUser.password === input.password) {
+            authenticatedUser = {
+              openId: dbUser.openId,
+              name: dbUser.name,
+              email: dbUser.email,
+              loginMethod: "local",
+              role: "admin",
+            };
+          }
+        }
+
+        if (!authenticatedUser) {
+          console.warn(`[Auth] Falha no login para: ${input.username}`);
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "Código Administrativo Inválido",
+            message: "Usuário ou Senha inválidos",
           });
         }
 
-        const adminUser = {
-          openId: "admin-master",
-          name: "Administrador LEG",
-          email: "admin@ligaleg.com.br",
-          loginMethod: "master",
-          role: "admin" as const,
-          lastSignedIn: new Date(),
-        };
-
-        console.log(`[Auth] Login mestre autorizado para: ${adminUser.name}`);
-
         const { upsertUser } = await import("./db");
-        await upsertUser(adminUser);
+        await upsertUser({
+          ...authenticatedUser,
+          lastSignedIn: new Date(),
+        });
 
         const { sdk } = await import("./_core/sdk");
         const { ONE_YEAR_MS } = await import("@shared/const");
         
-        const sessionToken = await sdk.createSessionToken(adminUser.openId, {
-          name: adminUser.name,
+        const sessionToken = await sdk.createSessionToken(authenticatedUser.openId, {
+          name: authenticatedUser.name || "Admin",
           expiresInMs: ONE_YEAR_MS,
         });
 
@@ -529,6 +548,41 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { path: "/", maxAge: 0 });
       return { success: true } as const;
     }),
+  }),
+
+  staff: router({
+    list: protectedProcedure.query(async () => {
+      const { getAllAdmins } = await import("./db");
+      return getAllAdmins();
+    }),
+    create: protectedProcedure
+      .input(z.object({ 
+        name: z.string(), 
+        username: z.string(), 
+        password: z.string() 
+      }))
+      .mutation(async ({ input }) => {
+        const { upsertUser } = await import("./db");
+        await upsertUser({
+          openId: `local:${input.username}`,
+          name: input.name,
+          username: input.username,
+          password: input.password,
+          role: "admin",
+          loginMethod: "local",
+        });
+        return { success: true };
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.id === input.id) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Você não pode excluir a si mesmo" });
+        }
+        const { deleteUser } = await import("./db");
+        await deleteUser(input.id);
+        return { success: true };
+      }),
   }),
   tournament: tournamentRouter,
   match: matchRouter,

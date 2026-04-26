@@ -6,11 +6,12 @@ import { Shield, Lock, ChevronRight, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Login() {
-  const [code, setCode] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
 
-  const loginMutation = trpc.auth.loginWithCode.useMutation({
+  const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
       toast.success("Acesso autorizado!");
       // Força um recarregamento total para garantir que o estado de auth seja capturado
@@ -23,8 +24,8 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code) return;
-    loginMutation.mutate({ code });
+    if (!username || !password) return;
+    loginMutation.mutate({ username, password });
   };
 
   return (
@@ -40,11 +41,27 @@ export default function Login() {
             <div className="w-20 h-20 bg-white rounded-3xl mx-auto mb-6 flex items-center justify-center p-2 shadow-xl rotate-[-2deg]">
               <img src="/logo.png" alt="LEG" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Área Administrativa</h1>
-            <p className="text-slate-400 text-sm font-medium">Insira o código de acesso para continuar</p>
+            <h1 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Acesso Equipe</h1>
+            <p className="text-slate-400 text-sm font-medium">Faça login para gerenciar a plataforma</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-red-500 transition-colors">
+                  <Users className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Usuário"
+                  className="w-full h-14 bg-slate-950 border border-white/5 rounded-2xl pl-14 pr-6 text-white font-bold placeholder:text-slate-700 focus:outline-none focus:border-red-500/50 focus:ring-4 focus:ring-red-500/10 transition-all"
+                  autoFocus
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <div className="relative group">
                 <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-red-500 transition-colors">
@@ -52,17 +69,16 @@ export default function Login() {
                 </div>
                 <input
                   type="password"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="Código de Acesso"
-                  className="w-full h-16 bg-slate-950 border border-white/5 rounded-2xl pl-14 pr-6 text-white font-bold placeholder:text-slate-700 focus:outline-none focus:border-red-500/50 focus:ring-4 focus:ring-red-500/10 transition-all"
-                  autoFocus
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Senha"
+                  className="w-full h-14 bg-slate-950 border border-white/5 rounded-2xl pl-14 pr-6 text-white font-bold placeholder:text-slate-700 focus:outline-none focus:border-red-500/50 focus:ring-4 focus:ring-red-500/10 transition-all"
                 />
               </div>
             </div>
 
             <Button
-              disabled={loginMutation.isPending || !code}
+              disabled={loginMutation.isPending || !username || !password}
               className="w-full h-16 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-red-600/20 active:translate-y-1 transition-all disabled:opacity-50"
             >
               {loginMutation.isPending ? (

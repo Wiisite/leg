@@ -20,8 +20,10 @@ export async function getDb() {
           console.log("[Database] Running auto-migrations and schema fixes...");
           await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
           
-          // FORÇA BRUTA: Tenta adicionar a coluna logo se a migração falhou silenciosamente
+          // FORÇA BRUTA: Tenta adicionar as colunas se a migração falhou silenciosamente
           await _db.execute(sql`ALTER TABLE teams ADD COLUMN IF NOT EXISTS logo TEXT NULL`);
+          await _db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(64) UNIQUE NULL`);
+          await _db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT NULL`);
           
           _migrated = true;
           console.log("[Database] Schema updated successfully!");
@@ -56,6 +58,14 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     updateSet[field] = normalized;
   };
   textFields.forEach(assignNullable);
+  if (user.username !== undefined) {
+    values.username = user.username;
+    updateSet.username = user.username;
+  }
+  if (user.password !== undefined) {
+    values.password = user.password;
+    updateSet.password = user.password;
+  }
   if (user.lastSignedIn !== undefined) {
     values.lastSignedIn = user.lastSignedIn;
     updateSet.lastSignedIn = user.lastSignedIn;
@@ -77,6 +87,29 @@ export async function getUserByOpenId(openId: string) {
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAdminByUsername(username: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.username, username), eq(users.role, "admin")))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAllAdmins() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).where(eq(users.role, "admin"));
+}
+
+export async function deleteUser(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(users).where(eq(users.id, id));
 }
 
 // ─── Tournaments ───────────────────────────────────────────────────────────────
