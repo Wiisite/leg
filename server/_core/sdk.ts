@@ -214,7 +214,6 @@ class SDKServer {
 
       if (
         !isNonEmptyString(openId) ||
-        !isNonEmptyString(appId) ||
         !isNonEmptyString(name)
       ) {
         console.warn("[Auth] Payload da sessão inválido ou incompleto:", payload);
