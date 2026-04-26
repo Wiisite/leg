@@ -201,10 +201,10 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
+      console.warn("[Auth] Sessão ausente (Cookie não encontrado)");
       return null;
     }
-
+    
     try {
       const secretKey = this.getSessionSecret();
       const { payload } = await jwtVerify(cookieValue, secretKey, {
@@ -217,7 +217,7 @@ class SDKServer {
         !isNonEmptyString(appId) ||
         !isNonEmptyString(name)
       ) {
-        console.warn("[Auth] Session payload missing required fields");
+        console.warn("[Auth] Payload da sessão inválido ou incompleto:", payload);
         return null;
       }
 
@@ -227,7 +227,7 @@ class SDKServer {
         name,
       };
     } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
+      console.error("[Auth] Falha na verificação do JWT:", error);
       return null;
     }
   }
