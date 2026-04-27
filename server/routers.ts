@@ -721,6 +721,38 @@ const matchRouter = router({
         })
         .where(eq(matches.id, input.matchId));
 
+      if (match.phase === "group" && input.homeScore !== undefined && input.awayScore !== undefined) {
+        const tournament = await getTournamentById(match.tournamentId);
+        if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
+
+        const isAdvancedModality =
+          tournament.modality === "handebol" ||
+          tournament.modality === "futsal" ||
+          tournament.modality === "basquete" ||
+          tournament.modality === "volei";
+
+        const teamList = await getTeamsByTournament(match.tournamentId);
+        const allMatches = await getMatchesByTournament(match.tournamentId);
+        const knockoutMatches = allMatches.filter((m) => m.phase !== "group");
+        const groupMatches = allMatches.filter((m) => m.phase === "group");
+        const allGroupFinished = groupMatches.length > 0 && groupMatches.every((m) => m.status === "finished");
+
+        if (isAdvancedModality && teamList.length === 4 && knockoutMatches.length === 0 && allGroupFinished) {
+          const standings = computeStandings(
+            teamList,
+            groupMatches,
+            tournament.pointsPerWin,
+            tournament.pointsPerDraw,
+            tournament.pointsPerLoss,
+            tournament.modality
+          );
+          const championName = standings[0]?.teamName;
+          if (championName) {
+            await updateTournamentStatus(match.tournamentId, "finished", championName);
+          }
+        }
+      }
+
       if (match.phase === "final" && input.homeScore !== undefined && input.awayScore !== undefined) {
         const tournament = await getTournamentById(match.tournamentId);
         if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });

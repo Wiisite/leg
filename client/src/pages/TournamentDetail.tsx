@@ -782,6 +782,17 @@ export default function TournamentDetail() {
     tournament.modality === "futsal" ||
     tournament.modality === "basquete" ||
     tournament.modality === "volei";
+  const hasKnockoutMatches = matches.some((m) => m.phase !== "group");
+  const isFlatStandings =
+    Array.isArray(standings) &&
+    standings.length > 0 &&
+    !("groupName" in standings[0]);
+  const singleGroupStandings = isFlatStandings ? (standings as any[]) : [];
+  const classificationTop4 =
+    teams.length === 4 && !hasKnockoutMatches && singleGroupStandings.length >= 4
+      ? singleGroupStandings.slice(0, 4)
+      : [];
+  const championDisplayName = tournament.champion || classificationTop4[0]?.teamName || "A definir";
 
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
@@ -1295,7 +1306,32 @@ export default function TournamentDetail() {
               </div>
             ) : (
               // Grupo único (flat array)
-              <StandingsTable standings={standings as any[]} modality={tournament.modality} />
+              <div className="space-y-6">
+                <StandingsTable standings={standings as any[]} modality={tournament.modality} />
+
+                {classificationTop4.length === 4 && (
+                  <div className="rounded-2xl border border-amber-200/70 bg-amber-50/40 p-5">
+                    <p className="text-xs font-black uppercase tracking-widest text-amber-700 mb-4">
+                      Classificação final (grupo único)
+                    </p>
+                    <div className="space-y-2">
+                      {classificationTop4.map((team, idx) => (
+                        <div
+                          key={team.teamId}
+                          className="flex items-center justify-between rounded-xl bg-white/80 border border-amber-100 px-4 py-3"
+                        >
+                          <span className="text-xs font-black uppercase tracking-wider text-slate-500">
+                            {idx === 0 ? "Campeão" : idx === 1 ? "Vice-campeão" : `${idx + 1}º lugar`}
+                          </span>
+                          <span className="text-sm font-black text-slate-800 uppercase">
+                            {team.teamName}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -1392,14 +1428,55 @@ export default function TournamentDetail() {
               Finais
             </h2>
             {finalMatches.length === 0 && thirdPlaceMatches.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-border/40 rounded-2xl">
-                <Star className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground text-sm">
-                  {isAuthenticated
-                    ? 'Conclua as semifinais e clique em "Gerar Final"'
-                    : "Final ainda não gerada"}
-                </p>
-              </div>
+              classificationTop4.length === 4 ? (
+                <div className="space-y-6 max-w-2xl">
+                  <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-5">
+                    <p className="text-xs font-black uppercase tracking-widest text-emerald-700 mb-4">
+                      Resultado final por classificação geral
+                    </p>
+                    <div className="space-y-2">
+                      {classificationTop4.map((team, idx) => (
+                        <div
+                          key={team.teamId}
+                          className="flex items-center justify-between rounded-xl bg-white/80 border border-emerald-100 px-4 py-3"
+                        >
+                          <span className="text-xs font-black uppercase tracking-wider text-slate-500">
+                            {idx === 0 ? "Campeão" : idx === 1 ? "Vice-campeão" : `${idx + 1}º lugar`}
+                          </span>
+                          <span className="text-sm font-black text-slate-800 uppercase">
+                            {team.teamName}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="inline-flex flex-col items-center gap-3 px-10 py-8 rounded-3xl bg-slate-50 border-2 border-red/10 shadow-xl">
+                      <div className="w-16 h-16 rounded-full bg-red/10 flex items-center justify-center mb-2">
+                        <Trophy className="w-8 h-8 text-red" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 uppercase font-bold tracking-widest mb-1">
+                          Grande Campeão
+                        </p>
+                        <p className="font-display text-3xl font-bold text-primary">
+                          {championDisplayName}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-16 border border-dashed border-border/40 rounded-2xl">
+                  <Star className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">
+                    {isAuthenticated
+                      ? 'Conclua as semifinais e clique em "Gerar Final"'
+                      : "Final ainda não gerada"}
+                  </p>
+                </div>
+              )
             ) : (
               <div className="space-y-8 max-w-5xl">
                 {usesAdvancedSeries ? (
@@ -1446,7 +1523,7 @@ export default function TournamentDetail() {
                         Grande Campeão
                       </p>
                       <p className="font-display text-3xl font-bold text-primary">
-                        {tournament.champion || "A definir"}
+                        {championDisplayName}
                       </p>
                     </div>
                   </div>
