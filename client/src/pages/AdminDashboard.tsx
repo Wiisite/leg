@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -16,6 +16,7 @@ import {
   LogOut,
   Plus,
   Trash2,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -168,7 +169,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {view === "tournaments" ? (
+        {view === "tournaments" && (
           <>
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10">
@@ -280,8 +281,14 @@ export default function AdminDashboard() {
               </div>
             )}
           </>
-        ) : (
+        )}
+
+        {view === "staff" && user?.openId === "admin-master" && (
           <StaffSection />
+        )}
+
+        {view === "profile" && (
+          <ProfileSection />
         )}
       </main>
     </div>
@@ -405,57 +412,155 @@ function StaffSection() {
 
 function ProfileSection() {
   const { user } = useAuth();
+  const utils = trpc.useUtils();
+  
   const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [username, setUsername] = useState(user?.username || "");
   const [password, setPassword] = useState("");
+
+  // Sincroniza o estado quando o usuário carrega ou muda
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setEmail(user.email || "");
+      setUsername(user.username || "");
+    }
+  }, [user]);
   
   const updateMutation = trpc.auth.updateMe.useMutation({
     onSuccess: () => {
+      utils.auth.me.invalidate();
       toast.success("Perfil atualizado com sucesso!");
       setPassword("");
     },
     onError: (e) => toast.error(e.message),
   });
 
+  const isMaster = user?.openId === "admin-master";
+
   return (
-    <div className="max-w-xl">
-      <h2 className="font-display text-xl font-semibold text-foreground mb-6">Meu Perfil</h2>
-      <div className="bg-white border border-slate-200 rounded-2xl p-8 space-y-6 shadow-sm">
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Nome de Exibição</label>
-          <input 
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 font-medium"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Nova Senha</label>
-          <input 
-            type="password"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 font-medium"
-            placeholder="Deixe em branco para não alterar"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+    <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Lado Esquerdo: Info Resumo */}
+        <div className="w-full md:w-80 space-y-6">
+          <div className="bg-white border border-slate-200 rounded-[32px] p-8 text-center shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-2 bg-red" />
+            <div className="w-24 h-24 rounded-3xl bg-slate-100 mx-auto mb-4 flex items-center justify-center text-slate-400 group-hover:scale-105 transition-transform duration-500">
+              <Users className="w-12 h-12" />
+            </div>
+            <h3 className="font-display text-xl font-bold text-slate-900 line-clamp-1">{user?.name}</h3>
+            <p className="text-sm text-slate-500 mb-6">@{user?.username || "admin"}</p>
+            
+            <div className="flex flex-col gap-2">
+              <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-red/10 text-red text-[10px] font-black uppercase tracking-wider">
+                <Shield className="w-3 h-3" />
+                {isMaster ? "Administrador Master" : "Equipe Administrativa"}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 rounded-[32px] p-6 border border-slate-100">
+            <div className="flex items-center gap-3 mb-4 text-slate-400">
+              <Clock className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Último Acesso</span>
+            </div>
+            <div className="text-sm font-bold text-slate-700">
+              {user?.lastSignedIn ? new Date(user.lastSignedIn).toLocaleString("pt-BR") : "Agora"}
+            </div>
+          </div>
         </div>
 
-        <Button 
-          className="w-full h-12 bg-red text-white font-bold rounded-xl"
-          disabled={updateMutation.isPending}
-          onClick={() => updateMutation.mutate({ 
-            name, 
-            ...(password ? { password } : {}) 
-          })}
-        >
-          {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
-        </Button>
-      </div>
-      
-      <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-        <p className="text-xs text-slate-500 leading-relaxed">
-          <strong>Atenção:</strong> Suas credenciais são pessoais. Evite compartilhar sua senha com outros membros da equipe para manter a integridade das ações no sistema.
-        </p>
+        {/* Lado Direito: Formulário */}
+        <div className="flex-1 bg-white border border-slate-200 rounded-[32px] p-8 md:p-10 shadow-premium relative">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-lg">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-display text-2xl font-bold text-slate-900">Configurações da Conta</h2>
+              <p className="text-xs text-slate-500">Mantenha seus dados de acesso sempre atualizados.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-8">
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2.5">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nome Completo</label>
+                <input 
+                  className="w-full bg-slate-50 border-none rounded-2xl h-14 px-5 font-bold text-slate-900 focus:ring-4 focus:ring-red/10 transition-all placeholder:text-slate-300"
+                  placeholder="Seu nome"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2.5">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">E-mail Profissional</label>
+                <input 
+                  className="w-full bg-slate-50 border-none rounded-2xl h-14 px-5 font-bold text-slate-900 focus:ring-4 focus:ring-red/10 transition-all placeholder:text-slate-300"
+                  placeholder="exemplo@ligaleg.com.br"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2.5">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nome de Usuário</label>
+                <div className="relative group">
+                  <input 
+                    className="w-full bg-slate-50 border-none rounded-2xl h-14 px-5 font-bold text-slate-900 focus:ring-4 focus:ring-red/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={isMaster}
+                  />
+                  {isMaster && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <span className="text-[10px] bg-slate-900 text-white px-2 py-1 rounded-lg font-bold">Bloqueado</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nova Senha</label>
+                <input 
+                  type="password"
+                  className="w-full bg-slate-50 border-none rounded-2xl h-14 px-5 font-bold text-slate-900 focus:ring-4 focus:ring-red/10 transition-all placeholder:text-slate-300"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button 
+                className="w-full h-16 bg-red text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-red/20 active:translate-y-1 transition-all"
+                disabled={updateMutation.isPending}
+                onClick={() => updateMutation.mutate({ 
+                  name,
+                  email,
+                  username: isMaster ? undefined : username,
+                  ...(password ? { password } : {}) 
+                })}
+              >
+                {updateMutation.isPending ? (
+                  <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  "Salvar Alterações do Perfil"
+                )}
+              </Button>
+            </div>
+          </div>
+          
+          <div className="mt-10 flex items-start gap-4 p-5 bg-amber-50 rounded-2xl border border-amber-100/50">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+              <strong>Importante:</strong> Suas credenciais são de uso pessoal e intransferível. Qualquer ação realizada com seu usuário será registrada nos logs de auditoria da plataforma.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

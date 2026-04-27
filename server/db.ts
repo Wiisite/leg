@@ -17,18 +17,28 @@ export async function getDb() {
       // Rodar migrações programaticamente
       if (!_migrated) {
         try {
-          console.log("[Database] Running auto-migrations and schema fixes...");
+          console.log("[Database] Checking schema and migrations...");
           await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
           
-          // FORÇA BRUTA: Tenta adicionar as colunas se a migração falhou silenciosamente
-          await _db.execute(sql`ALTER TABLE teams ADD COLUMN IF NOT EXISTS logo TEXT NULL`);
-          await _db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(64) UNIQUE NULL`);
-          await _db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT NULL`);
+          // Tenta adicionar colunas individualmente caso as migrações automáticas não cubram tudo
+          // Usamos try/catch individual para cada coluna para não interromper se uma já existir
+          const fixColumn = async (table: string, col: string, type: string) => {
+            try {
+              await _db!.execute(sql.raw(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`));
+              console.log(`[Database] Added column ${col} to ${table}`);
+            } catch (e) {
+              // Ignora erro se a coluna já existir
+            }
+          };
+
+          await fixColumn("teams", "logo", "TEXT NULL");
+          await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
+          await fixColumn("users", "password", "TEXT NULL");
           
           _migrated = true;
-          console.log("[Database] Schema updated successfully!");
+          console.log("[Database] Schema check completed.");
         } catch (migError) {
-          console.warn("[Database] Schema fix attempt:", migError);
+          console.error("[Database] Migration error (non-fatal):", migError);
           _migrated = true; 
         }
       }

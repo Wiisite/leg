@@ -67,14 +67,17 @@ function TeamBadge({ team, size = "md", showName = false }: { team: any; size?: 
 function ScoreModal({
   match,
   teams,
+  modality,
   onClose,
   onSave,
 }: {
   match: MatchForModal;
   teams: { id: number; name: string; shortName: string; color: string; logo?: string | null }[];
+  modality?: string;
   onClose: () => void;
   onSave: (matchId: number, home: number, away: number, time: string, location: string) => void;
 }) {
+  const isVolei = modality === "volei";
   const homeTeam = teams.find((t) => t.id === match.homeTeamId);
   const awayTeam = teams.find((t) => t.id === match.awayTeamId);
   const [home, setHome] = useState(match.homeScore ?? 0);
@@ -82,11 +85,20 @@ function ScoreModal({
   const [time, setTime] = useState(match.time ?? "");
   const [location, setLocation] = useState(match.location ?? "");
 
+  const voleiValid = !isVolei || (
+    (home === 3 && away >= 0 && away <= 2) ||
+    (away === 3 && home >= 0 && home <= 2) ||
+    (home === 2 && away >= 0 && away <= 1) ||
+    (away === 2 && home >= 0 && home <= 1)
+  );
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
       <div className="relative bg-white border border-slate-100 rounded-[32px] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-300">
-        <h3 className="font-black text-2xl text-center mb-8 text-slate-800 tracking-tight uppercase">Registrar Placar</h3>
+        <h3 className="font-black text-2xl text-center mb-8 text-slate-800 tracking-tight uppercase">
+          {isVolei ? "Registrar Sets" : "Registrar Placar"}
+        </h3>
         
         <div className="flex items-center gap-6 justify-between mb-10">
           <div className="flex-1 flex flex-col items-center gap-3">
@@ -94,22 +106,27 @@ function ScoreModal({
             <p className="text-[11px] font-black text-slate-400 uppercase text-center leading-tight min-h-[2.5rem] flex items-center">{homeTeam?.name}</p>
           </div>
           
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={0}
-              value={home}
-              onChange={(e) => setHome(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all"
-            />
-            <span className="text-slate-200 font-black text-xl">×</span>
-            <input
-              type="number"
-              min={0}
-              value={away}
-              onChange={(e) => setAway(Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all"
-            />
+          <div className="flex flex-col items-center gap-1">
+            {isVolei && <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Sets</span>}
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                max={isVolei ? 3 : undefined}
+                value={home}
+                onChange={(e) => setHome(Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all"
+              />
+              <span className="text-slate-200 font-black text-xl">×</span>
+              <input
+                type="number"
+                min={0}
+                max={isVolei ? 3 : undefined}
+                value={away}
+                onChange={(e) => setAway(Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all"
+              />
+            </div>
           </div>
           
           <div className="flex-1 flex flex-col items-center gap-3">
@@ -149,6 +166,26 @@ function ScoreModal({
           </div>
         </div>
 
+        {isVolei && !voleiValid && (home > 0 || away > 0) && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-center">
+            <p className="text-[11px] font-bold text-red-500">Placar inválido para vôlei. Placares válidos: 3×0, 3×1, 3×2, 2×0, 2×1</p>
+          </div>
+        )}
+
+        {isVolei && voleiValid && (home > 0 || away > 0) && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-bold text-amber-700">
+                {(() => {
+                  const w = Math.max(home, away), l = Math.min(home, away);
+                  const dominant = (w === 3 && l <= 1) || (w === 2 && l === 0);
+                  return dominant ? "Vitória direta → 3 pts / 0 pts" : "Vitória apertada → 2 pts / 1 pt";
+                })()}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <button 
             className="flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all" 
@@ -157,7 +194,8 @@ function ScoreModal({
             Cancelar
           </button>
           <button
-            className="flex-[2] bg-red hover:bg-red-600 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl shadow-xl shadow-red/20 transition-all active:scale-95"
+            className={`flex-[2] bg-red hover:bg-red-600 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl shadow-xl shadow-red/20 transition-all active:scale-95 ${isVolei && !voleiValid ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={isVolei && !voleiValid}
             onClick={() => onSave(match.id, home, away, time, location)}
           >
             SALVAR RESULTADO
@@ -238,7 +276,8 @@ function MatchCard({
   );
 }
 
-function StandingsTable({ standings }: { standings: any[] }) {
+function StandingsTable({ standings, modality }: { standings: any[]; modality?: string }) {
+  const isVolei = modality === "volei";
   return (
     <div className="overflow-x-auto rounded-[32px] border border-slate-100 shadow-sm bg-white">
       <table className="w-full border-collapse">
@@ -248,9 +287,9 @@ function StandingsTable({ standings }: { standings: any[] }) {
             <th className="py-6 px-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Equipe</th>
             <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">J</th>
             <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">V</th>
-            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">E</th>
+            {!isVolei && <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">E</th>}
             <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">D</th>
-            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">SG</th>
+            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">{isVolei ? "SS" : "SG"}</th>
             <th className="py-6 px-6 text-center text-[10px] font-black text-red uppercase tracking-widest w-20">Pts</th>
           </tr>
         </thead>
@@ -271,7 +310,7 @@ function StandingsTable({ standings }: { standings: any[] }) {
               </td>
               <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.played}</td>
               <td className="py-5 px-3 text-center text-sm font-black text-green-600">{s.won}</td>
-              <td className="py-5 px-3 text-center text-sm font-black text-amber-500">{s.drawn}</td>
+              {!isVolei && <td className="py-5 px-3 text-center text-sm font-black text-amber-500">{s.drawn}</td>}
               <td className="py-5 px-3 text-center text-sm font-black text-red-500">{s.lost}</td>
               <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.goalDiff > 0 ? `+${s.goalDiff}` : s.goalDiff}</td>
               <td className="py-5 px-6 text-center">
@@ -703,6 +742,7 @@ export default function TournamentDetail() {
         <ScoreModal
           match={editingMatch}
           teams={teams}
+          modality={tournament.modality}
           onClose={() => setEditingMatch(null)}
           onSave={(matchId: number, home: number, away: number, time: string, location: string) =>
             updateScore.mutate({ matchId, homeScore: home, awayScore: away, time, location })
@@ -945,7 +985,7 @@ export default function TournamentDetail() {
                 <p className="text-muted-foreground text-sm">Nenhuma partida registrada ainda</p>
               </div>
             ) : (
-              <StandingsTable standings={standings} />
+              <StandingsTable standings={standings} modality={tournament.modality} />
             )}
           </div>
         )}

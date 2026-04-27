@@ -84,22 +84,30 @@ function computeStandings(
     away.goalsFor += m.awayScore;
     away.goalsAgainst += m.homeScore;
     if (modality === "volei") {
+      // No vôlei não existe empate — sempre há um vencedor
       const homeWon = m.homeScore! > m.awayScore!;
       const winner = homeWon ? home : away;
       const loser = homeWon ? away : home;
-      const winnerScore = homeWon ? m.homeScore! : m.awayScore!;
-      const loserScore = homeWon ? m.awayScore! : m.homeScore!;
+      const winnerSets = homeWon ? m.homeScore! : m.awayScore!;
+      const loserSets = homeWon ? m.awayScore! : m.homeScore!;
 
-      if (winnerScore === 2 && loserScore === 0) {
+      winner.won++;
+      loser.lost++;
+
+      // Melhor de 5 (3x0, 3x1, 3x2) ou Melhor de 3 (2x0, 2x1)
+      // Vitória direta (3x0, 3x1, 2x0): 3 pts vencedor / 0 pts perdedor
+      // Vitória apertada (3x2, 2x1):     2 pts vencedor / 1 pt perdedor
+      const isDominant =
+        (winnerSets === 3 && loserSets <= 1) ||
+        (winnerSets === 2 && loserSets === 0);
+
+      if (isDominant) {
         winner.points += 3;
         loser.points += 0;
-      } else if (winnerScore === 2 && loserScore === 1) {
+      } else {
+        // 3x2 ou 2x1
         winner.points += 2;
         loser.points += 1;
-      } else {
-        // Fallback para outros placares (ex: 3x0, 3x1)
-        winner.points += pointsPerWin;
-        loser.points += pointsPerLoss;
       }
     } else if (m.homeScore! > m.awayScore!) {
       home.won++;
@@ -113,7 +121,7 @@ function computeStandings(
       home.points += pointsPerLoss;
     } else {
       home.drawn++;
-      home.drawn++;
+      away.drawn++;
       home.points += pointsPerDraw;
       away.points += pointsPerDraw;
     }
@@ -484,14 +492,34 @@ export const appRouter = router({
     updateMe: protectedProcedure
       .input(z.object({
         name: z.string().optional(),
+        email: z.string().email().optional().or(z.literal("")),
         username: z.string().optional(),
         password: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        const { upsertUser } = await import("./db");
+        const { upsertUser, getAdminByUsername } = await import("./db");
+        
+        // Se estiver tentando mudar o username, verifica se já existe
+        if (input.username && input.username !== ctx.user?.username) {
+          const existing = await getAdminByUsername(input.username);
+          if (existing && existing.openId !== ctx.user?.openId) {
+            throw new TRPCError({ 
+              code: "BAD_REQUEST", 
+              message: "Este nome de usuário já está em uso" 
+            });
+          }
+        }
+
+        // Normaliza campos vazios para não sobrescrever com string vazia
+        const cleanInput: Record<string, unknown> = {};
+        if (input.name) cleanInput.name = input.name;
+        if (input.email) cleanInput.email = input.email;
+        if (input.username) cleanInput.username = input.username;
+        if (input.password) cleanInput.password = input.password;
+
         await upsertUser({
           openId: ctx.user!.openId,
-          ...input,
+          ...cleanInput,
         });
         return { success: true };
       }),
@@ -500,43 +528,45 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         console.log(`[Auth] Tentativa de login para usuário: ${input.username}`);
         
+        const { getAdminByUsername, upsertUser } = await import("./db");
         const MASTER_CODE = process.env.AUTH_SECRET || "LEG2026";
         let authenticatedUser: any = null;
 
-        // 1. Tenta Login Mestre (Legado)
-        if (input.username === "admin" && input.password === MASTER_CODE) {
+        // 1. Tenta buscar no Banco de Dados primeiro (permite troca de senha do admin)
+        const dbUser = await getAdminByUsername(input.username);
+        
+        if (dbUser && dbUser.password === input.password) {
+          console.log(`[Auth] Usuário encontrado no banco: ${input.username}`);
+          authenticatedUser = {
+            openId: dbUser.openId,
+            name: dbUser.name,
+            email: dbUser.email,
+            username: dbUser.username,
+            loginMethod: "local",
+            role: "admin",
+          };
+        } 
+        // 2. Fallback para Login Mestre (caso a senha do banco falhe ou não exista)
+        else if (input.username === "admin" && input.password === MASTER_CODE) {
+          console.log(`[Auth] Login via chave mestra autorizado para: admin`);
           authenticatedUser = {
             openId: "admin-master",
             name: "Administrador LEG",
             email: "admin@ligaleg.com.br",
+            username: "admin",
             loginMethod: "master",
             role: "admin",
           };
-        } else {
-          // 2. Tenta buscar no Banco de Dados
-          const { getAdminByUsername } = await import("./db");
-          const dbUser = await getAdminByUsername(input.username);
-          
-          if (dbUser && dbUser.password === input.password) {
-            authenticatedUser = {
-              openId: dbUser.openId,
-              name: dbUser.name,
-              email: dbUser.email,
-              loginMethod: "local",
-              role: "admin",
-            };
-          }
         }
 
         if (!authenticatedUser) {
-          console.warn(`[Auth] Falha no login para: ${input.username}`);
+          console.warn(`[Auth] Falha no login para: ${input.username} (Usuário não encontrado ou senha incorreta)`);
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "Usuário ou Senha inválidos",
           });
         }
 
-        const { upsertUser } = await import("./db");
         await upsertUser({
           ...authenticatedUser,
           lastSignedIn: new Date(),
@@ -565,7 +595,10 @@ export const appRouter = router({
   }),
 
   staff: router({
-    list: protectedProcedure.query(async () => {
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user?.openId !== "admin-master") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Apenas o Administrador Master pode gerenciar a equipe" });
+      }
       const { getAllAdmins } = await import("./db");
       return getAllAdmins();
     }),
@@ -575,8 +608,18 @@ export const appRouter = router({
         username: z.string(), 
         password: z.string() 
       }))
-      .mutation(async ({ input }) => {
-        const { upsertUser } = await import("./db");
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.openId !== "admin-master") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        const { upsertUser, getAdminByUsername } = await import("./db");
+
+        // Verifica se usuário já existe
+        const existing = await getAdminByUsername(input.username);
+        if (existing) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Usuário já cadastrado" });
+        }
+
         await upsertUser({
           openId: `local:${input.username}`,
           name: input.name,
@@ -590,6 +633,9 @@ export const appRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.openId !== "admin-master") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
         if (ctx.user?.id === input.id) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Você não pode excluir a si mesmo" });
         }

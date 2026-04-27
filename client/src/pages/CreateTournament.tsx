@@ -196,7 +196,15 @@ export default function CreateTournament() {
                 </label>
                 <select
                   value={modality}
-                  onChange={(e) => setModality(e.target.value as any)}
+                  onChange={(e) => {
+                    const val = e.target.value as typeof modality;
+                    setModality(val);
+                    if (val === "volei") {
+                      setPointsPerWin(3);
+                      setPointsPerDraw(0);
+                      setPointsPerLoss(0);
+                    }
+                  }}
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                 >
                   <option value="futsal">Futsal</option>
@@ -205,53 +213,79 @@ export default function CreateTournament() {
                   <option value="handebol">Handebol</option>
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Número de Rodadas
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={rounds}
-                    onChange={(e) => setRounds(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Vitória (Pts)
-                  </label>
-                  <input
-                    type="number"
-                    value={pointsPerWin}
-                    onChange={(e) => setPointsPerWin(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Empate (Pts)
-                  </label>
-                  <input
-                    type="number"
-                    value={pointsPerDraw}
-                    onChange={(e) => setPointsPerDraw(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Derrota (Pts)
-                  </label>
-                  <input
-                    type="number"
-                    value={pointsPerLoss}
-                    onChange={(e) => setPointsPerLoss(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-                  />
-                </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Número de Rodadas
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={rounds}
+                  onChange={(e) => setRounds(Number(e.target.value))}
+                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold"
+                />
               </div>
+
+              {modality === "volei" ? (
+                <div className="col-span-2 bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 mt-2">
+                  <p className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">Pontuação do Vôlei (automática por sets)</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-background/50 rounded-lg p-2.5 text-center">
+                      <span className="font-black text-green-400 text-sm">3 pts</span>
+                      <p className="text-muted-foreground mt-0.5">Vitória 3×0 ou 3×1</p>
+                    </div>
+                    <div className="bg-background/50 rounded-lg p-2.5 text-center">
+                      <span className="font-black text-blue-400 text-sm">2 pts</span>
+                      <p className="text-muted-foreground mt-0.5">Vitória 3×2</p>
+                    </div>
+                    <div className="bg-background/50 rounded-lg p-2.5 text-center">
+                      <span className="font-black text-orange-400 text-sm">1 pt</span>
+                      <p className="text-muted-foreground mt-0.5">Derrota 2×3</p>
+                    </div>
+                    <div className="bg-background/50 rounded-lg p-2.5 text-center">
+                      <span className="font-black text-red-400 text-sm">0 pts</span>
+                      <p className="text-muted-foreground mt-0.5">Derrota 0×3 ou 1×3</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2.5 text-center">O placar é registrado em sets. A pontuação é calculada automaticamente.</p>
+                </div>
+              ) : (
+                <div className="col-span-2 grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Vitória (Pts)
+                    </label>
+                    <input
+                      type="number"
+                      value={pointsPerWin}
+                      onChange={(e) => setPointsPerWin(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Empate (Pts)
+                    </label>
+                    <input
+                      type="number"
+                      value={pointsPerDraw}
+                      onChange={(e) => setPointsPerDraw(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Derrota (Pts)
+                    </label>
+                    <input
+                      type="number"
+                      value={pointsPerLoss}
+                      onChange={(e) => setPointsPerLoss(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

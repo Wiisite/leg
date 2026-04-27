@@ -39,7 +39,12 @@ async function startServer() {
   const port = parseInt(process.env.PORT || "3000");
 
   server.listen(port, "0.0.0.0", () => {
-    console.log(`Server listening on port ${port}`);
+    console.log(`[Server] Listening on port ${port} (Production: ${process.env.NODE_ENV === "production"})`);
+  });
+
+  // Health check endpoint (must be before tRPC and static files)
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   // tRPC API
