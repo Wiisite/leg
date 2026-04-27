@@ -292,23 +292,42 @@ function MatchCardCompact({
   const finished = match.homeScore !== null;
 
   return (
-    <div
-      className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
-      onClick={() => isAdmin && onEdit && onEdit(match)}
-    >
-      <div className="flex items-center gap-2">
-        <TeamBadge team={home} size="sm" />
-        <span className="text-[10px] font-black text-slate-700 uppercase truncate flex-1 min-w-0">{home?.shortName || home?.name}</span>
-        <span className={`text-sm font-black min-w-[1.2rem] text-right ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
-          {match.homeScore ?? "-"}
-        </span>
-        <span className="text-slate-300 text-[10px] font-black">×</span>
-        <span className={`text-sm font-black min-w-[1.2rem] text-left ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
-          {match.awayScore ?? "-"}
-        </span>
-        <span className="text-[10px] font-black text-slate-700 uppercase truncate flex-1 min-w-0 text-right">{away?.shortName || away?.name}</span>
-        <TeamBadge team={away} size="sm" />
+    <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm hover:shadow-lg transition-all border-b-4 border-b-slate-100">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 flex flex-col items-center gap-2">
+          <TeamBadge team={home} size="md" />
+          <span className="text-[10px] font-black text-slate-800 uppercase text-center leading-tight">{home?.shortName}</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1.5 px-2">
+          <div className="flex items-center gap-3">
+            <span className={`text-2xl font-black ${finished ? 'text-slate-800' : 'text-slate-200'}`}>
+              {match.homeScore ?? "0"}
+            </span>
+            <span className="text-slate-300 font-black text-sm">×</span>
+            <span className={`text-2xl font-black ${finished ? 'text-slate-800' : 'text-slate-200'}`}>
+              {match.awayScore ?? "0"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center gap-2">
+          <TeamBadge team={away} size="md" />
+          <span className="text-[10px] font-black text-slate-800 uppercase text-center leading-tight">{away?.shortName}</span>
+        </div>
       </div>
+
+      {isAdmin && onEdit && (
+        <div className="mt-3 pt-3 border-t border-slate-50 text-center">
+          <Button 
+            size="sm" 
+            onClick={() => onEdit(match)}
+            className="bg-slate-50 hover:bg-red hover:text-white text-slate-400 text-[9px] font-black uppercase px-4 py-1 rounded-xl transition-all shadow-sm active:scale-95"
+          >
+            {finished ? "Editar" : "Registrar"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1217,7 +1236,7 @@ export default function TournamentDetail() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           {groupData.map(({ gName, gMatches }) => (
-                            <div key={gName} className="space-y-1.5">
+                            <div key={gName} className="space-y-3">
                               {gMatches.filter(m => m.round === roundNum).map((m) => (
                                 <MatchCardCompact key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
                               ))}
