@@ -777,6 +777,7 @@ export default function TournamentDetail() {
   const handebolPrataThird = thirdPlaceMatches.filter((m: any) => m.bracket === "prata");
   const handebolOuroFinal = finalMatches.filter((m: any) => m.bracket === "ouro" || !m.bracket);
   const handebolPrataFinal = finalMatches.filter((m: any) => m.bracket === "prata");
+  const usesAdvancedSeries = tournament.modality === "handebol" || tournament.modality === "futsal";
 
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
@@ -965,14 +966,14 @@ export default function TournamentDetail() {
                 Gerar Semifinais
               </Button>
             )}
-            {(tournament.status === "semifinals" || (tournament.modality === "handebol" && tournament.status === "final")) && (
+            {(tournament.status === "semifinals" || (usesAdvancedSeries && tournament.status === "final")) && (
               <Button
                 size="sm"
                 className="bg-primary text-white font-bold hover:opacity-90"
                 onClick={() => generateFinal.mutate({ tournamentId })}
                 disabled={generateFinal.isPending}
               >
-                {tournament.modality === "handebol" ? "Gerar Próxima Fase" : "Gerar Final"}
+                {usesAdvancedSeries ? "Gerar Próxima Fase" : "Gerar Final"}
               </Button>
             )}
           </div>
@@ -1342,7 +1343,7 @@ export default function TournamentDetail() {
                   </section>
                 )}
 
-                {tournament.modality === "handebol" ? (
+                {usesAdvancedSeries ? (
                   <div className="grid gap-6 lg:grid-cols-2">
                     <section>
                       <h3 className="text-sm font-black uppercase tracking-wider text-red mb-3">Série Liga (Ouro)</h3>
@@ -1397,7 +1398,7 @@ export default function TournamentDetail() {
               </div>
             ) : (
               <div className="space-y-8 max-w-5xl">
-                {tournament.modality === "handebol" ? (
+                {usesAdvancedSeries ? (
                   <div className="grid gap-6 lg:grid-cols-2">
                     <section>
                       <h3 className="text-sm font-black uppercase tracking-wider text-red mb-3">Série Liga (Ouro)</h3>

@@ -455,7 +455,7 @@ const tournamentRouter = router({
         const gA = groupStandings["A"] || groupStandings[sortedGroupNames[0]] || [];
         const gB = groupStandings["B"] || groupStandings[sortedGroupNames[1]] || [];
 
-        if (tournament.modality === "handebol") {
+        if (tournament.modality === "handebol" || tournament.modality === "futsal") {
           if (teamList.length === 6) {
             if (gA.length < 3 || gB.length < 3)
               throw new TRPCError({ code: "BAD_REQUEST", message: "Cada grupo precisa de 3 equipes classificadas" });
@@ -488,7 +488,7 @@ const tournamentRouter = router({
           if (teamList.length === 4) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "No handebol com 4 equipes a premiação é por classificação geral (sem mata-mata).",
+              message: "Com 4 equipes, a premiação é por classificação geral (sem mata-mata).",
             });
           }
         }
@@ -531,7 +531,7 @@ const tournamentRouter = router({
         return m.homeTeamId;
       };
 
-      if (tournament.modality === "handebol") {
+      if (tournament.modality === "handebol" || tournament.modality === "futsal") {
         const allMatches = await getMatchesByTournament(input.tournamentId);
         const quarterOuro = allMatches
           .filter((m) => m.phase === "quarterfinal" && m.bracket === "ouro")
