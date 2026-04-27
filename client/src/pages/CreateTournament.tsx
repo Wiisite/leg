@@ -21,7 +21,7 @@ const DEFAULT_TEAMS = [
   { name: "Colégio Canada", shortName: "CDA", color: "#0e7490" },
 ];
 
-type TeamInput = { name: string; shortName: string; color: string };
+type TeamInput = { name: string; shortName: string; color: string; group?: "A" | "B" };
 
 export default function CreateTournament() {
   const { isAuthenticated, loading } = useAuth();
@@ -34,7 +34,7 @@ export default function CreateTournament() {
   const [pointsPerLoss, setPointsPerLoss] = useState(0);
   const [rounds, setRounds] = useState(5);
   const [teams, setTeams] = useState<(TeamInput & { logo?: string })[]>(
-    DEFAULT_TEAMS.map(t => ({ ...t, logo: "" }))
+    DEFAULT_TEAMS.map((t, i) => ({ ...t, logo: "", group: i % 2 === 0 ? "A" as const : "B" as const }))
   );
 
   const createMutation = trpc.tournament.create.useMutation({
@@ -46,7 +46,11 @@ export default function CreateTournament() {
   });
 
   const addTeam = () => {
-    setTeams([...teams, { name: "", shortName: "", color: "#1e3a8a", logo: "" }]);
+    // Atribui grupo automaticamente para balancear
+    const countA = teams.filter(t => t.group === "A").length;
+    const countB = teams.filter(t => t.group === "B").length;
+    const nextGroup: "A" | "B" = countA <= countB ? "A" : "B";
+    setTeams([...teams, { name: "", shortName: "", color: "#1e3a8a", logo: "", group: nextGroup }]);
   };
 
   const removeTeam = (i: number) => {
@@ -72,6 +76,11 @@ export default function CreateTournament() {
     if (teams.length < 2) return toast.error("Adicione pelo menos 2 equipes");
     const invalid = teams.find((t) => !t.name.trim() || !t.shortName.trim());
     if (invalid) return toast.error("Preencha nome e sigla de todas as equipes");
+    if (teams.length > 4) {
+      const gA = teams.filter(t => t.group === "A").length;
+      const gB = teams.filter(t => t.group === "B").length;
+      if (gA < 2 || gB < 2) return toast.error("Cada grupo precisa de no mínimo 2 equipes");
+    }
     createMutation.mutate({ 
       name, 
       category, 
@@ -84,7 +93,8 @@ export default function CreateTournament() {
         name: t.name,
         shortName: t.shortName,
         color: t.color || "#1e3a8a",
-        logo: t.logo
+        logo: t.logo,
+        group: teams.length > 4 ? (t.group || "A") : undefined,
       }))
     });
   };
@@ -344,7 +354,7 @@ export default function CreateTournament() {
                       placeholder="Nome do Colégio / Equipe"
                       className="flex-1 px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold min-w-0"
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       <input
                         type="text"
                         value={team.shortName}
@@ -354,6 +364,32 @@ export default function CreateTournament() {
                         placeholder="Sigla"
                         className="w-24 px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs text-center font-black tracking-widest"
                       />
+                      {teams.length > 4 && (
+                        <div className="flex gap-0.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => updateTeam(i, "group", "A")}
+                            className={`px-2.5 py-2 rounded-l-lg text-[10px] font-black uppercase transition-all border ${
+                              team.group === "A"
+                                ? "bg-red text-white border-red shadow-sm"
+                                : "bg-white text-slate-400 border-slate-200 hover:border-red/40"
+                            }`}
+                          >
+                            A
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateTeam(i, "group", "B")}
+                            className={`px-2.5 py-2 rounded-r-lg text-[10px] font-black uppercase transition-all border ${
+                              team.group === "B"
+                                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                : "bg-white text-slate-400 border-slate-200 hover:border-blue-400"
+                            }`}
+                          >
+                            B
+                          </button>
+                        </div>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"
@@ -380,12 +416,12 @@ export default function CreateTournament() {
           {(() => {
             const n = teams.length;
             const numGroups = n <= 4 ? 1 : 2;
-            const perGroup = numGroups === 1 ? n : Math.ceil(n / 2);
-            const perGroup2 = numGroups === 2 ? n - perGroup : 0;
             const matchesInGroup = (t: number) => (t * (t - 1)) / 2;
+            const gACount = numGroups >= 2 ? teams.filter(t => t.group === "A").length : n;
+            const gBCount = numGroups >= 2 ? teams.filter(t => t.group === "B").length : 0;
             const groupMatches = numGroups === 1 
-              ? matchesInGroup(perGroup)
-              : matchesInGroup(perGroup) + matchesInGroup(perGroup2);
+              ? matchesInGroup(gACount)
+              : matchesInGroup(gACount) + matchesInGroup(gBCount);
             const totalMatches = groupMatches + 3; // + 2 semis + 1 final
 
             return (
@@ -412,24 +448,46 @@ export default function CreateTournament() {
                   </div>
                 </div>
 
-                {numGroups >= 2 && (
-                  <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 mt-2">
-                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2">Divisão dos Grupos (automática no sorteio)</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-background/50 rounded-lg p-2 text-center">
-                        <span className="font-black text-blue-500">Grupo A</span>
-                        <p className="text-muted-foreground">{perGroup} equipes</p>
+                {numGroups >= 2 && (() => {
+                  const gA = teams.filter(t => t.group === "A");
+                  const gB = teams.filter(t => t.group === "B");
+                  const valid = gA.length >= 2 && gB.length >= 2;
+                  return (
+                    <div className={`border rounded-xl p-3 mt-2 ${valid ? "bg-blue-500/5 border-blue-500/20" : "bg-red-500/5 border-red-500/20"}`}>
+                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2">Divisão dos Grupos</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-background/50 rounded-lg p-2">
+                          <div className="text-center mb-1">
+                            <span className="font-black text-red">Grupo A</span>
+                            <span className="text-muted-foreground ml-1">({gA.length})</span>
+                          </div>
+                          <div className="space-y-0.5">
+                            {gA.map(t => (
+                              <p key={t.shortName} className="text-[10px] text-slate-600 text-center font-medium truncate">{t.name || t.shortName}</p>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="bg-background/50 rounded-lg p-2">
+                          <div className="text-center mb-1">
+                            <span className="font-black text-blue-600">Grupo B</span>
+                            <span className="text-muted-foreground ml-1">({gB.length})</span>
+                          </div>
+                          <div className="space-y-0.5">
+                            {gB.map(t => (
+                              <p key={t.shortName} className="text-[10px] text-slate-600 text-center font-medium truncate">{t.name || t.shortName}</p>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <div className="bg-background/50 rounded-lg p-2 text-center">
-                        <span className="font-black text-blue-500">Grupo B</span>
-                        <p className="text-muted-foreground">{perGroup2} equipes</p>
-                      </div>
+                      {!valid && (
+                        <p className="text-[10px] text-red-500 font-bold text-center mt-2">Cada grupo precisa de no mínimo 2 equipes</p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                        Semifinais: 1º Grupo A × 2º Grupo B &nbsp;|&nbsp; 1º Grupo B × 2º Grupo A
+                      </p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-2 text-center">
-                      Semifinais: 1º Grupo A × 2º Grupo B &nbsp;|&nbsp; 1º Grupo B × 2º Grupo A
-                    </p>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {numGroups === 1 && n <= 4 && (
                   <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-3 mt-2">
