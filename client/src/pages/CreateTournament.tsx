@@ -32,6 +32,7 @@ export default function CreateTournament() {
   const [pointsPerWin, setPointsPerWin] = useState(3);
   const [pointsPerDraw, setPointsPerDraw] = useState(1);
   const [pointsPerLoss, setPointsPerLoss] = useState(0);
+  const [homeAndAway, setHomeAndAway] = useState(false);
   const [rounds, setRounds] = useState(5);
   const [teams, setTeams] = useState<(TeamInput & { logo?: string })[]>(
     DEFAULT_TEAMS.map((t, i) => ({ ...t, logo: "", group: i % 2 === 0 ? "A" as const : "B" as const }))
@@ -86,6 +87,7 @@ export default function CreateTournament() {
       category, 
       modality, 
       rounds,
+      homeAndAway,
       pointsPerWin, 
       pointsPerDraw, 
       pointsPerLoss,
@@ -234,6 +236,24 @@ export default function CreateTournament() {
                   onChange={(e) => setRounds(Number(e.target.value))}
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold"
                 />
+              </div>
+
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Formato de Grupo Único (4 equipes)
+                </label>
+                <label className="w-full px-4 py-2.5 bg-background border border-border rounded-xl flex items-center justify-between cursor-pointer">
+                  <span className="text-sm text-foreground font-semibold">Ida e volta</span>
+                  <input
+                    type="checkbox"
+                    checked={homeAndAway}
+                    onChange={(e) => setHomeAndAway(e.target.checked)}
+                    className="h-4 w-4 accent-red"
+                  />
+                </label>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Quando habilitado e houver 4 equipes em grupo único, cada confronto será em ida e volta.
+                </p>
               </div>
 
               {modality === "volei" ? (
@@ -419,9 +439,11 @@ export default function CreateTournament() {
             const matchesInGroup = (t: number) => (t * (t - 1)) / 2;
             const gACount = numGroups >= 2 ? teams.filter(t => t.group === "A").length : n;
             const gBCount = numGroups >= 2 ? teams.filter(t => t.group === "B").length : 0;
-            const groupMatches = numGroups === 1 
+            const isSingleGroupFourTeams = numGroups === 1 && n === 4;
+            const baseGroupMatches = numGroups === 1
               ? matchesInGroup(gACount)
               : matchesInGroup(gACount) + matchesInGroup(gBCount);
+            const groupMatches = isSingleGroupFourTeams && homeAndAway ? baseGroupMatches * 2 : baseGroupMatches;
             const totalMatches = groupMatches + 3; // + 2 semis + 1 final
 
             return (
@@ -494,6 +516,11 @@ export default function CreateTournament() {
                     <p className="text-[10px] text-green-400 font-bold uppercase tracking-wider">
                       Grupo único — Todas as equipes jogam entre si
                     </p>
+                    {n === 4 && homeAndAway && (
+                      <p className="text-[10px] text-green-500 font-bold mt-1">
+                        Ida e volta ativo: cada duelo acontece 2 vezes.
+                      </p>
+                    )}
                     <p className="text-[10px] text-muted-foreground mt-1">
                       Semifinais: 1º × 4º &nbsp;|&nbsp; 2º × 3º
                     </p>

@@ -172,6 +172,7 @@ const tournamentRouter = router({
         pointsPerWin: z.number().default(3),
         pointsPerDraw: z.number().default(1),
         pointsPerLoss: z.number().default(0),
+        homeAndAway: z.boolean().default(false),
         rounds: z.number().default(5),
         teams: z
           .array(
@@ -194,7 +195,8 @@ const tournamentRouter = router({
         input.pointsPerWin,
         input.pointsPerDraw,
         input.pointsPerLoss,
-        input.rounds
+        input.rounds,
+        input.homeAndAway
       );
       
       for (const t of input.teams) {
@@ -220,6 +222,7 @@ const tournamentRouter = router({
           })
         ),
         rounds: z.number().default(5),
+        homeAndAway: z.boolean().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -227,12 +230,18 @@ const tournamentRouter = router({
       if (!db) throw new Error("DB not available");
 
       // 1. Atualiza dados básicos do torneio
-      await updateTournament(input.id, {
+      const tournamentUpdateData: Parameters<typeof updateTournament>[1] = {
         name: input.name,
         category: input.category,
         modality: input.modality,
         rounds: input.rounds,
-      });
+      };
+
+      if (input.homeAndAway !== undefined) {
+        tournamentUpdateData.homeAndAway = input.homeAndAway ? 1 : 0;
+      }
+
+      await updateTournament(input.id, tournamentUpdateData);
 
       // 2. Gerencia equipes
       const existingTeams = await getTeamsByTournament(input.id);
@@ -298,6 +307,7 @@ const tournamentRouter = router({
       const { updateTeamGroup } = await import("./db");
       const totalTeams = teamList.length;
       const numGroups = totalTeams <= 4 ? 1 : 2;
+      const shouldGenerateHomeAndAway = numGroups === 1 && totalTeams === 4 && (tournament.homeAndAway ?? 0) === 1;
       const groups: (typeof teamList)[] = [];
 
       if (input.mode === "manual" && input.manualGroups && numGroups >= 2) {
@@ -344,7 +354,7 @@ const tournamentRouter = router({
         const n = groupTeams.length;
         const fullRounds = n - 1;
         const matchesPerRound = n / 2;
-        const roundsToGenerate = tournament.rounds || fullRounds;
+        const roundsToGenerate = shouldGenerateHomeAndAway ? fullRounds : (tournament.rounds || fullRounds);
 
         for (let round = 1; round <= roundsToGenerate; round++) {
           for (let m = 0; m < matchesPerRound; m++) {
@@ -352,6 +362,9 @@ const tournamentRouter = router({
             const away = groupTeams[n - 1 - m];
             if (home.id !== -1 && away.id !== -1) {
               await createMatch(input.tournamentId, "group", home.id, away.id, round);
+              if (shouldGenerateHomeAndAway) {
+                await createMatch(input.tournamentId, "group", away.id, home.id, round + fullRounds);
+              }
             }
           }
           groupTeams.splice(1, 0, groupTeams.pop()!);
@@ -790,6 +803,13 @@ const seedRouter = router({
       results.push("Coluna bracket adicionada em matches!");
     } catch (e: any) {
       results.push("matches.bracket: " + e.message);
+    }
+    // Coluna homeAndAway em tournaments
+    try {
+      await db.execute(sql`ALTER TABLE tournaments ADD COLUMN homeAndAway INT NOT NULL DEFAULT 0`);
+      results.push("Coluna homeAndAway adicionada em tournaments!");
+    } catch (e: any) {
+      results.push("tournaments.homeAndAway: " + e.message);
     }
     // Atualiza enum de phase em matches
     try {

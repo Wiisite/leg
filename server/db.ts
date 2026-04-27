@@ -34,6 +34,7 @@ export async function getDb() {
           await fixColumn("teams", "logo", "TEXT NULL");
           await fixColumn("teams", "groupName", "VARCHAR(2) NULL");
           await fixColumn("matches", "bracket", "ENUM('ouro','prata') NULL");
+          await fixColumn("tournaments", "homeAndAway", "INT NOT NULL DEFAULT 0");
           await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
           await fixColumn("users", "password", "TEXT NULL");
 
@@ -156,7 +157,8 @@ export async function createTournament(
   pointsPerWin: number = 3,
   pointsPerDraw: number = 1,
   pointsPerLoss: number = 0,
-  rounds: number = 5
+  rounds: number = 5,
+  homeAndAway: boolean = false
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -167,6 +169,7 @@ export async function createTournament(
     pointsPerWin,
     pointsPerDraw,
     pointsPerLoss,
+    homeAndAway: homeAndAway ? 1 : 0,
     rounds,
     status: "pending",
   });
@@ -188,7 +191,13 @@ export async function updateTournamentStatus(
 
 export async function updateTournament(
   id: number,
-  data: { name?: string; category?: string; modality?: "futsal" | "basquete" | "volei" | "handebol"; rounds?: number }
+  data: {
+    name?: string;
+    category?: string;
+    modality?: "futsal" | "basquete" | "volei" | "handebol";
+    rounds?: number;
+    homeAndAway?: number;
+  }
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
