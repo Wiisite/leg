@@ -31,21 +31,18 @@ async function startServer() {
   const app = express();
   app.set("trust proxy", true);
   const server = createServer(app);
+
+  // Health check endpoint — FIRST, before everything else
+  app.get("/api/health", (_req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
-  const port = parseInt(process.env.PORT || "3000");
-
-  server.listen(port, "0.0.0.0", () => {
-    console.log(`[Server] Listening on port ${port} (Production: ${process.env.NODE_ENV === "production"})`);
-  });
-
-  // Health check endpoint (must be before tRPC and static files)
-  app.get("/api/health", (req, res) => {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
-  });
 
   // tRPC API
   app.use(
@@ -61,6 +58,20 @@ async function startServer() {
     await setupVite(app, server);
   } else {
     serveStatic(app);
+  }
+
+  const port = parseInt(process.env.PORT || "3000");
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`[Server] Listening on port ${port} (Production: ${process.env.NODE_ENV === "production"})`);
+  });
+
+  // Pre-warm database connection so migrations run immediately
+  try {
+    const { getDb } = await import("../db");
+    await getDb();
+    console.log("[Server] Database connection established.");
+  } catch (e) {
+    console.error("[Server] Database pre-warm failed (non-fatal):", e);
   }
 }
 
