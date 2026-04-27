@@ -276,6 +276,43 @@ function MatchCard({
   );
 }
 
+function MatchCardCompact({
+  match,
+  teams,
+  isAdmin,
+  onEdit,
+}: {
+  match: MatchForModal;
+  teams: any[];
+  isAdmin: boolean;
+  onEdit?: (m: MatchForModal) => void;
+}) {
+  const home = teams.find((t) => t.id === match.homeTeamId);
+  const away = teams.find((t) => t.id === match.awayTeamId);
+  const finished = match.homeScore !== null;
+
+  return (
+    <div
+      className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
+      onClick={() => isAdmin && onEdit && onEdit(match)}
+    >
+      <div className="flex items-center gap-2">
+        <TeamBadge team={home} size="sm" />
+        <span className="text-[10px] font-black text-slate-700 uppercase truncate flex-1 min-w-0">{home?.shortName || home?.name}</span>
+        <span className={`text-sm font-black min-w-[1.2rem] text-right ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
+          {match.homeScore ?? "-"}
+        </span>
+        <span className="text-slate-300 text-[10px] font-black">×</span>
+        <span className={`text-sm font-black min-w-[1.2rem] text-left ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
+          {match.awayScore ?? "-"}
+        </span>
+        <span className="text-[10px] font-black text-slate-700 uppercase truncate flex-1 min-w-0 text-right">{away?.shortName || away?.name}</span>
+        <TeamBadge team={away} size="sm" />
+      </div>
+    </div>
+  );
+}
+
 function StandingsTable({ standings, modality }: { standings: any[]; modality?: string }) {
   const isVolei = modality === "volei";
   return (
@@ -1148,45 +1185,47 @@ export default function TournamentDetail() {
                   );
                 }
 
-                // Múltiplos grupos — exibe separado por grupo
+                // Múltiplos grupos — lado a lado, compacto por rodada
+                const groupData = uniqueGroups.map((gName: string) => {
+                  const groupTeamIds = new Set(teams.filter(t => (t as any).groupName === gName).map(t => t.id));
+                  const gMatches = groupMatches.filter(m => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId));
+                  const rounds = gMatches.map(m => m.round).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
+                  return { gName, gMatches, rounds };
+                });
+                const allRounds = groupData.flatMap(g => g.rounds).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
+
                 return (
-                  <div className="space-y-16">
-                    {uniqueGroups.map((gName: string) => {
-                      const groupTeamIds = new Set(teams.filter(t => (t as any).groupName === gName).map(t => t.id));
-                      const gMatches = groupMatches.filter(m => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId));
-                      const rounds = gMatches.map(m => m.round).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
-
-                      return (
-                        <div key={gName}>
-                          <div className="flex items-center gap-4 mb-8">
-                            <div className="h-px flex-1 bg-red/20" />
-                            <h3 className="text-sm font-black text-red uppercase tracking-[0.3em] bg-red/5 px-6 py-2 rounded-full border border-red/20 shadow-sm">
-                              Grupo {gName}
-                            </h3>
-                            <div className="h-px flex-1 bg-red/20" />
-                          </div>
-
-                          <div className="space-y-10">
-                            {rounds.map(roundNum => (
-                              <div key={roundNum}>
-                                <div className="flex items-center gap-4 mb-6">
-                                  <div className="h-px flex-1 bg-slate-200" />
-                                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50 px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                                    {roundNum}ª Rodada
-                                  </h3>
-                                  <div className="h-px flex-1 bg-slate-200" />
-                                </div>
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                  {gMatches.filter(m => m.round === roundNum).map((m) => (
-                                    <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                  <div className="space-y-6">
+                    {/* Group Headers */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {groupData.map(({ gName }) => (
+                        <div key={gName} className={`text-center py-2 rounded-xl border font-black text-xs uppercase tracking-[0.2em] ${
+                          gName === "A" ? "bg-red/5 border-red/20 text-red" : "bg-blue-500/5 border-blue-500/20 text-blue-600"
+                        }`}>
+                          Grupo {gName}
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
+
+                    {/* Rounds side by side */}
+                    {allRounds.map(roundNum => (
+                      <div key={roundNum}>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="h-px flex-1 bg-slate-200" />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{roundNum}ª Rodada</span>
+                          <div className="h-px flex-1 bg-slate-200" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          {groupData.map(({ gName, gMatches }) => (
+                            <div key={gName} className="space-y-1.5">
+                              {gMatches.filter(m => m.round === roundNum).map((m) => (
+                                <MatchCardCompact key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 );
               })()
