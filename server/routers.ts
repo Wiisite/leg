@@ -423,48 +423,88 @@ const tournamentRouter = router({
   generateSemifinals: protectedProcedure
     .input(z.object({ tournamentId: z.number() }),)
     .mutation(async ({ input }) => {
+      const tournament = await getTournamentById(input.tournamentId);
+      if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
       const teamList = await getTeamsByTournament(input.tournamentId);
       const groupMatches = await getMatchesByPhase(input.tournamentId, "group");
       const unfinished = groupMatches.filter((m) => m.status !== "finished");
       if (unfinished.length > 0)
         throw new TRPCError({ code: "BAD_REQUEST", message: "Ainda há partidas da fase de grupos em aberto" });
-      const existing = await getMatchesByPhase(input.tournamentId, "semifinal");
-      if (existing.length > 0)
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Semifinais já geradas" });
+
+      const allMatches = await getMatchesByTournament(input.tournamentId);
+      const existingKnockout = allMatches.filter((m) => m.phase !== "group");
+      if (existingKnockout.length > 0)
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Mata-mata já gerado" });
 
       const groupNames = teamList.map(t => t.groupName).filter((g): g is string => g != null).filter((v, i, a) => a.indexOf(v) === i);
 
       if (groupNames.length >= 2) {
-        // Cruzamento entre grupos: 1º A vs 2º B, 1º B vs 2º A
         const groupStandings: Record<string, ReturnType<typeof computeStandings>> = {};
-        for (const gName of groupNames.sort()) {
+        const sortedGroupNames = [...groupNames].sort();
+        for (const gName of sortedGroupNames) {
           const gTeams = teamList.filter(t => t.groupName === gName);
           const gTeamIds = new Set(gTeams.map(t => t.id));
           const gMatches = groupMatches.filter(m => gTeamIds.has(m.homeTeamId) && gTeamIds.has(m.awayTeamId));
-          const tournament = await getTournamentById(input.tournamentId);
           groupStandings[gName] = computeStandings(
             gTeams, gMatches,
-            tournament!.pointsPerWin, tournament!.pointsPerDraw, tournament!.pointsPerLoss,
-            tournament!.modality
+            tournament.pointsPerWin, tournament.pointsPerDraw, tournament.pointsPerLoss,
+            tournament.modality
           );
         }
 
-        const gA = groupStandings["A"] || [];
-        const gB = groupStandings["B"] || [];
+        const gA = groupStandings["A"] || groupStandings[sortedGroupNames[0]] || [];
+        const gB = groupStandings["B"] || groupStandings[sortedGroupNames[1]] || [];
+
+        if (tournament.modality === "handebol") {
+          if (teamList.length === 6) {
+            if (gA.length < 3 || gB.length < 3)
+              throw new TRPCError({ code: "BAD_REQUEST", message: "Cada grupo precisa de 3 equipes classificadas" });
+
+            // Série Liga (Ouro)
+            await createMatch(input.tournamentId, "semifinal", gA[0].teamId, gB[1].teamId, 1, "ouro");
+            await createMatch(input.tournamentId, "semifinal", gA[1].teamId, gB[0].teamId, 2, "ouro");
+
+            // Série Paulista (Prata) semifinal única
+            await createMatch(input.tournamentId, "semifinal", gA[2].teamId, gB[2].teamId, 1, "prata");
+
+            await updateTournamentStatus(input.tournamentId, "semifinals");
+            return { ok: true };
+          }
+
+          if (teamList.length === 8) {
+            if (gA.length < 4 || gB.length < 4)
+              throw new TRPCError({ code: "BAD_REQUEST", message: "Cada grupo precisa de 4 equipes classificadas" });
+
+            // Quartas de final (Série Liga - Ouro)
+            await createMatch(input.tournamentId, "quarterfinal", gA[0].teamId, gB[3].teamId, 1, "ouro");
+            await createMatch(input.tournamentId, "quarterfinal", gA[1].teamId, gB[2].teamId, 2, "ouro");
+            await createMatch(input.tournamentId, "quarterfinal", gA[2].teamId, gB[1].teamId, 3, "ouro");
+            await createMatch(input.tournamentId, "quarterfinal", gA[3].teamId, gB[0].teamId, 4, "ouro");
+
+            await updateTournamentStatus(input.tournamentId, "semifinals");
+            return { ok: true };
+          }
+
+          if (teamList.length === 4) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "No handebol com 4 equipes a premiação é por classificação geral (sem mata-mata).",
+            });
+          }
+        }
+
+        // Padrão (demais modalidades): 1º A vs 2º B, 1º B vs 2º A
         if (gA.length < 2 || gB.length < 2)
           throw new TRPCError({ code: "BAD_REQUEST", message: "Cada grupo precisa de ao menos 2 equipes classificadas" });
 
-        // Semi 1: 1º Grupo A vs 2º Grupo B
         await createMatch(input.tournamentId, "semifinal", gA[0].teamId, gB[1].teamId, 1);
-        // Semi 2: 1º Grupo B vs 2º Grupo A
         await createMatch(input.tournamentId, "semifinal", gB[0].teamId, gA[1].teamId, 2);
       } else {
         // Grupo único — 1º vs 4º, 2º vs 3º
-        const tournament = await getTournamentById(input.tournamentId);
         const standings = computeStandings(
           teamList, groupMatches,
-          tournament!.pointsPerWin, tournament!.pointsPerDraw, tournament!.pointsPerLoss,
-          tournament!.modality
+          tournament.pointsPerWin, tournament.pointsPerDraw, tournament.pointsPerLoss,
+          tournament.modality
         );
         if (standings.length < 4)
           throw new TRPCError({ code: "BAD_REQUEST", message: "São necessárias ao menos 4 equipes" });
@@ -479,6 +519,115 @@ const tournamentRouter = router({
   generateFinal: protectedProcedure
     .input(z.object({ tournamentId: z.number() }),)
     .mutation(async ({ input }) => {
+      const tournament = await getTournamentById(input.tournamentId);
+      if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
+
+      const getWinner = (m: { homeScore: number | null; awayScore: number | null; homeTeamId: number; awayTeamId: number }) => {
+        if ((m.homeScore ?? 0) >= (m.awayScore ?? 0)) return m.homeTeamId;
+        return m.awayTeamId;
+      };
+      const getLoser = (m: { homeScore: number | null; awayScore: number | null; homeTeamId: number; awayTeamId: number }) => {
+        if ((m.homeScore ?? 0) >= (m.awayScore ?? 0)) return m.awayTeamId;
+        return m.homeTeamId;
+      };
+
+      if (tournament.modality === "handebol") {
+        const allMatches = await getMatchesByTournament(input.tournamentId);
+        const quarterOuro = allMatches
+          .filter((m) => m.phase === "quarterfinal" && m.bracket === "ouro")
+          .sort((a, b) => a.round - b.round);
+
+        // Fluxo com 8 equipes: quartas -> semis (ouro/prata) -> finais (ouro/prata)
+        if (quarterOuro.length === 4) {
+          if (quarterOuro.some((m) => m.status !== "finished")) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Ainda há quartas de final em aberto" });
+          }
+
+          const semisOuro = allMatches.filter((m) => m.phase === "semifinal" && m.bracket === "ouro");
+          const semisPrata = allMatches.filter((m) => m.phase === "semifinal" && m.bracket === "prata");
+
+          if (semisOuro.length === 0 && semisPrata.length === 0) {
+            const q1 = quarterOuro.find((m) => m.round === 1)!;
+            const q2 = quarterOuro.find((m) => m.round === 2)!;
+            const q3 = quarterOuro.find((m) => m.round === 3)!;
+            const q4 = quarterOuro.find((m) => m.round === 4)!;
+
+            await createMatch(input.tournamentId, "semifinal", getWinner(q1), getWinner(q3), 1, "ouro");
+            await createMatch(input.tournamentId, "semifinal", getWinner(q2), getWinner(q4), 2, "ouro");
+            await createMatch(input.tournamentId, "semifinal", getLoser(q1), getLoser(q3), 1, "prata");
+            await createMatch(input.tournamentId, "semifinal", getLoser(q2), getLoser(q4), 2, "prata");
+            await updateTournamentStatus(input.tournamentId, "semifinals");
+            return { ok: true };
+          }
+
+          if (semisOuro.some((m) => m.status !== "finished") || semisPrata.some((m) => m.status !== "finished")) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Ainda há semifinais em aberto" });
+          }
+
+          const existingFinals = allMatches.filter(
+            (m) => (m.phase === "final" || m.phase === "third_place") && (m.bracket === "ouro" || m.bracket === "prata")
+          );
+          if (existingFinals.length > 0) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Finais já geradas" });
+          }
+
+          const so1 = semisOuro.find((m) => m.round === 1)!;
+          const so2 = semisOuro.find((m) => m.round === 2)!;
+          const sp1 = semisPrata.find((m) => m.round === 1)!;
+          const sp2 = semisPrata.find((m) => m.round === 2)!;
+
+          await createMatch(input.tournamentId, "third_place", getLoser(so1), getLoser(so2), 1, "ouro");
+          await createMatch(input.tournamentId, "final", getWinner(so1), getWinner(so2), 1, "ouro");
+          await createMatch(input.tournamentId, "third_place", getLoser(sp1), getLoser(sp2), 1, "prata");
+          await createMatch(input.tournamentId, "final", getWinner(sp1), getWinner(sp2), 1, "prata");
+          await updateTournamentStatus(input.tournamentId, "final");
+          return { ok: true };
+        }
+
+        // Fluxo com 6 equipes: semis ouro + semi prata -> finais ouro -> final prata
+        const semisOuro = allMatches
+          .filter((m) => m.phase === "semifinal" && m.bracket === "ouro")
+          .sort((a, b) => a.round - b.round);
+        const semiPrata = allMatches.find((m) => m.phase === "semifinal" && m.bracket === "prata");
+
+        if (semisOuro.length >= 2 && semiPrata) {
+          if (semisOuro.some((m) => m.status !== "finished") || semiPrata.status !== "finished") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Ainda há semifinais em aberto" });
+          }
+
+          const finalsOuro = allMatches.filter((m) => m.phase === "final" && m.bracket === "ouro");
+          const thirdOuro = allMatches.filter((m) => m.phase === "third_place" && m.bracket === "ouro");
+          const finalPrata = allMatches.filter((m) => m.phase === "final" && m.bracket === "prata");
+
+          if (finalsOuro.length === 0 && thirdOuro.length === 0) {
+            const so1 = semisOuro.find((m) => m.round === 1)!;
+            const so2 = semisOuro.find((m) => m.round === 2)!;
+            await createMatch(input.tournamentId, "third_place", getLoser(so1), getLoser(so2), 1, "ouro");
+            await createMatch(input.tournamentId, "final", getWinner(so1), getWinner(so2), 1, "ouro");
+            await updateTournamentStatus(input.tournamentId, "final");
+            return { ok: true };
+          }
+
+          if (finalPrata.length === 0) {
+            const third = thirdOuro[0];
+            if (!third || third.status !== "finished") {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Finalize a disputa de 3º da Série Liga para gerar a final da Série Paulista",
+              });
+            }
+
+            const quartaSerieLiga = getLoser(third);
+            const vencedorPrata = getWinner(semiPrata);
+            await createMatch(input.tournamentId, "final", quartaSerieLiga, vencedorPrata, 1, "prata");
+            await updateTournamentStatus(input.tournamentId, "final");
+            return { ok: true };
+          }
+
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Finais já geradas" });
+        }
+      }
+
       const semis = await getMatchesByPhase(input.tournamentId, "semifinal");
       const unfinished = semis.filter((m) => m.status !== "finished");
       if (unfinished.length > 0)
@@ -486,12 +635,6 @@ const tournamentRouter = router({
       const existing = await getMatchesByPhase(input.tournamentId, "final");
       if (existing.length > 0)
         throw new TRPCError({ code: "BAD_REQUEST", message: "Final já gerada" });
-      // Determine winners of each semi
-      const getWinner = (m: typeof semis[0]) => {
-        if (m.homeScore! > m.awayScore!) return m.homeTeamId;
-        if (m.awayScore! > m.homeScore!) return m.awayTeamId;
-        return m.homeTeamId; // tie-break: home advances
-      };
       const semi1 = semis.find((m) => m.round === 1)!;
       const semi2 = semis.find((m) => m.round === 2)!;
       const finalist1 = getWinner(semi1);
@@ -514,7 +657,9 @@ const tournamentRouter = router({
       });
       return {
         group: allMatches.filter((m) => m.phase === "group").map(enrich),
+        quarterfinal: allMatches.filter((m) => m.phase === "quarterfinal").map(enrich),
         semifinal: allMatches.filter((m) => m.phase === "semifinal").map(enrich),
+        third_place: allMatches.filter((m) => m.phase === "third_place").map(enrich),
         final: allMatches.filter((m) => m.phase === "final").map(enrich),
       };
     }),
@@ -550,8 +695,8 @@ const matchRouter = router({
         })
         .where(eq(matches.id, input.matchId));
 
-      // If final match finished, set champion
-      if (match.phase === "final" && input.homeScore !== undefined && input.awayScore !== undefined) {
+      // If Ouro final match finished, set champion
+      if (match.phase === "final" && match.bracket !== "prata" && input.homeScore !== undefined && input.awayScore !== undefined) {
         const winner =
           input.homeScore >= input.awayScore ? match.homeTeamId : match.awayTeamId;
         const teamList = await getTeamsByTournament(match.tournamentId);
@@ -593,6 +738,20 @@ const seedRouter = router({
       results.push("Coluna groupName adicionada!");
     } catch (e: any) {
       results.push("groupName: " + e.message);
+    }
+    // Coluna bracket em matches
+    try {
+      await db.execute(sql`ALTER TABLE matches ADD COLUMN bracket ENUM('ouro','prata') NULL`);
+      results.push("Coluna bracket adicionada em matches!");
+    } catch (e: any) {
+      results.push("matches.bracket: " + e.message);
+    }
+    // Atualiza enum de phase em matches
+    try {
+      await db.execute(sql.raw("ALTER TABLE matches MODIFY COLUMN phase ENUM('group','quarterfinal','semifinal','third_place','final') NOT NULL"));
+      results.push("Enum phase de matches atualizado!");
+    } catch (e: any) {
+      results.push("matches.phase: " + e.message);
     }
     return { success: true, message: results.join(" | ") };
   }),

@@ -33,8 +33,19 @@ export async function getDb() {
 
           await fixColumn("teams", "logo", "TEXT NULL");
           await fixColumn("teams", "groupName", "VARCHAR(2) NULL");
+          await fixColumn("matches", "bracket", "ENUM('ouro','prata') NULL");
           await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
           await fixColumn("users", "password", "TEXT NULL");
+
+          try {
+            await _db!.execute(
+              sql.raw(
+                "ALTER TABLE matches MODIFY COLUMN phase ENUM('group','quarterfinal','semifinal','third_place','final') NOT NULL"
+              )
+            );
+          } catch (e) {
+            // Ignora erro caso o tipo já esteja atualizado
+          }
           
           _migrated = true;
           console.log("[Database] Schema check completed.");
@@ -224,7 +235,7 @@ export async function getMatchesByTournament(tournamentId: number) {
 
 export async function getMatchesByPhase(
   tournamentId: number,
-  phase: "group" | "semifinal" | "final"
+  phase: "group" | "quarterfinal" | "semifinal" | "third_place" | "final"
 ) {
   const db = await getDb();
   if (!db) return [];
@@ -236,14 +247,15 @@ export async function getMatchesByPhase(
 
 export async function createMatch(
   tournamentId: number,
-  phase: "group" | "semifinal" | "final",
+  phase: "group" | "quarterfinal" | "semifinal" | "third_place" | "final",
   homeTeamId: number,
   awayTeamId: number,
-  round: number
+  round: number,
+  bracket?: "ouro" | "prata"
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.insert(matches).values({ tournamentId, phase, homeTeamId, awayTeamId, round });
+  await db.insert(matches).values({ tournamentId, phase, homeTeamId, awayTeamId, round, bracket });
 }
 
 export async function updateMatchScore(

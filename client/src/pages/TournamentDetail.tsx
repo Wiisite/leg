@@ -766,8 +766,17 @@ export default function TournamentDetail() {
 
   const { tournament, teams, matches } = data;
   const groupMatches = matches.filter((m) => m.phase === "group");
+  const quarterMatches = matches.filter((m) => m.phase === "quarterfinal");
   const semiMatches = matches.filter((m) => m.phase === "semifinal");
+  const thirdPlaceMatches = matches.filter((m) => m.phase === "third_place");
   const finalMatches = matches.filter((m) => m.phase === "final");
+
+  const handebolOuroSemi = semiMatches.filter((m: any) => m.bracket === "ouro");
+  const handebolPrataSemi = semiMatches.filter((m: any) => m.bracket === "prata");
+  const handebolOuroThird = thirdPlaceMatches.filter((m: any) => m.bracket === "ouro");
+  const handebolPrataThird = thirdPlaceMatches.filter((m: any) => m.bracket === "prata");
+  const handebolOuroFinal = finalMatches.filter((m: any) => m.bracket === "ouro" || !m.bracket);
+  const handebolPrataFinal = finalMatches.filter((m: any) => m.bracket === "prata");
 
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
@@ -956,14 +965,14 @@ export default function TournamentDetail() {
                 Gerar Semifinais
               </Button>
             )}
-            {tournament.status === "semifinals" && (
+            {(tournament.status === "semifinals" || (tournament.modality === "handebol" && tournament.status === "final")) && (
               <Button
                 size="sm"
                 className="bg-primary text-white font-bold hover:opacity-90"
                 onClick={() => generateFinal.mutate({ tournamentId })}
                 disabled={generateFinal.isPending}
               >
-                Gerar Final
+                {tournament.modality === "handebol" ? "Gerar Próxima Fase" : "Gerar Final"}
               </Button>
             )}
           </div>
@@ -1307,28 +1316,65 @@ export default function TournamentDetail() {
         {activeTab === "semifinals" && (
           <div>
             <h2 className="font-display text-xl font-semibold text-foreground mb-6">
-              Semifinais
+              Fase Eliminatória
             </h2>
-            {semiMatches.length === 0 ? (
+            {quarterMatches.length === 0 && semiMatches.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-border/40 rounded-2xl">
                 <Swords className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm">
                   {isAuthenticated
                     ? 'Conclua a fase de grupos e clique em "Gerar Semifinais"'
-                    : "Semifinais ainda não geradas"}
+                    : "Fase eliminatória ainda não gerada"}
                 </p>
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 max-w-2xl">
-                {semiMatches.map((m) => (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    teams={teams}
-                    isAdmin={isAuthenticated}
-                    onEdit={setEditingMatch}
-                  />
-                ))}
+              <div className="space-y-8 max-w-5xl">
+                {quarterMatches.length > 0 && (
+                  <section>
+                    <h3 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-3">Quartas de Final</h3>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {quarterMatches
+                        .sort((a, b) => a.round - b.round)
+                        .map((m) => (
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                        ))}
+                    </div>
+                  </section>
+                )}
+
+                {tournament.modality === "handebol" ? (
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <section>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-red mb-3">Série Liga (Ouro)</h3>
+                      <div className="space-y-3">
+                        {handebolOuroSemi
+                          .sort((a, b) => a.round - b.round)
+                          .map((m) => (
+                            <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                          ))}
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-blue-600 mb-3">Série Paulista (Prata)</h3>
+                      <div className="space-y-3">
+                        {handebolPrataSemi
+                          .sort((a, b) => a.round - b.round)
+                          .map((m) => (
+                            <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                          ))}
+                      </div>
+                    </section>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2 max-w-2xl">
+                    {semiMatches
+                      .sort((a, b) => a.round - b.round)
+                      .map((m) => (
+                        <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                      ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1338,9 +1384,9 @@ export default function TournamentDetail() {
         {activeTab === "final" && (
           <div>
             <h2 className="font-display text-xl font-semibold text-foreground mb-6">
-              Grande Final
+              Finais
             </h2>
-            {finalMatches.length === 0 ? (
+            {finalMatches.length === 0 && thirdPlaceMatches.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-border/40 rounded-2xl">
                 <Star className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm">
@@ -1350,16 +1396,41 @@ export default function TournamentDetail() {
                 </p>
               </div>
             ) : (
-              <div className="max-w-md">
-                {finalMatches.map((m) => (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    teams={teams}
-                    isAdmin={isAuthenticated}
-                    onEdit={setEditingMatch}
-                  />
-                ))}
+              <div className="space-y-8 max-w-5xl">
+                {tournament.modality === "handebol" ? (
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <section>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-red mb-3">Série Liga (Ouro)</h3>
+                      <div className="space-y-3">
+                        {handebolOuroThird.map((m) => (
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                        ))}
+                        {handebolOuroFinal.map((m) => (
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                        ))}
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-blue-600 mb-3">Série Paulista (Prata)</h3>
+                      <div className="space-y-3">
+                        {handebolPrataThird.map((m) => (
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                        ))}
+                        {handebolPrataFinal.map((m) => (
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+                ) : (
+                  <div className="max-w-md">
+                    {finalMatches.map((m) => (
+                      <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                    ))}
+                  </div>
+                )}
+
                 <div className="mt-8 text-center">
                   <div className="inline-flex flex-col items-center gap-3 px-10 py-8 rounded-3xl bg-slate-50 border-2 border-red/10 shadow-xl">
                     <div className="w-16 h-16 rounded-full bg-red/10 flex items-center justify-center mb-2">
@@ -1370,7 +1441,7 @@ export default function TournamentDetail() {
                         Grande Campeão
                       </p>
                       <p className="font-display text-3xl font-bold text-primary">
-                        {tournament.champion}
+                        {tournament.champion || "A definir"}
                       </p>
                     </div>
                   </div>

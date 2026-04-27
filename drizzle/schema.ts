@@ -69,7 +69,8 @@ export type InsertTeam = typeof teams.$inferInsert;
 export const matches = mysqlTable("matches", {
   id: int("id").autoincrement().primaryKey(),
   tournamentId: int("tournamentId").notNull(),
-  phase: mysqlEnum("phase", ["group", "semifinal", "final"]).notNull(),
+  phase: mysqlEnum("phase", ["group", "quarterfinal", "semifinal", "third_place", "final"]).notNull(),
+  bracket: mysqlEnum("bracket", ["ouro", "prata"]),
   round: int("round").default(1).notNull(),
   homeTeamId: int("homeTeamId").notNull(),
   awayTeamId: int("awayTeamId").notNull(),
