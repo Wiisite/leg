@@ -457,11 +457,11 @@ export default function CreateTournament() {
             </Button>
             <Button
               type="submit"
-              className="flex-1 gradient-gold text-amber-950 font-semibold hover:opacity-90 shadow-gold"
+              className="flex-1 bg-red text-white font-bold hover:opacity-90 shadow-xl shadow-red/20"
               disabled={createMutation.isPending}
             >
               {createMutation.isPending ? (
-                <div className="w-4 h-4 rounded-full border-2 border-amber-950 border-t-transparent animate-spin mr-2" />
+                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mr-2" />
               ) : (
                 <Trophy className="w-4 h-4 mr-2" />
               )}

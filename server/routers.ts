@@ -272,7 +272,16 @@ const tournamentRouter = router({
     }),
 
   generateGroupMatches: protectedProcedure
-    .input(z.object({ tournamentId: z.number() }),)
+    .input(z.object({
+      tournamentId: z.number(),
+      // Modo: "auto" = sorteio automático, "manual" = admin escolheu os grupos
+      mode: z.enum(["auto", "manual"]).default("auto"),
+      // Apenas usado no modo manual: { teamId: number, group: "A" | "B" }
+      manualGroups: z.array(z.object({
+        teamId: z.number(),
+        group: z.string(),
+      })).optional(),
+    }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("DB Error");
@@ -285,38 +294,48 @@ const tournamentRouter = router({
       const existing = await getMatchesByPhase(input.tournamentId, "group");
       if (existing.length > 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Confrontos já gerados" });
 
-      // Sorteio (shuffle) das equipes
-      const shuffledTeams = [...teamList].sort(() => Math.random() - 0.5);
-
-      // Divide em grupos: 4 equipes = 1 grupo, 6+ = 2 grupos
       const { updateTeamGroup } = await import("./db");
-      const totalTeams = shuffledTeams.length;
+      const totalTeams = teamList.length;
       const numGroups = totalTeams <= 4 ? 1 : 2;
-      const groups: (typeof shuffledTeams)[] = [];
+      const groups: (typeof teamList)[] = [];
 
-      if (numGroups === 1) {
-        groups.push(shuffledTeams);
-        for (const t of shuffledTeams) {
-          await updateTeamGroup(t.id, "A");
+      if (input.mode === "manual" && input.manualGroups && numGroups >= 2) {
+        // ── Modo manual: admin definiu os grupos ──
+        const groupMap = new Map(input.manualGroups.map(g => [g.teamId, g.group]));
+        const groupA = teamList.filter(t => groupMap.get(t.id) === "A");
+        const groupB = teamList.filter(t => groupMap.get(t.id) === "B");
+
+        if (groupA.length < 2 || groupB.length < 2) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cada grupo precisa de no mínimo 2 equipes" });
         }
-      } else {
-        // Divide equipes alternadamente para equilibrar os grupos
-        const groupA: typeof shuffledTeams = [];
-        const groupB: typeof shuffledTeams = [];
-        shuffledTeams.forEach((t, i) => {
-          if (i % 2 === 0) groupA.push(t);
-          else groupB.push(t);
-        });
+
         groups.push(groupA, groupB);
         for (const t of groupA) await updateTeamGroup(t.id, "A");
         for (const t of groupB) await updateTeamGroup(t.id, "B");
+      } else {
+        // ── Modo automático: sorteio ──
+        const shuffledTeams = [...teamList].sort(() => Math.random() - 0.5);
+
+        if (numGroups === 1) {
+          groups.push(shuffledTeams);
+          for (const t of shuffledTeams) await updateTeamGroup(t.id, "A");
+        } else {
+          const groupA: typeof shuffledTeams = [];
+          const groupB: typeof shuffledTeams = [];
+          shuffledTeams.forEach((t, i) => {
+            if (i % 2 === 0) groupA.push(t);
+            else groupB.push(t);
+          });
+          groups.push(groupA, groupB);
+          for (const t of groupA) await updateTeamGroup(t.id, "A");
+          for (const t of groupB) await updateTeamGroup(t.id, "B");
+        }
       }
 
       // Gera round-robin para cada grupo
       const GROUP_NAMES = ["A", "B"];
       for (let g = 0; g < groups.length; g++) {
         const groupTeams = [...groups[g]];
-        // BYE se número ímpar no grupo
         if (groupTeams.length % 2 !== 0) {
           groupTeams.push({ id: -1, name: "BYE", shortName: "BYE", color: "#000", tournamentId: input.tournamentId, createdAt: new Date(), logo: null, groupName: GROUP_NAMES[g] } as any);
         }
@@ -334,7 +353,6 @@ const tournamentRouter = router({
               await createMatch(input.tournamentId, "group", home.id, away.id, round);
             }
           }
-          // Rotate (keep first fixed)
           groupTeams.splice(1, 0, groupTeams.pop()!);
         }
       }

@@ -20,7 +20,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
@@ -611,6 +611,9 @@ export default function TournamentDetail() {
   const [activeTab, setActiveTab] = useState<Tab>("groups");
   const [isEditingTournament, setIsEditingTournament] = useState(false);
   const [editingMatch, setEditingMatch] = useState<null | MatchForModal>(null);
+  const [showGroupSetup, setShowGroupSetup] = useState(false);
+  const [groupMode, setGroupMode] = useState<"auto" | "manual">("auto");
+  const [manualAssignment, setManualAssignment] = useState<Record<number, "A" | "B">>({});
 
   const { data, refetch, isLoading, error } = trpc.tournament.getById.useQuery({ id: tournamentId });
   const { data: standings } = trpc.tournament.getStandings.useQuery({ tournamentId });
@@ -865,11 +868,22 @@ export default function TournamentDetail() {
       {isAuthenticated && (
         <div className="border-b border-border/40 py-3">
           <div className="container flex flex-wrap gap-2">
-            {tournament.status === "pending" && (
+            {tournament.status === "pending" && !showGroupSetup && (
               <Button
                 size="sm"
                 className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
-                onClick={() => generateGroups.mutate({ tournamentId })}
+                onClick={() => {
+                  if (teams.length > 4) {
+                    setShowGroupSetup(true);
+                    // Inicializa assignment: metade A, metade B
+                    const init: Record<number, "A" | "B"> = {};
+                    teams.forEach((t, i) => { init[t.id] = i % 2 === 0 ? "A" : "B"; });
+                    setManualAssignment(init);
+                  } else {
+                    // 4 ou menos = grupo único, gera direto
+                    generateGroups.mutate({ tournamentId, mode: "auto" });
+                  }
+                }}
                 disabled={generateGroups.isPending}
               >
                 <Shuffle className="w-4 h-4 mr-1.5" />
@@ -896,6 +910,164 @@ export default function TournamentDetail() {
                 Gerar Final
               </Button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Group Setup Modal — escolha automático ou manual */}
+      {showGroupSetup && tournament.status === "pending" && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowGroupSetup(false)} />
+          <div className="relative bg-white rounded-[28px] p-6 sm:p-8 w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setShowGroupSetup(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="font-black text-xl text-slate-800 mb-1 uppercase tracking-tight">Configurar Grupos</h3>
+            <p className="text-xs text-slate-500 mb-6">{teams.length} equipes serão divididas em 2 grupos</p>
+
+            {/* Mode selector */}
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              <button
+                onClick={() => setGroupMode("auto")}
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
+                  groupMode === "auto"
+                    ? "border-red bg-red/5 text-red"
+                    : "border-slate-200 text-slate-400 hover:border-slate-300"
+                }`}
+              >
+                <Shuffle className="w-6 h-6" />
+                <span className="text-xs font-black uppercase tracking-wider">Automático</span>
+                <span className="text-[10px] font-medium opacity-70">Sorteio aleatório</span>
+              </button>
+              <button
+                onClick={() => setGroupMode("manual")}
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
+                  groupMode === "manual"
+                    ? "border-red bg-red/5 text-red"
+                    : "border-slate-200 text-slate-400 hover:border-slate-300"
+                }`}
+              >
+                <Edit2 className="w-6 h-6" />
+                <span className="text-xs font-black uppercase tracking-wider">Manual</span>
+                <span className="text-[10px] font-medium opacity-70">Você define os grupos</span>
+              </button>
+            </div>
+
+            {/* Manual assignment UI */}
+            {groupMode === "manual" && (
+              <div className="space-y-3 mb-6">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clique no grupo de cada equipe</p>
+                {teams.map(t => {
+                  const currentGroup = manualAssignment[t.id] || "A";
+                  return (
+                    <div key={t.id} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        {t.logo ? (
+                          <img src={t.logo as string} className="w-8 h-8 rounded-lg object-contain" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-black" style={{ backgroundColor: t.color }}>
+                            {t.shortName.slice(0, 2)}
+                          </div>
+                        )}
+                        <span className="text-sm font-bold text-slate-700">{t.name}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setManualAssignment(prev => ({ ...prev, [t.id]: "A" }))}
+                          className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+                            currentGroup === "A"
+                              ? "bg-red text-white shadow-sm"
+                              : "bg-white border border-slate-200 text-slate-400 hover:border-red/40"
+                          }`}
+                        >
+                          A
+                        </button>
+                        <button
+                          onClick={() => setManualAssignment(prev => ({ ...prev, [t.id]: "B" }))}
+                          className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+                            currentGroup === "B"
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "bg-white border border-slate-200 text-slate-400 hover:border-blue-400"
+                          }`}
+                        >
+                          B
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Preview dos grupos */}
+                {(() => {
+                  const gA = teams.filter(t => manualAssignment[t.id] === "A");
+                  const gB = teams.filter(t => manualAssignment[t.id] === "B");
+                  const valid = gA.length >= 2 && gB.length >= 2;
+                  return (
+                    <div className={`grid grid-cols-2 gap-2 mt-3 p-3 rounded-xl border ${valid ? "border-green-200 bg-green-50/50" : "border-red-200 bg-red-50/50"}`}>
+                      <div className="text-center">
+                        <span className="text-[10px] font-black text-red uppercase tracking-widest">Grupo A</span>
+                        <p className="text-lg font-black text-slate-700">{gA.length}</p>
+                      </div>
+                      <div className="text-center">
+                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Grupo B</span>
+                        <p className="text-lg font-black text-slate-700">{gB.length}</p>
+                      </div>
+                      {!valid && (
+                        <p className="col-span-2 text-[10px] text-red-500 font-bold text-center mt-1">Cada grupo precisa de no mínimo 2 equipes</p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {groupMode === "auto" && (
+              <div className="bg-slate-50 rounded-xl p-4 mb-6 text-center">
+                <Shuffle className="w-8 h-8 text-red/40 mx-auto mb-2" />
+                <p className="text-xs text-slate-500">As equipes serão divididas aleatoriamente em <strong>2 grupos equilibrados</strong>.</p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-2xl font-bold text-xs"
+                onClick={() => setShowGroupSetup(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-[2] bg-red text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-red/20 hover:opacity-90"
+                disabled={generateGroups.isPending || (groupMode === "manual" && (() => {
+                  const gA = teams.filter(t => manualAssignment[t.id] === "A");
+                  const gB = teams.filter(t => manualAssignment[t.id] === "B");
+                  return gA.length < 2 || gB.length < 2;
+                })())}
+                onClick={() => {
+                  if (groupMode === "auto") {
+                    generateGroups.mutate({ tournamentId, mode: "auto" });
+                  } else {
+                    const manualGroupsArr = Object.entries(manualAssignment).map(([teamId, group]) => ({
+                      teamId: Number(teamId),
+                      group,
+                    }));
+                    generateGroups.mutate({ tournamentId, mode: "manual", manualGroups: manualGroupsArr });
+                  }
+                  setShowGroupSetup(false);
+                }}
+              >
+                {generateGroups.isPending ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <>
+                    <Shuffle className="w-4 h-4 mr-1.5" />
+                    {groupMode === "auto" ? "Sortear e Gerar Jogos" : "Confirmar e Gerar Jogos"}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}
