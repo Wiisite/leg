@@ -777,7 +777,11 @@ export default function TournamentDetail() {
   const handebolPrataThird = thirdPlaceMatches.filter((m: any) => m.bracket === "prata");
   const handebolOuroFinal = finalMatches.filter((m: any) => m.bracket === "ouro" || !m.bracket);
   const handebolPrataFinal = finalMatches.filter((m: any) => m.bracket === "prata");
-  const usesAdvancedSeries = tournament.modality === "handebol" || tournament.modality === "futsal" || tournament.modality === "basquete";
+  const usesAdvancedSeries =
+    tournament.modality === "handebol" ||
+    tournament.modality === "futsal" ||
+    tournament.modality === "basquete" ||
+    tournament.modality === "volei";
 
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
     pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },

@@ -455,7 +455,7 @@ const tournamentRouter = router({
         const gA = groupStandings["A"] || groupStandings[sortedGroupNames[0]] || [];
         const gB = groupStandings["B"] || groupStandings[sortedGroupNames[1]] || [];
 
-        if (tournament.modality === "handebol" || tournament.modality === "futsal" || tournament.modality === "basquete") {
+        if (tournament.modality === "handebol" || tournament.modality === "futsal" || tournament.modality === "basquete" || tournament.modality === "volei") {
           if (teamList.length === 6) {
             if (gA.length < 3 || gB.length < 3)
               throw new TRPCError({ code: "BAD_REQUEST", message: "Cada grupo precisa de 3 equipes classificadas" });
@@ -531,7 +531,7 @@ const tournamentRouter = router({
         return m.homeTeamId;
       };
 
-      if (tournament.modality === "handebol" || tournament.modality === "futsal" || tournament.modality === "basquete") {
+      if (tournament.modality === "handebol" || tournament.modality === "futsal" || tournament.modality === "basquete" || tournament.modality === "volei") {
         const allMatches = await getMatchesByTournament(input.tournamentId);
         const quarterOuro = allMatches
           .filter((m) => m.phase === "quarterfinal" && m.bracket === "ouro")
