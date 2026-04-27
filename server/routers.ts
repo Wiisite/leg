@@ -500,6 +500,19 @@ const tournamentRouter = router({
         await createMatch(input.tournamentId, "semifinal", gA[0].teamId, gB[1].teamId, 1);
         await createMatch(input.tournamentId, "semifinal", gB[0].teamId, gA[1].teamId, 2);
       } else {
+        if (
+          (tournament.modality === "handebol" ||
+            tournament.modality === "futsal" ||
+            tournament.modality === "basquete" ||
+            tournament.modality === "volei") &&
+          teamList.length === 4
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Com 4 equipes, a premiação é por classificação geral (sem mata-mata).",
+          });
+        }
+
         // Grupo único — 1º vs 4º, 2º vs 3º
         const standings = computeStandings(
           teamList, groupMatches,
@@ -695,11 +708,43 @@ const matchRouter = router({
         })
         .where(eq(matches.id, input.matchId));
 
-      // If Ouro final match finished, set champion
-      if (match.phase === "final" && match.bracket !== "prata" && input.homeScore !== undefined && input.awayScore !== undefined) {
-        const winner =
-          input.homeScore >= input.awayScore ? match.homeTeamId : match.awayTeamId;
+      if (match.phase === "final" && input.homeScore !== undefined && input.awayScore !== undefined) {
+        const tournament = await getTournamentById(match.tournamentId);
+        if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
+
+        const isAdvancedModality =
+          tournament.modality === "handebol" ||
+          tournament.modality === "futsal" ||
+          tournament.modality === "basquete" ||
+          tournament.modality === "volei";
+
         const teamList = await getTeamsByTournament(match.tournamentId);
+
+        if (!isAdvancedModality) {
+          const winner =
+            input.homeScore >= input.awayScore ? match.homeTeamId : match.awayTeamId;
+          const championTeam = teamList.find((t) => t.id === winner);
+          await updateTournamentStatus(match.tournamentId, "finished", championTeam?.name);
+          return { ok: true };
+        }
+
+        const allMatches = await getMatchesByTournament(match.tournamentId);
+        const knockoutMatches = allMatches.filter((m) => m.phase !== "group");
+        const hasOpenKnockout = knockoutMatches.some((m) => m.status !== "finished");
+
+        // Campeão sempre vem da final da Série Liga (Ouro)
+        const ouroFinal = knockoutMatches.find((m) => m.phase === "final" && m.bracket !== "prata");
+        if (!ouroFinal) {
+          return { ok: true };
+        }
+
+        const ouroHomeScore = ouroFinal.id === match.id ? input.homeScore : ouroFinal.homeScore;
+        const ouroAwayScore = ouroFinal.id === match.id ? input.awayScore : ouroFinal.awayScore;
+        if (ouroHomeScore === null || ouroAwayScore === null || hasOpenKnockout) {
+          return { ok: true };
+        }
+
+        const winner = ouroHomeScore >= ouroAwayScore ? ouroFinal.homeTeamId : ouroFinal.awayTeamId;
         const championTeam = teamList.find((t) => t.id === winner);
         await updateTournamentStatus(match.tournamentId, "finished", championTeam?.name);
       }
