@@ -199,11 +199,18 @@ export async function createTeam(
   name: string,
   shortName: string,
   color: string,
-  logo?: string
+  logo?: string,
+  groupName?: string
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.insert(teams).values({ tournamentId, name, shortName, color, logo });
+  await db.insert(teams).values({ tournamentId, name, shortName, color, logo, groupName });
+}
+
+export async function updateTeamGroup(teamId: number, groupName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(teams).set({ groupName }).where(eq(teams.id, teamId));
 }
 
 // ─── Matches ───────────────────────────────────────────────────────────────────

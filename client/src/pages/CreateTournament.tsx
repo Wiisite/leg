@@ -377,29 +377,73 @@ export default function CreateTournament() {
           </div>
 
           {/* Preview */}
-          <div className="bg-secondary/20 border border-border/30 rounded-2xl p-5">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Resumo do torneio
-            </h3>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-xl font-display font-bold text-gold">{teams.length}</div>
-                <div className="text-xs text-muted-foreground">Equipes</div>
-              </div>
-              <div>
-                <div className="text-xl font-display font-bold text-gold">
-                  {(teams.length * (teams.length - 1)) / 2}
+          {(() => {
+            const n = teams.length;
+            const numGroups = n <= 4 ? 1 : 2;
+            const perGroup = numGroups === 1 ? n : Math.ceil(n / 2);
+            const perGroup2 = numGroups === 2 ? n - perGroup : 0;
+            const matchesInGroup = (t: number) => (t * (t - 1)) / 2;
+            const groupMatches = numGroups === 1 
+              ? matchesInGroup(perGroup)
+              : matchesInGroup(perGroup) + matchesInGroup(perGroup2);
+            const totalMatches = groupMatches + 3; // + 2 semis + 1 final
+
+            return (
+              <div className="bg-secondary/20 border border-border/30 rounded-2xl p-5 space-y-4">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Resumo do torneio
+                </h3>
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div>
+                    <div className="text-xl font-display font-bold text-gold">{n}</div>
+                    <div className="text-xs text-muted-foreground">Equipes</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-display font-bold text-gold">{numGroups}</div>
+                    <div className="text-xs text-muted-foreground">{numGroups === 1 ? "Grupo" : "Grupos"}</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-display font-bold text-gold">{groupMatches}</div>
+                    <div className="text-xs text-muted-foreground">Jogos (grupos)</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-display font-bold text-gold">{totalMatches}</div>
+                    <div className="text-xs text-muted-foreground">Total de jogos</div>
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">Partidas (grupos)</div>
+
+                {numGroups >= 2 && (
+                  <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 mt-2">
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2">Divisão dos Grupos (automática no sorteio)</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-background/50 rounded-lg p-2 text-center">
+                        <span className="font-black text-blue-500">Grupo A</span>
+                        <p className="text-muted-foreground">{perGroup} equipes</p>
+                      </div>
+                      <div className="bg-background/50 rounded-lg p-2 text-center">
+                        <span className="font-black text-blue-500">Grupo B</span>
+                        <p className="text-muted-foreground">{perGroup2} equipes</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                      Semifinais: 1º Grupo A × 2º Grupo B &nbsp;|&nbsp; 1º Grupo B × 2º Grupo A
+                    </p>
+                  </div>
+                )}
+
+                {numGroups === 1 && n <= 4 && (
+                  <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-3 mt-2">
+                    <p className="text-[10px] text-green-400 font-bold uppercase tracking-wider">
+                      Grupo único — Todas as equipes jogam entre si
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Semifinais: 1º × 4º &nbsp;|&nbsp; 2º × 3º
+                    </p>
+                  </div>
+                )}
               </div>
-              <div>
-                <div className="text-xl font-display font-bold text-gold">
-                  {(teams.length * (teams.length - 1)) / 2 + 3}
-                </div>
-                <div className="text-xs text-muted-foreground">Total de partidas</div>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Submit */}
           <div className="flex gap-3">

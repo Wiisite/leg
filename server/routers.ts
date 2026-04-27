@@ -197,7 +197,7 @@ const tournamentRouter = router({
       );
       
       for (const t of input.teams) {
-        await createTeam(Number(tournamentId), t.name, t.shortName, t.color, t.logo);
+        await createTeam(Number(tournamentId), t.name, t.shortName, t.color, t.logo ?? undefined);
       }
       return { id: Number(tournamentId) };
     }),
@@ -251,7 +251,7 @@ const tournamentRouter = router({
             .set({ name: t.name, shortName: t.shortName, color: t.color, logo: t.logo })
             .where(eq(teams.id, t.id));
         } else {
-          await createTeam(input.id, t.name, t.shortName, t.color, t.logo);
+          await createTeam(input.id, t.name, t.shortName, t.color, t.logo ?? undefined);
         }
       }
 
@@ -288,34 +288,59 @@ const tournamentRouter = router({
       // Sorteio (shuffle) das equipes
       const shuffledTeams = [...teamList].sort(() => Math.random() - 0.5);
 
-      // Round-robin algorithm
-      const teams = [...shuffledTeams];
-      if (teams.length % 2 !== 0) {
-        teams.push({ id: -1, name: "BYE", shortName: "BYE", color: "#000", tournamentId: input.tournamentId, createdAt: new Date(), logo: null });
-      }
+      // Divide em grupos: 4 equipes = 1 grupo, 6+ = 2 grupos
+      const { updateTeamGroup } = await import("./db");
+      const totalTeams = shuffledTeams.length;
+      const numGroups = totalTeams <= 4 ? 1 : 2;
+      const groups: (typeof shuffledTeams)[] = [];
 
-      const numTeams = teams.length;
-      const fullRounds = numTeams - 1;
-      const matchesPerRound = numTeams / 2;
-      
-      // Usa o número de rodadas do torneio ou o padrão do algoritmo
-      const roundsToGenerate = tournament.rounds || fullRounds;
-
-      for (let round = 1; round <= roundsToGenerate; round++) {
-        // Se exceder o número de rodadas únicas do round-robin, o algoritmo rotaciona mas repete
-        for (let match = 0; match < matchesPerRound; match++) {
-          const home = teams[match];
-          const away = teams[numTeams - 1 - match];
-
-          if (home.id !== -1 && away.id !== -1) {
-            await createMatch(input.tournamentId, "group", home.id, away.id, round);
-          }
+      if (numGroups === 1) {
+        groups.push(shuffledTeams);
+        for (const t of shuffledTeams) {
+          await updateTeamGroup(t.id, "A");
         }
-        // Rotate teams (keep first team fixed)
-        teams.splice(1, 0, teams.pop()!);
+      } else {
+        // Divide equipes alternadamente para equilibrar os grupos
+        const groupA: typeof shuffledTeams = [];
+        const groupB: typeof shuffledTeams = [];
+        shuffledTeams.forEach((t, i) => {
+          if (i % 2 === 0) groupA.push(t);
+          else groupB.push(t);
+        });
+        groups.push(groupA, groupB);
+        for (const t of groupA) await updateTeamGroup(t.id, "A");
+        for (const t of groupB) await updateTeamGroup(t.id, "B");
       }
+
+      // Gera round-robin para cada grupo
+      const GROUP_NAMES = ["A", "B"];
+      for (let g = 0; g < groups.length; g++) {
+        const groupTeams = [...groups[g]];
+        // BYE se número ímpar no grupo
+        if (groupTeams.length % 2 !== 0) {
+          groupTeams.push({ id: -1, name: "BYE", shortName: "BYE", color: "#000", tournamentId: input.tournamentId, createdAt: new Date(), logo: null, groupName: GROUP_NAMES[g] } as any);
+        }
+
+        const n = groupTeams.length;
+        const fullRounds = n - 1;
+        const matchesPerRound = n / 2;
+        const roundsToGenerate = tournament.rounds || fullRounds;
+
+        for (let round = 1; round <= roundsToGenerate; round++) {
+          for (let m = 0; m < matchesPerRound; m++) {
+            const home = groupTeams[m];
+            const away = groupTeams[n - 1 - m];
+            if (home.id !== -1 && away.id !== -1) {
+              await createMatch(input.tournamentId, "group", home.id, away.id, round);
+            }
+          }
+          // Rotate (keep first fixed)
+          groupTeams.splice(1, 0, groupTeams.pop()!);
+        }
+      }
+
       await updateTournamentStatus(input.tournamentId, "group_stage");
-      return { ok: true };
+      return { ok: true, groups: numGroups };
     }),
 
   getStandings: publicProcedure
@@ -325,14 +350,41 @@ const tournamentRouter = router({
       if (!tournament) throw new TRPCError({ code: "NOT_FOUND" });
       const teamList = await getTeamsByTournament(input.tournamentId);
       const groupMatches = await getMatchesByPhase(input.tournamentId, "group");
-      return computeStandings(
-        teamList,
-        groupMatches,
-        tournament.pointsPerWin,
-        tournament.pointsPerDraw,
-        tournament.pointsPerLoss,
-        tournament.modality
-      );
+
+      // Verifica se existem grupos definidos
+      const groupNames = teamList.map(t => t.groupName).filter((g): g is string => g != null).filter((v, i, a) => a.indexOf(v) === i);
+
+      if (groupNames.length <= 1) {
+        // Grupo único — retorno flat (retrocompatível)
+        return computeStandings(
+          teamList,
+          groupMatches,
+          tournament.pointsPerWin,
+          tournament.pointsPerDraw,
+          tournament.pointsPerLoss,
+          tournament.modality
+        );
+      }
+
+      // Múltiplos grupos — retorna classificação separada por grupo
+      const result: { groupName: string; standings: ReturnType<typeof computeStandings> }[] = [];
+      for (const gName of groupNames.sort()) {
+        const groupTeams = teamList.filter(t => t.groupName === gName);
+        const groupTeamIds = new Set(groupTeams.map(t => t.id));
+        const gMatches = groupMatches.filter(m => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId));
+        result.push({
+          groupName: gName,
+          standings: computeStandings(
+            groupTeams,
+            gMatches,
+            tournament.pointsPerWin,
+            tournament.pointsPerDraw,
+            tournament.pointsPerLoss,
+            tournament.modality
+          ),
+        });
+      }
+      return result;
     }),
 
   delete: protectedProcedure
@@ -360,12 +412,47 @@ const tournamentRouter = router({
       const existing = await getMatchesByPhase(input.tournamentId, "semifinal");
       if (existing.length > 0)
         throw new TRPCError({ code: "BAD_REQUEST", message: "Semifinais já geradas" });
-      const standings = computeStandings(teamList, groupMatches);
-      if (standings.length < 4)
-        throw new TRPCError({ code: "BAD_REQUEST", message: "São necessárias ao menos 4 equipes" });
-      // 1st vs 4th, 2nd vs 3rd
-      await createMatch(input.tournamentId, "semifinal", standings[0].teamId, standings[3].teamId, 1);
-      await createMatch(input.tournamentId, "semifinal", standings[1].teamId, standings[2].teamId, 2);
+
+      const groupNames = teamList.map(t => t.groupName).filter((g): g is string => g != null).filter((v, i, a) => a.indexOf(v) === i);
+
+      if (groupNames.length >= 2) {
+        // Cruzamento entre grupos: 1º A vs 2º B, 1º B vs 2º A
+        const groupStandings: Record<string, ReturnType<typeof computeStandings>> = {};
+        for (const gName of groupNames.sort()) {
+          const gTeams = teamList.filter(t => t.groupName === gName);
+          const gTeamIds = new Set(gTeams.map(t => t.id));
+          const gMatches = groupMatches.filter(m => gTeamIds.has(m.homeTeamId) && gTeamIds.has(m.awayTeamId));
+          const tournament = await getTournamentById(input.tournamentId);
+          groupStandings[gName] = computeStandings(
+            gTeams, gMatches,
+            tournament!.pointsPerWin, tournament!.pointsPerDraw, tournament!.pointsPerLoss,
+            tournament!.modality
+          );
+        }
+
+        const gA = groupStandings["A"] || [];
+        const gB = groupStandings["B"] || [];
+        if (gA.length < 2 || gB.length < 2)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cada grupo precisa de ao menos 2 equipes classificadas" });
+
+        // Semi 1: 1º Grupo A vs 2º Grupo B
+        await createMatch(input.tournamentId, "semifinal", gA[0].teamId, gB[1].teamId, 1);
+        // Semi 2: 1º Grupo B vs 2º Grupo A
+        await createMatch(input.tournamentId, "semifinal", gB[0].teamId, gA[1].teamId, 2);
+      } else {
+        // Grupo único — 1º vs 4º, 2º vs 3º
+        const tournament = await getTournamentById(input.tournamentId);
+        const standings = computeStandings(
+          teamList, groupMatches,
+          tournament!.pointsPerWin, tournament!.pointsPerDraw, tournament!.pointsPerLoss,
+          tournament!.modality
+        );
+        if (standings.length < 4)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "São necessárias ao menos 4 equipes" });
+        await createMatch(input.tournamentId, "semifinal", standings[0].teamId, standings[3].teamId, 1);
+        await createMatch(input.tournamentId, "semifinal", standings[1].teamId, standings[2].teamId, 2);
+      }
+
       await updateTournamentStatus(input.tournamentId, "semifinals");
       return { ok: true };
     }),
@@ -473,13 +560,22 @@ const seedRouter = router({
   fixDatabase: publicProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
+    const results: string[] = [];
+    // Coluna logo
     try {
-      // Forçar a criação da coluna logo se ela não existir
       await db.execute(sql`ALTER TABLE teams ADD COLUMN logo TEXT NULL`);
-      return { success: true, message: "Coluna logo adicionada!" };
+      results.push("Coluna logo adicionada!");
     } catch (e: any) {
-      return { success: false, message: "Coluna já existe ou erro: " + e.message };
+      results.push("logo: " + e.message);
     }
+    // Coluna groupName
+    try {
+      await db.execute(sql`ALTER TABLE teams ADD COLUMN groupName VARCHAR(2) NULL`);
+      results.push("Coluna groupName adicionada!");
+    } catch (e: any) {
+      results.push("groupName: " + e.message);
+    }
+    return { success: true, message: results.join(" | ") };
   }),
 });
 

@@ -378,7 +378,7 @@ function BracketView({
 
   const finalMatch = bracket.final[0];
   const finalWinner = finalMatch ? getWinner(finalMatch) : null;
-  const champion = finalWinner ? getTeam(finalWinner) : null;
+  const champion = finalWinner ? teams.find(t => t.id === finalWinner) : null;
 
   return (
     <div className="overflow-x-auto pb-4">
@@ -395,7 +395,7 @@ function BracketView({
               <span className="text-xs text-muted-foreground">Aguardando fase de grupos</span>
             </div>
           ) : (
-            bracket.semifinal.map((m, i) => (
+            bracket.semifinal.map((m: any, i: number) => (
               <BracketMatch key={m.id} match={m} label={`Semifinal ${i + 1}`} />
             ))
           )}
@@ -670,7 +670,7 @@ export default function TournamentDetail() {
     }
   });
 
-  const fixDb = trpc.system.fixDatabase.useMutation();
+  const fixDb = trpc.seed.fixDatabase.useMutation();
 
   if (isLoading) {
     return (
@@ -945,30 +945,79 @@ export default function TournamentDetail() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-12">
-                {Array.from(new Set(groupMatches.map(m => m.round))).sort((a, b) => a - b).map(roundNum => (
-                  <div key={roundNum}>
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="h-px flex-1 bg-slate-200" />
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50 px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                        {roundNum}ª Rodada
-                      </h3>
-                      <div className="h-px flex-1 bg-slate-200" />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {groupMatches.filter(m => m.round === roundNum).map((m) => (
-                        <MatchCard
-                          key={m.id}
-                          match={m}
-                          teams={teams}
-                          isAdmin={isAuthenticated}
-                          onEdit={setEditingMatch}
-                        />
+              (() => {
+                // Detecta se há múltiplos grupos pelas equipes
+                const teamGroupMap = new Map(teams.map(t => [t.id, (t as any).groupName as string | null]));
+                const groupNamesSet = teams.map(t => (t as any).groupName).filter((g: any): g is string => g != null);
+                const uniqueGroups = groupNamesSet.filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).sort();
+                const hasMultipleGroups = uniqueGroups.length >= 2;
+
+                if (!hasMultipleGroups) {
+                  // Grupo único — exibe por rodada como antes
+                  return (
+                    <div className="space-y-12">
+                      {groupMatches.map(m => m.round).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b).map(roundNum => (
+                        <div key={roundNum}>
+                          <div className="flex items-center gap-4 mb-6">
+                            <div className="h-px flex-1 bg-slate-200" />
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50 px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                              {roundNum}ª Rodada
+                            </h3>
+                            <div className="h-px flex-1 bg-slate-200" />
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {groupMatches.filter(m => m.round === roundNum).map((m) => (
+                              <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
+                  );
+                }
+
+                // Múltiplos grupos — exibe separado por grupo
+                return (
+                  <div className="space-y-16">
+                    {uniqueGroups.map((gName: string) => {
+                      const groupTeamIds = new Set(teams.filter(t => (t as any).groupName === gName).map(t => t.id));
+                      const gMatches = groupMatches.filter(m => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId));
+                      const rounds = gMatches.map(m => m.round).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
+
+                      return (
+                        <div key={gName}>
+                          <div className="flex items-center gap-4 mb-8">
+                            <div className="h-px flex-1 bg-red/20" />
+                            <h3 className="text-sm font-black text-red uppercase tracking-[0.3em] bg-red/5 px-6 py-2 rounded-full border border-red/20 shadow-sm">
+                              Grupo {gName}
+                            </h3>
+                            <div className="h-px flex-1 bg-red/20" />
+                          </div>
+
+                          <div className="space-y-10">
+                            {rounds.map(roundNum => (
+                              <div key={roundNum}>
+                                <div className="flex items-center gap-4 mb-6">
+                                  <div className="h-px flex-1 bg-slate-200" />
+                                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50 px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                                    {roundNum}ª Rodada
+                                  </h3>
+                                  <div className="h-px flex-1 bg-slate-200" />
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                  {gMatches.filter(m => m.round === roundNum).map((m) => (
+                                    <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                );
+              })()
             )}
           </div>
         )}
@@ -979,13 +1028,30 @@ export default function TournamentDetail() {
             <h2 className="font-display text-xl font-semibold text-foreground mb-6">
               Classificação
             </h2>
-            {!standings || standings.length === 0 ? (
+            {!standings || (Array.isArray(standings) && standings.length === 0) ? (
               <div className="text-center py-16 border border-dashed border-border/40 rounded-2xl">
                 <BarChart3 className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm">Nenhuma partida registrada ainda</p>
               </div>
+            ) : Array.isArray(standings) && standings.length > 0 && "groupName" in standings[0] ? (
+              // Múltiplos grupos
+              <div className="space-y-10">
+                {(standings as any[]).map((g: any) => (
+                  <div key={g.groupName}>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="h-px flex-1 bg-red/20" />
+                      <h3 className="text-sm font-black text-red uppercase tracking-[0.3em] bg-red/5 px-6 py-2 rounded-full border border-red/20 shadow-sm">
+                        Grupo {g.groupName}
+                      </h3>
+                      <div className="h-px flex-1 bg-red/20" />
+                    </div>
+                    <StandingsTable standings={g.standings} modality={tournament.modality} />
+                  </div>
+                ))}
+              </div>
             ) : (
-              <StandingsTable standings={standings} modality={tournament.modality} />
+              // Grupo único (flat array)
+              <StandingsTable standings={standings as any[]} modality={tournament.modality} />
             )}
           </div>
         )}
