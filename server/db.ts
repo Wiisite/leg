@@ -32,6 +32,7 @@ export async function getDb() {
           };
 
           await fixColumn("teams", "logo", "TEXT NULL");
+          await fixColumn("teams", "groupName", "VARCHAR(2) NULL");
           await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
           await fixColumn("users", "password", "TEXT NULL");
           
