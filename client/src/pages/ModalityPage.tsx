@@ -257,7 +257,6 @@ export default function ModalityPage() {
 
       <SiteFooter
         footerLogoUrl={footerLogoUrl}
-        partners={partners}
         modalities={modalitiesInOrder}
         modalityLabelByKey={Object.fromEntries(modalitiesInOrder.map((mod) => [mod, MODALITY_CONFIG[mod]?.label ?? mod]))}
         onModalityClick={(modalityKey) => navigate(`/modalidade/${modalityKey}`)}

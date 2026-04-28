@@ -123,7 +123,7 @@ export default function Home() {
   const homeHighlightImageUrl =
     siteSettings?.homeHighlightImageUrl?.trim()
       ? siteSettings.homeHighlightImageUrl
-      : "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1600&q=80";
+      : "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1800&q=80";
   const homeHeroImages = siteSettings?.homeHeroImages ?? {};
   const partners = siteSettings?.partners ?? [];
 
@@ -567,18 +567,16 @@ export default function Home() {
           className="absolute inset-0 bg-cover bg-center md:bg-fixed"
           style={{ backgroundImage: `url(${homeHighlightImageUrl})` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#08123E]/90 via-[#08123E]/75 to-[#08123E]/50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B102D]/86 via-[#0B102D]/72 to-[#0B102D]/58" />
 
-        <div className="container relative h-full py-16 md:py-24 flex flex-col justify-end max-w-3xl text-white">
+        <div className="container relative h-full py-16 md:py-24 flex flex-col items-center justify-center text-center max-w-4xl text-white">
           <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100 mb-3">Destaque LEG</p>
-          <h3 className="text-4xl md:text-6xl font-black leading-tight mb-3">Junte-se à nossa equipe</h3>
-          <p className="text-red-100/95 text-sm md:text-lg mb-6">Ser o número #1 é o nosso verdadeiro objetivo.</p>
-          <Button
-            onClick={() => document.getElementById("sobre")?.scrollIntoView({ behavior: "smooth" })}
-            className="h-11 px-6 w-fit bg-white text-[#05206F] hover:bg-[#D50000] hover:text-white font-black uppercase tracking-[0.12em]"
-          >
-            Conheça mais
-          </Button>
+          <h3 className="text-4xl md:text-6xl font-black leading-[1.05] max-w-3xl">
+            Junte-se à nossa equipe
+          </h3>
+          <p className="mt-4 text-red-100/95 text-2xl md:text-5xl font-black leading-tight max-w-3xl">
+            Ser o número <span className="text-[#D50000]">#1</span> é nosso verdadeiro objetivo
+          </p>
         </div>
       </section>
 
@@ -742,7 +740,6 @@ export default function Home() {
 
       <SiteFooter
         footerLogoUrl={footerLogoUrl}
-        partners={partners}
         modalities={modalitiesInOrder}
         modalityLabelByKey={Object.fromEntries(modalitiesInOrder.map((mod) => [mod, MODALITY_CONFIG[mod]?.label ?? mod]))}
         onHomeClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

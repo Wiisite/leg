@@ -1548,7 +1548,6 @@ export default function TournamentDetail() {
 
       <SiteFooter
         footerLogoUrl={footerLogoUrl}
-        partners={partners}
         modalities={modalitiesInOrder}
         modalityLabelByKey={modalityLabels}
         onModalityClick={(modalityKey) => navigate(`/modalidade/${modalityKey}`)}

@@ -1,13 +1,7 @@
 import { Button } from "@/components/ui/button";
 
-type Partner = {
-  name: string;
-  logoUrl: string;
-};
-
 type SiteFooterProps = {
   footerLogoUrl: string;
-  partners: Partner[];
   modalities: string[];
   modalityLabelByKey?: Record<string, string>;
   onHomeClick?: () => void;
@@ -18,7 +12,6 @@ type SiteFooterProps = {
 
 export function SiteFooter({
   footerLogoUrl,
-  partners,
   modalities,
   modalityLabelByKey,
   onHomeClick,
@@ -101,31 +94,7 @@ export function SiteFooter({
             <ul className="space-y-2 text-sm text-blue-100/85">
               <li>Fale conosco</li>
               <li>Contato comercial</li>
-              <li>Seja um parceiro</li>
             </ul>
-
-            <div className="mt-5 rounded-xl bg-white/10 border border-white/15 p-3 text-xs">
-              <p className="font-black uppercase tracking-wider mb-1">Parceiros</p>
-              {partners.length === 0 ? (
-                <p className="text-blue-100/80">Nenhum parceiro cadastrado</p>
-              ) : (
-                <div className="flex flex-wrap items-center gap-3">
-                  {partners.map((partner) => (
-                    <div
-                      key={`${partner.name}-${partner.logoUrl}`}
-                      className="inline-flex items-center gap-2 rounded-md bg-white/10 px-2.5 py-1.5"
-                    >
-                      <img
-                        src={partner.logoUrl}
-                        alt={partner.name}
-                        className="h-5 w-5 rounded bg-white p-0.5 object-contain"
-                      />
-                      <span className="text-[11px] text-blue-100/90">{partner.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
