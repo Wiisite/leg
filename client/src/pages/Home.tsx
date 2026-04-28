@@ -109,6 +109,7 @@ export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isHeaderShrunk, setIsHeaderShrunk] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
@@ -195,6 +196,13 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [heroSlides.length]);
 
+  useEffect(() => {
+    const onScroll = () => setIsHeaderShrunk(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const slideSports = (direction: "left" | "right") => {
     if (!sliderRef.current) return;
     const amount = Math.max(280, sliderRef.current.clientWidth * 0.7);
@@ -256,8 +264,8 @@ export default function Home() {
               <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Modalidade</button>
             </nav>
 
-            <div className="absolute left-1/2 top-[88%] -translate-x-1/2 -translate-y-1/2 z-30">
-              <div className="w-36 h-36 md:w-44 md:h-44 drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)]">
+            <div className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-300 ${isHeaderShrunk ? "top-[76%]" : "top-[88%]"}`}>
+              <div className={`drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)] transition-all duration-300 ${isHeaderShrunk ? "w-24 h-24 md:w-28 md:h-28" : "w-36 h-36 md:w-44 md:h-44"}`}>
                 <img src={mainLogoUrl} alt="Logo LEG" className="w-full h-full object-contain" />
               </div>
             </div>
