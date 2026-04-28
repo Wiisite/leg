@@ -270,8 +270,11 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="relative bg-[#05206F] text-white overflow-visible">
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-[#D50000]/85" />
+        <div className="relative bg-[#D50000] text-white overflow-visible">
+          <div className="pointer-events-none absolute inset-0 opacity-25">
+            <div className="absolute -left-16 top-0 h-full w-48 bg-[#B80000] skew-x-[-30deg]" />
+            <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
+          </div>
 
           <div className="container relative h-24 flex items-center justify-between">
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
@@ -307,7 +310,7 @@ export default function Home() {
           </div>
 
           {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-[#D50000]/60 bg-[#041955]">
+            <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
               <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
                 <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="text-left">Home</button>
                 <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Modalidades</button>
@@ -319,15 +322,15 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative bg-[#05206F] text-white pt-24 pb-16 overflow-hidden">
+      <section className="relative bg-[#D50000] text-white pt-32 pb-16 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -bottom-20 -right-20 h-80 w-80 border border-white/15 rounded-full" />
           <div className="absolute -top-28 -left-10 h-72 w-72 border border-white/15 rounded-full" />
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-[#D50000]/85" />
+          <div className="absolute top-0 right-16 h-full w-36 bg-[#BC0000] skew-x-[-26deg] opacity-35" />
         </div>
 
         <div className="relative">
-          <div className="relative w-full overflow-hidden border-y border-white/30 min-h-[430px] md:min-h-[560px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#0B1542]">
+          <div className="relative w-full overflow-hidden border-y border-white/30 min-h-[430px] md:min-h-[560px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#9E0000]">
             {heroSlides.map((slide, index) => (
               <article
                 key={slide.id}
