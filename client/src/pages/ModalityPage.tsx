@@ -38,6 +38,7 @@ export default function ModalityPage() {
   const [logoShrinkProgress, setLogoShrinkProgress] = useState(0);
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
+  const { data: homeNews } = trpc.tournament.getHomeNews.useQuery();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
 
   const mainLogoUrl = siteSettings?.mainLogoUrl?.trim() ? siteSettings.mainLogoUrl : "/logo.png";
@@ -57,7 +58,7 @@ export default function ModalityPage() {
     [tournaments, modality]
   );
 
-  const modalityNews = useMemo(() => {
+  const fallbackModalityNews = useMemo(() => {
     const modalityLabel = config?.label ?? "modalidade";
     return [...list]
       .sort((a, b) => {
@@ -89,13 +90,28 @@ export default function ModalityPage() {
         return {
           id: t.id,
           tournamentId: t.id,
-          statusLabel,
+          badgeLabel: statusLabel,
           headline,
           summary,
           formattedDate,
         };
       });
   }, [list, config?.label]);
+
+  const modalityNews = useMemo(() => {
+    const filteredFromHome = (homeNews ?? [])
+      .filter((news) => String(news.modalityKey || "").toLowerCase() === modality)
+      .map((news) => ({
+        id: news.id,
+        tournamentId: news.tournamentId,
+        badgeLabel: "Destaque",
+        headline: news.headline,
+        summary: news.summary,
+        formattedDate: news.formattedDate,
+      }));
+
+    return filteredFromHome.length > 0 ? filteredFromHome : fallbackModalityNews;
+  }, [homeNews, modality, fallbackModalityNews]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -284,7 +300,7 @@ export default function ModalityPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
 
         <div className="container relative py-12 md:py-20">
-          <div className="mx-auto max-w-5xl rounded-[28px] border border-white/25 bg-white/10 backdrop-blur-md shadow-[0_20px_55px_rgba(2,6,23,0.45)] px-6 py-8 md:px-10 md:py-12 text-white">
+          <div className="mx-auto max-w-5xl rounded-[28px] border border-white/20 bg-white/8 backdrop-blur-md shadow-[0_20px_55px_rgba(2,6,23,0.45)] px-6 py-8 md:px-10 md:py-12 text-white">
             <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100/95 mb-3 text-center">Destaques dos campeonatos</p>
             <h2 className="text-3xl md:text-5xl font-black leading-tight mb-3 text-center">O que está acontecendo agora</h2>
             <p className="text-sm md:text-lg text-white/90 leading-relaxed max-w-2xl mx-auto mb-8 text-center">
@@ -300,11 +316,11 @@ export default function ModalityPage() {
                 {modalityNews.map((news) => (
                   <article
                     key={`mod-news-${news.id}`}
-                    className="rounded-2xl border border-white/20 bg-black/25 p-5 shadow-sm hover:shadow-lg hover:bg-black/35 transition-all"
+                    className="rounded-2xl border border-white/15 bg-black/15 backdrop-blur-[2px] p-5 shadow-sm hover:shadow-lg hover:bg-black/25 transition-all"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/15 text-white/90">
-                        {news.statusLabel}
+                        {news.badgeLabel}
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-white/70">{news.formattedDate}</span>
                     </div>
