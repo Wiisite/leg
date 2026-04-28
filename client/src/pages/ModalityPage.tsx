@@ -264,7 +264,7 @@ export default function ModalityPage() {
                 <article
                   key={t.id}
                   onClick={() => navigate(`/tournament/${t.id}`)}
-                  className="group cursor-pointer rounded-2xl p-5 bg-white border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
+                  className="group cursor-pointer rounded-2xl p-5 bg-white/90 backdrop-blur-[2px] border border-white/70 shadow-[0_10px_24px_rgba(15,23,42,0.12)] hover:shadow-[0_16px_34px_rgba(15,23,42,0.18)] hover:bg-white/95 hover:-translate-y-1 transition-all"
                 >
                   <div className="flex items-center justify-between mb-6">
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: config.accent }}>
