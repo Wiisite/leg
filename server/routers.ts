@@ -865,23 +865,23 @@ const siteRouter = router({
   updateSettings: protectedProcedure
     .input(
       z.object({
-        mainLogoUrl: z.string().trim().max(2048).optional(),
-        footerLogoUrl: z.string().trim().max(2048).optional(),
-        homeHighlightImageUrl: z.string().trim().max(2048).optional(),
+        mainLogoUrl: z.string().trim().max(10_000_000).optional(),
+        footerLogoUrl: z.string().trim().max(10_000_000).optional(),
+        homeHighlightImageUrl: z.string().trim().max(10_000_000).optional(),
         homeHeroImages: z
           .object({
-            futsal: z.string().trim().max(2048).optional(),
-            basquete: z.string().trim().max(2048).optional(),
-            volei: z.string().trim().max(2048).optional(),
-            handebol: z.string().trim().max(2048).optional(),
+            futsal: z.string().trim().max(10_000_000).optional(),
+            basquete: z.string().trim().max(10_000_000).optional(),
+            volei: z.string().trim().max(10_000_000).optional(),
+            handebol: z.string().trim().max(10_000_000).optional(),
           })
           .optional(),
         modalityBannerImages: z
           .object({
-            futsal: z.string().trim().max(2048).optional(),
-            basquete: z.string().trim().max(2048).optional(),
-            volei: z.string().trim().max(2048).optional(),
-            handebol: z.string().trim().max(2048).optional(),
+            futsal: z.string().trim().max(10_000_000).optional(),
+            basquete: z.string().trim().max(10_000_000).optional(),
+            volei: z.string().trim().max(10_000_000).optional(),
+            handebol: z.string().trim().max(10_000_000).optional(),
           })
           .optional(),
         mainLogoFileDataUrl: z.string().max(10_000_000).optional(),
@@ -907,7 +907,7 @@ const siteRouter = router({
           .array(
             z.object({
               name: z.string().trim().min(1).max(120),
-              logoUrl: z.string().trim().max(2048).optional(),
+              logoUrl: z.string().trim().max(10_000_000).optional(),
               logoFileDataUrl: z.string().max(10_000_000).optional(),
             })
           )
