@@ -154,6 +154,14 @@ export default function Home() {
     setMobileMenuOpen(false);
   };
 
+  const scrollToSection = (sectionId: string, offset = 140) => {
+    const target = document.getElementById(sectionId);
+    if (!target) return;
+    const top = target.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    setMobileMenuOpen(false);
+  };
+
   const heroSlides = useMemo<HeroSlide[]>(() => {
     const featured = modalitiesInOrder
       .map((modality) => groupedTournaments?.[modality]?.[0])
@@ -345,8 +353,8 @@ export default function Home() {
           <div className="container relative h-24 flex items-center justify-between">
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="hover:text-red-100 transition-colors">Home</button>
-              <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Notícia</button>
-              <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Modalidade</button>
+              <button onClick={() => scrollToSection("noticias")} className="hover:text-red-100 transition-colors">Notícia</button>
+              <button onClick={() => scrollToSection("modalidades")} className="hover:text-red-100 transition-colors">Modalidade</button>
             </nav>
 
             <div
@@ -379,7 +387,7 @@ export default function Home() {
             <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
               <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
                 <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="text-left">Home</button>
-                <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Modalidades</button>
+                <button onClick={() => scrollToSection("modalidades")} className="text-left">Modalidades</button>
                 <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Torneios</button>
                 <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Contato</button>
               </div>
@@ -527,7 +535,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="container mb-14">
+      <section id="noticias" className="container mb-14 scroll-mt-36">
         <div className="rounded-3xl bg-white border border-slate-200 shadow-xl p-6 md:p-8">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -748,7 +756,7 @@ export default function Home() {
         modalityLabelByKey={Object.fromEntries(modalitiesInOrder.map((mod) => [mod, MODALITY_CONFIG[mod]?.label ?? mod]))}
         onHomeClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         onAboutClick={() => document.getElementById("sobre")?.scrollIntoView({ behavior: "smooth" })}
-        onNewsClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })}
+        onNewsClick={() => scrollToSection("noticias")}
         onModalityClick={scrollToModality}
       />
     </div>
