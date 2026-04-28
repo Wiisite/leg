@@ -18,7 +18,7 @@ import {
   Volleyball,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function CourtIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
@@ -88,6 +88,23 @@ const MODALITY_CONFIG: Record<
   },
 };
 
+const HERO_IMAGE_BY_MODALITY: Record<string, string> = {
+  futsal: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1600&q=80",
+  basquete: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80",
+  volei: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=1600&q=80",
+  handebol: "https://images.unsplash.com/photo-1592656094267-764a45160876?auto=format&fit=crop&w=1600&q=80",
+};
+
+type HeroSlide = {
+  id: string;
+  badge: string;
+  title: string;
+  description: string;
+  cta: string;
+  imageUrl: string;
+  onClick: () => void;
+};
+
 export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
@@ -120,6 +137,63 @@ export default function Home() {
     document.getElementById(modality)?.scrollIntoView({ behavior: "smooth", block: "start" });
     setMobileMenuOpen(false);
   };
+
+  const heroSlides = useMemo<HeroSlide[]>(() => {
+    const featured = modalitiesInOrder
+      .map((modality) => groupedTournaments?.[modality]?.[0])
+      .filter(Boolean) as NonNullable<typeof tournaments>;
+
+    if (featured.length === 0) {
+      return [
+        {
+          id: "hero-futsal",
+          badge: "DESTAQUE DA TEMPORADA",
+          title: "5ª COPA LEG DE FUTSAL",
+          description: "Acompanhe jogos, classificação e os melhores momentos da principal modalidade da LEG.",
+          cta: "Acessar modalidade",
+          imageUrl: HERO_IMAGE_BY_MODALITY.futsal,
+          onClick: () => scrollToModality("futsal"),
+        },
+        {
+          id: "hero-volei",
+          badge: "NOVIDADE",
+          title: "2ª COPA LEG DE VOLEIBOL",
+          description: "Confira os destaques da rodada e acesse rapidamente a página da competição.",
+          cta: "Ver detalhes",
+          imageUrl: HERO_IMAGE_BY_MODALITY.volei,
+          onClick: () => scrollToModality("volei"),
+        },
+      ];
+    }
+
+    return featured.map((tournament) => {
+      const modalityLabel = MODALITY_CONFIG[tournament.modality]?.label ?? "Modalidade";
+      const statusLabel = STATUS_LABELS[tournament.status]?.label ?? "Em andamento";
+      return {
+        id: `hero-${tournament.id}`,
+        badge: `${modalityLabel} • ${tournament.category}`,
+        title: tournament.name.toUpperCase(),
+        description: `Status atual: ${statusLabel}. Acesse a página para acompanhar tabela, partidas e classificações.`,
+        cta: "Acessar página",
+        imageUrl: HERO_IMAGE_BY_MODALITY[tournament.modality] ?? HERO_IMAGE_BY_MODALITY.futsal,
+        onClick: () => navigate(`/tournament/${tournament.id}`),
+      };
+    });
+  }, [groupedTournaments, navigate]);
+
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    setHeroIndex(0);
+  }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (heroSlides.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 5500);
+    return () => window.clearInterval(timer);
+  }, [heroSlides.length]);
 
   const slideSports = (direction: "left" | "right") => {
     if (!sliderRef.current) return;
@@ -215,7 +289,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative bg-[#D50000] text-white pt-32 pb-32 overflow-hidden">
+      <section className="relative bg-[#D50000] text-white pt-32 pb-28 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -bottom-20 -right-20 h-80 w-80 border border-white/15 rounded-full" />
           <div className="absolute -top-28 -left-10 h-72 w-72 border border-white/15 rounded-full" />
@@ -223,13 +297,64 @@ export default function Home() {
         </div>
 
         <div className="container relative">
-          <p className="text-xs uppercase tracking-[0.2em] font-bold text-red-100 mb-4">Torneio e Festivais</p>
-          <h1 className="font-black text-4xl md:text-6xl leading-tight mb-5">Torneio em andamento</h1>
-          <p className="max-w-2xl text-red-100 text-base md:text-lg mb-10">
-            Acompanhe os campeonatos por modalidade com placares atualizados, classificação geral e fases eliminatórias.
-          </p>
+          <div className="relative rounded-[2rem] overflow-hidden border border-white/30 min-h-[360px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#9E0000]">
+            {heroSlides.map((slide, index) => (
+              <article
+                key={slide.id}
+                className={`absolute inset-0 transition-opacity duration-700 ${index === heroIndex ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+              >
+                <img src={slide.imageUrl} alt={slide.title} className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#120303]/90 via-[#120303]/70 to-[#120303]/45" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
 
-          <div id="modalidades" className="flex flex-wrap gap-3">
+                <div className="relative h-full p-6 md:p-10 lg:p-12 flex flex-col justify-end max-w-3xl">
+                  <p className="text-[11px] md:text-xs uppercase tracking-[0.22em] font-black text-red-100 mb-3">{slide.badge}</p>
+                  <h1 className="font-black text-3xl md:text-5xl leading-tight mb-4">{slide.title}</h1>
+                  <p className="text-red-100 text-sm md:text-base mb-6 max-w-2xl">{slide.description}</p>
+                  <Button
+                    onClick={slide.onClick}
+                    className="h-11 px-6 w-fit bg-white text-[#D50000] hover:bg-[#05206F] hover:text-white font-black uppercase tracking-[0.12em]"
+                  >
+                    {slide.cta}
+                  </Button>
+                </div>
+              </article>
+            ))}
+
+            {heroSlides.length > 1 && (
+              <div className="absolute right-4 bottom-4 md:right-6 md:bottom-6 flex items-center gap-2 z-20">
+                <button
+                  className="h-9 w-9 rounded-full border border-white/60 bg-black/25 hover:bg-black/45 transition-colors"
+                  onClick={() => setHeroIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
+                  aria-label="Slide anterior"
+                >
+                  <ChevronLeft className="w-4 h-4 mx-auto" />
+                </button>
+                <button
+                  className="h-9 w-9 rounded-full border border-white/60 bg-black/25 hover:bg-black/45 transition-colors"
+                  onClick={() => setHeroIndex((prev) => (prev + 1) % heroSlides.length)}
+                  aria-label="Próximo slide"
+                >
+                  <ChevronRight className="w-4 h-4 mx-auto" />
+                </button>
+              </div>
+            )}
+
+            {heroSlides.length > 1 && (
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-5 z-20 flex items-center gap-2">
+                {heroSlides.map((slide, index) => (
+                  <button
+                    key={`${slide.id}-dot`}
+                    onClick={() => setHeroIndex(index)}
+                    className={`h-2.5 rounded-full transition-all ${index === heroIndex ? "w-8 bg-white" : "w-2.5 bg-white/50"}`}
+                    aria-label={`Ir para slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div id="modalidades" className="flex flex-wrap gap-3 mt-8">
             {(modalitiesWithTournaments.length > 0 ? modalitiesWithTournaments : modalitiesInOrder).map((modality) => (
               <button
                 key={modality}
