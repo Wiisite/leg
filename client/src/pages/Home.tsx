@@ -134,7 +134,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#F0F2F6] text-slate-900" style={{ fontFamily: "'Rajdhani', 'Segoe UI', sans-serif" }}>
       <header className="sticky top-0 z-50 shadow-xl">
         <div className="bg-[#05206F] text-white">
-          <div className="container h-10 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider">
+          <div className="container h-12 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.12em]">
             <button className="inline-flex items-center gap-2 hover:text-red-200 transition-colors">
               <Contact className="w-3.5 h-3.5" />
               Fale Conosco
@@ -144,7 +144,7 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <Button
                   onClick={() => navigate("/admin")}
-                  className="h-7 px-3 bg-white text-[#05206F] hover:bg-red-50 text-[10px] font-black rounded-md"
+                  className="h-8 px-3.5 bg-white text-[#05206F] hover:bg-red-50 text-[11px] font-black rounded-md"
                 >
                   Painel Admin
                 </Button>
@@ -175,20 +175,20 @@ export default function Home() {
             <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
           </div>
 
-          <div className="container relative h-22 flex items-center justify-between">
-            <nav className="hidden lg:flex items-center gap-6 text-[11px] font-black uppercase tracking-[0.18em]">
+          <div className="container relative h-24 flex items-center justify-between">
+            <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="hover:text-red-100 transition-colors">Home</button>
               <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Notícia</button>
               <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Modalidade</button>
             </nav>
 
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <div className="w-20 h-20 rounded-full bg-white shadow-2xl p-2">
+            <div className="absolute left-1/2 top-[56%] -translate-x-1/2 -translate-y-1/2 z-20">
+              <div className="w-32 h-32 md:w-36 md:h-36 drop-shadow-[0_14px_30px_rgba(0,0,0,0.35)]">
                 <img src={mainLogoUrl} alt="Logo LEG" className="w-full h-full object-contain" />
               </div>
             </div>
 
-            <nav className="hidden lg:flex items-center gap-6 text-[11px] font-black uppercase tracking-[0.18em]">
+            <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Clínicas</button>
               <button onClick={() => document.getElementById("sobre")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Quem Somos</button>
               <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Contato</button>
@@ -204,7 +204,7 @@ export default function Home() {
 
           {mobileMenuOpen && (
             <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
-              <div className="container py-4 flex flex-col gap-3 text-[11px] font-black uppercase tracking-wider">
+              <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
                 <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="text-left">Home</button>
                 <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Modalidades</button>
                 <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Torneios</button>
