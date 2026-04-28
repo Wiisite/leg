@@ -152,7 +152,7 @@ export default function Home() {
           description: "Acompanhe jogos, classificação e os melhores momentos da principal modalidade da LEG.",
           cta: "Acessar modalidade",
           imageUrl: HERO_IMAGE_BY_MODALITY.futsal,
-          onClick: () => scrollToModality("futsal"),
+          onClick: () => navigate("/modalidade/futsal"),
         },
         {
           id: "hero-volei",
@@ -161,7 +161,7 @@ export default function Home() {
           description: "Confira os destaques da rodada e acesse rapidamente a página da competição.",
           cta: "Ver detalhes",
           imageUrl: HERO_IMAGE_BY_MODALITY.volei,
-          onClick: () => scrollToModality("volei"),
+          onClick: () => navigate("/modalidade/volei"),
         },
       ];
     }
@@ -289,15 +289,15 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative bg-[#D50000] text-white pt-32 pb-28 overflow-hidden">
+      <section className="relative bg-[#D50000] text-white pt-32 pb-16 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -bottom-20 -right-20 h-80 w-80 border border-white/15 rounded-full" />
           <div className="absolute -top-28 -left-10 h-72 w-72 border border-white/15 rounded-full" />
           <div className="absolute top-0 right-16 h-full w-36 bg-[#BC0000] skew-x-[-26deg] opacity-35" />
         </div>
 
-        <div className="container relative">
-          <div className="relative rounded-[2rem] overflow-hidden border border-white/30 min-h-[360px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#9E0000]">
+        <div className="relative">
+          <div className="relative w-full overflow-hidden border-y border-white/30 min-h-[390px] md:min-h-[500px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#9E0000]">
             {heroSlides.map((slide, index) => (
               <article
                 key={slide.id}
@@ -353,22 +353,10 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          <div id="modalidades" className="flex flex-wrap gap-3 mt-8">
-            {(modalitiesWithTournaments.length > 0 ? modalitiesWithTournaments : modalitiesInOrder).map((modality) => (
-              <button
-                key={modality}
-                onClick={() => scrollToModality(modality)}
-                className="h-11 px-5 rounded-full bg-white text-[#D50000] hover:bg-[#05206F] hover:text-white transition-all border border-white/40 text-xs font-black uppercase tracking-[0.15em]"
-              >
-                {MODALITY_CONFIG[modality]?.navLabel ?? modality}
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
-      <section className="container -mt-16 relative z-20 mb-16">
+      <section id="modalidades" className="container -mt-10 relative z-20 mb-16">
         <div className="rounded-3xl bg-white border border-slate-200 shadow-xl p-5 md:p-7">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg md:text-2xl font-black uppercase tracking-wide text-[#05206F]">Modalidades em destaque</h2>
@@ -408,10 +396,10 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 mb-3">{config?.label ?? modality}</h3>
                   <button
-                    onClick={() => scrollToModality(modality)}
+                    onClick={() => navigate(`/modalidade/${modality}`)}
                     className="text-xs font-black uppercase tracking-[0.16em] inline-flex items-center gap-1 text-[#D50000] hover:text-[#05206F]"
                   >
-                    Ver Detalhes <ChevronRight className="w-3.5 h-3.5" />
+                    Ver página <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </article>
               );
