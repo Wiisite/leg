@@ -503,71 +503,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="container mb-16">
-        <div className="rounded-3xl border border-slate-200 bg-white shadow-xl p-6 md:p-8">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#D50000]">Parcerias LEG</p>
-              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-[#05206F]">Quem faz o campeonato acontecer</h2>
-            </div>
-            <div className="hidden md:flex items-center gap-2">
-              <button
-                className="h-10 w-10 rounded-full border border-slate-300 text-slate-600 hover:bg-[#05206F] hover:text-white transition-colors"
-                onClick={() => partnersSliderRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
-                aria-label="Voltar parceiros"
-              >
-                <ChevronLeft className="w-4 h-4 mx-auto" />
-              </button>
-              <button
-                className="h-10 w-10 rounded-full border border-slate-300 text-slate-600 hover:bg-[#05206F] hover:text-white transition-colors"
-                onClick={() => partnersSliderRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
-                aria-label="Avançar parceiros"
-              >
-                <ChevronRight className="w-4 h-4 mx-auto" />
-              </button>
-            </div>
-          </div>
-
-          {partners.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-              <p className="text-sm font-bold text-slate-500">Nenhum parceiro cadastrado no momento.</p>
-            </div>
-          ) : (
-            <>
-              <div
-                ref={partnersSliderRef}
-                onMouseEnter={() => setIsPartnersHovered(true)}
-                onMouseLeave={() => setIsPartnersHovered(false)}
-                className="hidden md:flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              >
-                {partners.map((partner) => (
-                  <article
-                    key={`${partner.name}-${partner.logoUrl}`}
-                    className="shrink-0 w-[220px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                  >
-                    <div className="h-24 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-3 p-3">
-                      <img src={partner.logoUrl} alt={partner.name} className="max-h-full max-w-full object-contain" />
-                    </div>
-                    <p className="text-sm font-black text-slate-800 uppercase tracking-wide truncate">{partner.name}</p>
-                  </article>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 md:hidden">
-                {partners.map((partner) => (
-                  <article key={`mobile-${partner.name}-${partner.logoUrl}`} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <div className="h-20 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center mb-2 p-2">
-                      <img src={partner.logoUrl} alt={partner.name} className="max-h-full max-w-full object-contain" />
-                    </div>
-                    <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide truncate">{partner.name}</p>
-                  </article>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
       <section id="sobre" className="relative min-h-[420px] md:min-h-[520px] overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center md:bg-fixed"
@@ -739,6 +674,71 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      <section className="container mb-16">
+        <div className="rounded-3xl border border-slate-200 bg-white shadow-xl p-6 md:p-8">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#D50000]">Parcerias LEG</p>
+              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-[#05206F]">Quem faz o campeonato acontecer</h2>
+            </div>
+            <div className="hidden md:flex items-center gap-2">
+              <button
+                className="h-10 w-10 rounded-full border border-slate-300 text-slate-600 hover:bg-[#05206F] hover:text-white transition-colors"
+                onClick={() => partnersSliderRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
+                aria-label="Voltar parceiros"
+              >
+                <ChevronLeft className="w-4 h-4 mx-auto" />
+              </button>
+              <button
+                className="h-10 w-10 rounded-full border border-slate-300 text-slate-600 hover:bg-[#05206F] hover:text-white transition-colors"
+                onClick={() => partnersSliderRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
+                aria-label="Avançar parceiros"
+              >
+                <ChevronRight className="w-4 h-4 mx-auto" />
+              </button>
+            </div>
+          </div>
+
+          {partners.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <p className="text-sm font-bold text-slate-500">Nenhum parceiro cadastrado no momento.</p>
+            </div>
+          ) : (
+            <>
+              <div
+                ref={partnersSliderRef}
+                onMouseEnter={() => setIsPartnersHovered(true)}
+                onMouseLeave={() => setIsPartnersHovered(false)}
+                className="hidden md:flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {partners.map((partner) => (
+                  <article
+                    key={`${partner.name}-${partner.logoUrl}`}
+                    className="shrink-0 w-[220px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="h-24 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-3 p-3">
+                      <img src={partner.logoUrl} alt={partner.name} className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <p className="text-sm font-black text-slate-800 uppercase tracking-wide truncate">{partner.name}</p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 md:hidden">
+                {partners.map((partner) => (
+                  <article key={`mobile-${partner.name}-${partner.logoUrl}`} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <div className="h-20 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center mb-2 p-2">
+                      <img src={partner.logoUrl} alt={partner.name} className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide truncate">{partner.name}</p>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
       <SiteFooter
         footerLogoUrl={footerLogoUrl}
