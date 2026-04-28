@@ -229,6 +229,7 @@ export default function Home() {
 
         return {
           id: t.id,
+          tournamentId: t.id,
           modalityKey,
           modalityLabel,
           statusLabel,
@@ -552,7 +553,7 @@ export default function Home() {
                   <h4 className="text-lg font-black text-slate-900 leading-tight mb-2">{news.headline}</h4>
                   <p className="text-sm text-slate-600 mb-4 leading-relaxed">{news.summary}</p>
                   <button
-                    onClick={() => navigate(`/modalidade/${news.modalityKey}`)}
+                    onClick={() => navigate(`/tournament/${news.tournamentId}`)}
                     className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.14em] text-[#D50000] hover:text-[#05206F]"
                   >
                     Acessar página
