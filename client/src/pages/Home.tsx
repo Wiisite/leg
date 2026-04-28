@@ -583,7 +583,7 @@ export default function Home() {
                 <img src={footerLogoUrl} alt="Logo LEG rodapé" className="w-12 h-12 rounded-lg bg-white p-1 object-contain" />
                 <div>
                   <p className="font-black text-2xl leading-none">LIGA ESCOLAR</p>
-                  <p className="font-black text-xs tracking-[0.2em] text-red-200">GUARULHENSE</p>
+                  <p className="font-black text-xs tracking-[0.2em] text-[#D50000]">GUARULHENSE</p>
                 </div>
               </div>
               <p className="text-sm text-blue-100/85 max-w-sm mb-4">
