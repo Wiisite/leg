@@ -57,6 +57,46 @@ export default function ModalityPage() {
     [tournaments, modality]
   );
 
+  const modalityNews = useMemo(() => {
+    const modalityLabel = config?.label ?? "modalidade";
+    return [...list]
+      .sort((a, b) => {
+        const dateA = new Date(String((a as any).updatedAt ?? (a as any).createdAt ?? 0)).getTime();
+        const dateB = new Date(String((b as any).updatedAt ?? (b as any).createdAt ?? 0)).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        return Number((b as any).id ?? 0) - Number((a as any).id ?? 0);
+      })
+      .slice(0, 6)
+      .map((t) => {
+        const statusLabel = STATUS_LABELS[t.status]?.label ?? "Atualização";
+        const lastUpdate = new Date(String((t as any).updatedAt ?? (t as any).createdAt ?? Date.now()));
+        const formattedDate = Number.isNaN(lastUpdate.getTime())
+          ? "Atualizado recentemente"
+          : lastUpdate.toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+
+        const headline = t.champion
+          ? `${t.champion} conquista o título no ${t.name}`
+          : `${t.name}: ${statusLabel.toLowerCase()}`;
+
+        const summary = t.champion
+          ? `Título confirmado na categoria ${t.category}. Veja os detalhes da campanha no ${modalityLabel.toLowerCase()}.`
+          : `A disputa da categoria ${t.category} está em ${statusLabel.toLowerCase()}. Acompanhe tabela e próximos jogos.`;
+
+        return {
+          id: t.id,
+          tournamentId: t.id,
+          statusLabel,
+          headline,
+          summary,
+          formattedDate,
+        };
+      });
+  }, [list, config?.label]);
+
   useEffect(() => {
     const onScroll = () => {
       const maxScroll = 140;
@@ -181,12 +221,14 @@ export default function ModalityPage() {
           className="absolute inset-0 bg-cover bg-center md:bg-fixed"
           style={{ backgroundImage: `url(${modalityBannerImageUrl})` }}
         />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#081226]/78 via-[#10203A]/64 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10" />
 
         <div className="container relative py-14 md:py-20">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-white mb-3 [text-shadow:0_2px_10px_rgba(0,0,0,0.55)]">Página da modalidade</p>
-          <h1 className="font-black text-4xl md:text-6xl leading-tight mb-3 [text-shadow:0_3px_16px_rgba(0,0,0,0.6)]">{config.label}</h1>
+          <h1 className="font-black text-4xl md:text-6xl leading-tight mb-3 [text-shadow:0_3px_16px_rgba(0,0,0,0.6)]">Competições em destaque</h1>
           <p className="text-sm md:text-lg text-white max-w-2xl [text-shadow:0_2px_10px_rgba(0,0,0,0.55)]">
-            Acompanhe jogos, tabelas e novidades do {config.label.toLowerCase()} da Liga Escolar Guarulhense.
+            Acompanhe jogos, tabela, classificação e novidades da Liga Escolar Guarulhense.
           </p>
         </div>
       </section>
@@ -242,18 +284,45 @@ export default function ModalityPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
 
         <div className="container relative py-12 md:py-20">
-          <div className="mx-auto max-w-3xl rounded-[28px] border border-white/25 bg-white/10 backdrop-blur-md shadow-[0_20px_55px_rgba(2,6,23,0.45)] px-6 py-8 md:px-10 md:py-12 text-center text-white">
-            <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100/95 mb-3">Destaque da modalidade</p>
-            <h2 className="text-3xl md:text-5xl font-black leading-tight mb-3">{config.label} em alta na LEG</h2>
-            <p className="text-sm md:text-lg text-white/90 leading-relaxed max-w-2xl mx-auto mb-6">
-              Jogos intensos, evolução técnica e competição de alto nível. Acompanhe os campeonatos, resultados e os próximos confrontos da modalidade.
+          <div className="mx-auto max-w-5xl rounded-[28px] border border-white/25 bg-white/10 backdrop-blur-md shadow-[0_20px_55px_rgba(2,6,23,0.45)] px-6 py-8 md:px-10 md:py-12 text-white">
+            <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100/95 mb-3 text-center">Destaques dos campeonatos</p>
+            <h2 className="text-3xl md:text-5xl font-black leading-tight mb-3 text-center">O que está acontecendo agora</h2>
+            <p className="text-sm md:text-lg text-white/90 leading-relaxed max-w-2xl mx-auto mb-8 text-center">
+              Atualizações recentes da modalidade com acesso direto para cada campeonato.
             </p>
-            <Button
-              onClick={() => navigate("/")}
-              className="h-11 px-6 w-fit mx-auto bg-white text-slate-900 hover:bg-slate-100 font-black uppercase tracking-[0.12em]"
-            >
-              Ver Home
-            </Button>
+
+            {modalityNews.length === 0 ? (
+              <div className="rounded-2xl border border-white/20 bg-black/20 p-7 text-center">
+                <p className="text-sm font-bold text-white/90">Sem atualizações no momento.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {modalityNews.map((news) => (
+                  <article
+                    key={`mod-news-${news.id}`}
+                    className="rounded-2xl border border-white/20 bg-black/25 p-5 shadow-sm hover:shadow-lg hover:bg-black/35 transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/15 text-white/90">
+                        {news.statusLabel}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/70">{news.formattedDate}</span>
+                    </div>
+
+                    <h4 className="text-lg font-black text-white leading-tight mb-2">{news.headline}</h4>
+                    <p className="text-sm text-white/85 mb-4 leading-relaxed">{news.summary}</p>
+
+                    <button
+                      onClick={() => navigate(`/tournament/${news.tournamentId}`)}
+                      className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.14em] text-red-100 hover:text-white"
+                    >
+                      Ver campeonato
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
