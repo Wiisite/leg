@@ -112,6 +112,8 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logoShrinkProgress, setLogoShrinkProgress] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const partnersSliderRef = useRef<HTMLDivElement>(null);
+  const [isPartnersHovered, setIsPartnersHovered] = useState(false);
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
@@ -195,11 +197,70 @@ export default function Home() {
     });
   }, [groupedTournaments, navigate, homeHeroImages]);
 
+  const championshipNews = useMemo(() => {
+    const list = [...(tournaments ?? [])]
+      .sort((a, b) => {
+        const dateA = new Date(String((a as any).updatedAt ?? (a as any).createdAt ?? 0)).getTime();
+        const dateB = new Date(String((b as any).updatedAt ?? (b as any).createdAt ?? 0)).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        return Number((b as any).id ?? 0) - Number((a as any).id ?? 0);
+      })
+      .slice(0, 8)
+      .map((t) => {
+        const modalityKey = String(t.modality || "futsal").toLowerCase();
+        const modalityLabel = MODALITY_CONFIG[modalityKey]?.label ?? "Modalidade";
+        const statusLabel = STATUS_LABELS[t.status]?.label ?? "Atualização";
+        const lastUpdate = new Date(String((t as any).updatedAt ?? (t as any).createdAt ?? Date.now()));
+        const formattedDate = Number.isNaN(lastUpdate.getTime())
+          ? "Atualizado recentemente"
+          : lastUpdate.toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+
+        const headline = t.champion
+          ? `${t.name} definiu campeão`
+          : `${t.name} segue em ${statusLabel.toLowerCase()}`;
+        const summary = t.champion
+          ? `Título confirmado para ${t.champion}. Confira os detalhes da campanha na modalidade ${modalityLabel.toLowerCase()}.`
+          : `A competição da categoria ${t.category} está em ${statusLabel.toLowerCase()}. Acompanhe os próximos resultados.`;
+
+        return {
+          id: t.id,
+          modalityKey,
+          modalityLabel,
+          statusLabel,
+          headline,
+          summary,
+          formattedDate,
+        };
+      });
+
+    return list;
+  }, [tournaments]);
+
   const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
     setHeroIndex(0);
   }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (!partnersSliderRef.current || partners.length <= 1 || isPartnersHovered) return;
+    const slider = partnersSliderRef.current;
+    const timer = window.setInterval(() => {
+      const step = 220;
+      const nearEnd = slider.scrollLeft + slider.clientWidth >= slider.scrollWidth - 24;
+      if (nearEnd) {
+        slider.scrollTo({ left: 0, behavior: "smooth" });
+        return;
+      }
+      slider.scrollBy({ left: step, behavior: "smooth" });
+    }, 2600);
+
+    return () => window.clearInterval(timer);
+  }, [partners.length, isPartnersHovered]);
 
   useEffect(() => {
     if (heroSlides.length <= 1) return;
@@ -442,6 +503,71 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="container mb-16">
+        <div className="rounded-3xl border border-slate-200 bg-white shadow-xl p-6 md:p-8">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#D50000]">Parcerias LEG</p>
+              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-[#05206F]">Quem faz o campeonato acontecer</h2>
+            </div>
+            <div className="hidden md:flex items-center gap-2">
+              <button
+                className="h-10 w-10 rounded-full border border-slate-300 text-slate-600 hover:bg-[#05206F] hover:text-white transition-colors"
+                onClick={() => partnersSliderRef.current?.scrollBy({ left: -220, behavior: "smooth" })}
+                aria-label="Voltar parceiros"
+              >
+                <ChevronLeft className="w-4 h-4 mx-auto" />
+              </button>
+              <button
+                className="h-10 w-10 rounded-full border border-slate-300 text-slate-600 hover:bg-[#05206F] hover:text-white transition-colors"
+                onClick={() => partnersSliderRef.current?.scrollBy({ left: 220, behavior: "smooth" })}
+                aria-label="Avançar parceiros"
+              >
+                <ChevronRight className="w-4 h-4 mx-auto" />
+              </button>
+            </div>
+          </div>
+
+          {partners.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <p className="text-sm font-bold text-slate-500">Nenhum parceiro cadastrado no momento.</p>
+            </div>
+          ) : (
+            <>
+              <div
+                ref={partnersSliderRef}
+                onMouseEnter={() => setIsPartnersHovered(true)}
+                onMouseLeave={() => setIsPartnersHovered(false)}
+                className="hidden md:flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {partners.map((partner) => (
+                  <article
+                    key={`${partner.name}-${partner.logoUrl}`}
+                    className="shrink-0 w-[220px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="h-24 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-3 p-3">
+                      <img src={partner.logoUrl} alt={partner.name} className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <p className="text-sm font-black text-slate-800 uppercase tracking-wide truncate">{partner.name}</p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 md:hidden">
+                {partners.map((partner) => (
+                  <article key={`mobile-${partner.name}-${partner.logoUrl}`} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <div className="h-20 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center mb-2 p-2">
+                      <img src={partner.logoUrl} alt={partner.name} className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide truncate">{partner.name}</p>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
       <section id="sobre" className="relative min-h-[420px] md:min-h-[520px] overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center md:bg-fixed"
@@ -459,6 +585,45 @@ export default function Home() {
             adolescentes matriculados nas escolas do município, oferecendo competições com organização, respeito e
             oportunidade de sociabilização no ambiente educacional.
           </p>
+        </div>
+      </section>
+
+      <section className="container mb-14">
+        <div className="rounded-3xl bg-white border border-slate-200 shadow-xl p-6 md:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#D50000]">Notícias</p>
+              <h3 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-[#05206F]">O que está acontecendo nos campeonatos</h3>
+            </div>
+          </div>
+
+          {championshipNews.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <p className="text-sm font-bold text-slate-500">Sem atualizações no momento.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {championshipNews.map((news) => (
+                <article key={`news-${news.id}`} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-700">
+                      {news.modalityLabel}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{news.formattedDate}</span>
+                  </div>
+                  <h4 className="text-lg font-black text-slate-900 leading-tight mb-2">{news.headline}</h4>
+                  <p className="text-sm text-slate-600 mb-4 leading-relaxed">{news.summary}</p>
+                  <button
+                    onClick={() => navigate(`/modalidade/${news.modalityKey}`)}
+                    className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.14em] text-[#D50000] hover:text-[#05206F]"
+                  >
+                    Acessar página
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
