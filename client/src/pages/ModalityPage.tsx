@@ -233,25 +233,28 @@ export default function ModalityPage() {
         )}
       </main>
 
-      <section className="relative min-h-[320px] md:min-h-[420px] overflow-hidden mt-6">
+      <section className="relative isolate overflow-hidden mt-8 min-h-[340px] md:min-h-[460px]">
         <div
           className="absolute inset-0 bg-cover bg-center md:bg-fixed"
           style={{ backgroundImage: `url(${modalityBannerImageUrl})` }}
         />
-        <div className="absolute inset-0" style={{ background: `linear-gradient(90deg, ${config.accent}E8 0%, ${config.accent}B8 48%, ${config.accent}7A 100%)` }} />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#060B1B]/82 via-[#0C1730]/68 to-[#111827]/56" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
 
-        <div className="container relative py-14 md:py-20 text-white max-w-3xl">
-          <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-white/85 mb-3">Destaque da modalidade</p>
-          <h2 className="text-3xl md:text-5xl font-black leading-tight mb-3">{config.label} em evidência</h2>
-          <p className="text-sm md:text-lg text-white/90 mb-6">
-            Acompanhe os campeonatos, resultados e tudo que está movimentando o {config.label.toLowerCase()} na LEG.
-          </p>
-          <Button
-            onClick={() => navigate("/")}
-            className="h-11 px-6 w-fit bg-white text-slate-900 hover:bg-slate-100 font-black uppercase tracking-[0.12em]"
-          >
-            Ver Home
-          </Button>
+        <div className="container relative py-12 md:py-20">
+          <div className="mx-auto max-w-3xl rounded-[28px] border border-white/25 bg-white/10 backdrop-blur-md shadow-[0_20px_55px_rgba(2,6,23,0.45)] px-6 py-8 md:px-10 md:py-12 text-center text-white">
+            <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100/95 mb-3">Destaque da modalidade</p>
+            <h2 className="text-3xl md:text-5xl font-black leading-tight mb-3">{config.label} em alta na LEG</h2>
+            <p className="text-sm md:text-lg text-white/90 leading-relaxed max-w-2xl mx-auto mb-6">
+              Jogos intensos, evolução técnica e competição de alto nível. Acompanhe os campeonatos, resultados e os próximos confrontos da modalidade.
+            </p>
+            <Button
+              onClick={() => navigate("/")}
+              className="h-11 px-6 w-fit mx-auto bg-white text-slate-900 hover:bg-slate-100 font-black uppercase tracking-[0.12em]"
+            >
+              Ver Home
+            </Button>
+          </div>
         </div>
       </section>
 
