@@ -172,17 +172,22 @@ export default function ModalityPage() {
         </div>
       </header>
 
-      <section className="relative bg-[#D50000] text-white pt-16 pb-14 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 opacity-25">
-          <div className="absolute -left-16 top-0 h-full w-48 bg-[#B80000] skew-x-[-30deg]" />
-          <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
-        </div>
+      <section className="relative min-h-[320px] md:min-h-[420px] overflow-hidden text-white">
+        <div
+          className="absolute inset-0 bg-cover bg-center md:bg-fixed"
+          style={{ backgroundImage: `url(${modalityBannerImageUrl})` }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(90deg, ${config.accent}E8 0%, ${config.accent}B8 48%, ${config.accent}7A 100%)` }}
+        />
 
-        <div className="container relative">
-          <p className="text-xs uppercase tracking-[0.2em] font-bold text-red-100 mb-3">Página da modalidade</p>
-          <h1 className="font-black text-4xl md:text-6xl leading-tight" style={{ color: "white" }}>
-            {config.label}
-          </h1>
+        <div className="container relative py-14 md:py-20">
+          <p className="text-xs uppercase tracking-[0.2em] font-bold text-white/85 mb-3">Página da modalidade</p>
+          <h1 className="font-black text-4xl md:text-6xl leading-tight mb-3">{config.label}</h1>
+          <p className="text-sm md:text-lg text-white/90 max-w-2xl">
+            Acompanhe jogos, tabelas e novidades do {config.label.toLowerCase()} da Liga Escolar Guarulhense.
+          </p>
         </div>
       </section>
 
