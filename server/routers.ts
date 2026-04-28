@@ -158,6 +158,161 @@ const tournamentRouter = router({
     return getAllTournaments();
   }),
 
+  getHomeNews: publicProcedure.query(async () => {
+    const modalityLabelByKey: Record<string, string> = {
+      futsal: "Futsal",
+      basquete: "Basquete",
+      volei: "Voleibol",
+      handebol: "Handebol",
+    };
+
+    const tournaments = await getAllTournaments();
+    const news: Array<{
+      id: string;
+      tournamentId: number;
+      modalityKey: string;
+      modalityLabel: string;
+      headline: string;
+      summary: string;
+      formattedDate: string;
+      priority: number;
+      dateTs: number;
+    }> = [];
+
+    for (const tournament of tournaments) {
+      const modalityKey = String(tournament.modality || "futsal").toLowerCase();
+      const modalityLabel = modalityLabelByKey[modalityKey] ?? "Modalidade";
+      const updatedAt = new Date(String((tournament as any).updatedAt ?? (tournament as any).createdAt ?? Date.now()));
+      const dateTs = Number.isNaN(updatedAt.getTime()) ? Date.now() : updatedAt.getTime();
+      const formattedDate = Number.isNaN(updatedAt.getTime())
+        ? "Atualizado recentemente"
+        : updatedAt.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+
+      if (tournament.champion) {
+        news.push({
+          id: `champion-${tournament.id}`,
+          tournamentId: tournament.id,
+          modalityKey,
+          modalityLabel,
+          headline: `${tournament.champion} é campeão do ${tournament.name}`,
+          summary: `A competição ${tournament.category} do ${modalityLabel.toLowerCase()} foi encerrada com título confirmado para ${tournament.champion}.`,
+          formattedDate,
+          priority: 120,
+          dateTs,
+        });
+      }
+
+      const teamList = await getTeamsByTournament(tournament.id);
+      const groupMatches = await getMatchesByPhase(tournament.id, "group");
+      const finishedGroupMatches = groupMatches.filter((m) => m.status === "finished" && m.homeScore !== null && m.awayScore !== null);
+
+      const groupNames = teamList
+        .map((t) => t.groupName)
+        .filter((g): g is string => g != null)
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .sort();
+
+      if (teamList.length > 0 && finishedGroupMatches.length > 0) {
+        if (groupNames.length <= 1) {
+          const standings = computeStandings(
+            teamList,
+            groupMatches,
+            tournament.pointsPerWin,
+            tournament.pointsPerDraw,
+            tournament.pointsPerLoss,
+            tournament.modality,
+          );
+
+          const leader = standings[0];
+          const vice = standings[1];
+
+          if (leader && leader.played > 0) {
+            news.push({
+              id: `leader-${tournament.id}`,
+              tournamentId: tournament.id,
+              modalityKey,
+              modalityLabel,
+              headline: `${leader.teamName} lidera ${tournament.category} no ${modalityLabel}`,
+              summary: `Com ${leader.points} ponto${leader.points === 1 ? "" : "s"} em ${leader.played} jogo${leader.played === 1 ? "" : "s"}, a equipe está no topo da classificação do ${tournament.name}.`,
+              formattedDate,
+              priority: 100,
+              dateTs,
+            });
+          }
+
+          if (leader && vice && leader.played > 0 && vice.played > 0 && Math.abs(leader.points - vice.points) <= 1) {
+            news.push({
+              id: `race-${tournament.id}`,
+              tournamentId: tournament.id,
+              modalityKey,
+              modalityLabel,
+              headline: `Disputa acirrada pela liderança no ${tournament.name}`,
+              summary: `${leader.teamName} (${leader.points} pts) e ${vice.teamName} (${vice.points} pts) brigam ponto a ponto pela ponta da tabela.`,
+              formattedDate,
+              priority: 90,
+              dateTs,
+            });
+          }
+        } else {
+          for (const groupName of groupNames) {
+            const groupTeams = teamList.filter((t) => t.groupName === groupName);
+            const groupIds = new Set(groupTeams.map((t) => t.id));
+            const groupOnlyMatches = groupMatches.filter((m) => groupIds.has(m.homeTeamId) && groupIds.has(m.awayTeamId));
+            const standings = computeStandings(
+              groupTeams,
+              groupOnlyMatches,
+              tournament.pointsPerWin,
+              tournament.pointsPerDraw,
+              tournament.pointsPerLoss,
+              tournament.modality,
+            );
+            const leader = standings[0];
+            if (!leader || leader.played === 0) continue;
+
+            news.push({
+              id: `leader-${tournament.id}-group-${groupName}`,
+              tournamentId: tournament.id,
+              modalityKey,
+              modalityLabel,
+              headline: `${leader.teamName} lidera o Grupo ${groupName} no ${tournament.name}`,
+              summary: `Com ${leader.points} ponto${leader.points === 1 ? "" : "s"}, a equipe abre vantagem na categoria ${tournament.category} do ${modalityLabel.toLowerCase()}.`,
+              formattedDate,
+              priority: 95,
+              dateTs,
+            });
+          }
+        }
+      }
+
+      if (finishedGroupMatches.length === 0) {
+        news.push({
+          id: `status-${tournament.id}`,
+          tournamentId: tournament.id,
+          modalityKey,
+          modalityLabel,
+          headline: `${tournament.name} segue em preparação`,
+          summary: `A competição da categoria ${tournament.category} no ${modalityLabel.toLowerCase()} está em fase inicial. Fique de olho nos próximos resultados.`,
+          formattedDate,
+          priority: 40,
+          dateTs,
+        });
+      }
+    }
+
+    return news
+      .sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        if (b.dateTs !== a.dateTs) return b.dateTs - a.dateTs;
+        return a.id.localeCompare(b.id);
+      })
+      .slice(0, 8)
+      .map(({ priority, dateTs, ...item }) => item);
+  }),
+
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const tournament = await getTournamentById(input.id);
     if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });

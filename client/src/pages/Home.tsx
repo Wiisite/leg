@@ -116,6 +116,7 @@ export default function Home() {
   const [isPartnersHovered, setIsPartnersHovered] = useState(false);
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
+  const { data: homeNews } = trpc.tournament.getHomeNews.useQuery();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
 
   const mainLogoUrl = siteSettings?.mainLogoUrl?.trim() ? siteSettings.mainLogoUrl : "/logo.png";
@@ -239,6 +240,8 @@ export default function Home() {
 
     return list;
   }, [tournaments]);
+
+  const renderedNews = homeNews && homeNews.length > 0 ? homeNews : championshipNews;
 
   const [heroIndex, setHeroIndex] = useState(0);
 
@@ -532,13 +535,13 @@ export default function Home() {
             </div>
           </div>
 
-          {championshipNews.length === 0 ? (
+          {renderedNews.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
               <p className="text-sm font-bold text-slate-500">Sem atualizações no momento.</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {championshipNews.map((news) => (
+              {renderedNews.map((news) => (
                 <article key={`news-${news.id}`} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-3">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-700">
