@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
@@ -269,11 +270,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="relative bg-[#D50000] text-white overflow-visible">
-          <div className="pointer-events-none absolute inset-0 opacity-25">
-            <div className="absolute -left-16 top-0 h-full w-48 bg-[#B80000] skew-x-[-30deg]" />
-            <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
-          </div>
+        <div className="relative bg-[#05206F] text-white overflow-visible">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-[#D50000]/85" />
 
           <div className="container relative h-24 flex items-center justify-between">
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
@@ -309,7 +307,7 @@ export default function Home() {
           </div>
 
           {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
+            <div className="lg:hidden border-t border-[#D50000]/60 bg-[#041955]">
               <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
                 <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="text-left">Home</button>
                 <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Modalidades</button>
@@ -321,15 +319,15 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative bg-[#D50000] text-white pt-32 pb-16 overflow-hidden">
+      <section className="relative bg-[#05206F] text-white pt-24 pb-16 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -bottom-20 -right-20 h-80 w-80 border border-white/15 rounded-full" />
           <div className="absolute -top-28 -left-10 h-72 w-72 border border-white/15 rounded-full" />
-          <div className="absolute top-0 right-16 h-full w-36 bg-[#BC0000] skew-x-[-26deg] opacity-35" />
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-[#D50000]/85" />
         </div>
 
         <div className="relative">
-          <div className="relative w-full overflow-hidden border-y border-white/30 min-h-[390px] md:min-h-[500px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#9E0000]">
+          <div className="relative w-full overflow-hidden border-y border-white/30 min-h-[430px] md:min-h-[560px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#0B1542]">
             {heroSlides.map((slide, index) => (
               <article
                 key={slide.id}
@@ -573,92 +571,16 @@ export default function Home() {
         )}
       </main>
 
-      <footer id="rodape" className="mt-20 bg-[#05206F] text-white pt-12 pb-8">
-        <div className="h-1 w-full bg-gradient-to-r from-transparent via-red-300 to-transparent opacity-80 mb-10" />
-
-        <div className="container">
-          <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr] border-b border-white/15 pb-10">
-            <div id="sobre">
-              <div className="flex items-center gap-3 mb-4">
-                <img src={footerLogoUrl} alt="Logo LEG rodapé" className="w-12 h-12 rounded-lg bg-white p-1 object-contain" />
-                <div>
-                  <p className="font-black text-2xl leading-none">LIGA ESCOLAR</p>
-                  <p className="font-black text-xs tracking-[0.2em] text-[#D50000]">GUARULHENSE</p>
-                </div>
-              </div>
-              <p className="text-sm text-blue-100/85 max-w-sm mb-4">
-                Receba novidades de competições, resultados e notícias de eventos escolares de Guarulhos.
-              </p>
-
-              <div className="flex gap-2 max-w-sm">
-                <input
-                  type="email"
-                  placeholder="E-mail"
-                  className="flex-1 h-10 px-3 rounded-md text-slate-900 bg-white"
-                />
-                <Button className="h-10 px-5 bg-[#D50000] hover:bg-[#BB0000] text-white font-black uppercase tracking-wider">Enviar</Button>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-black uppercase tracking-[0.16em] mb-3">Sobre</h4>
-              <ul className="space-y-2 text-sm text-blue-100/85">
-                <li><button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Home</button></li>
-                <li><button onClick={() => document.getElementById("sobre")?.scrollIntoView({ behavior: "smooth" })}>Sobre nós</button></li>
-                <li><button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })}>Notícias</button></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-black uppercase tracking-[0.16em] mb-3">Modalidades</h4>
-              <ul className="space-y-2 text-sm text-blue-100/85">
-                {modalitiesInOrder.map((mod) => (
-                  <li key={mod}>
-                    <button onClick={() => scrollToModality(mod)}>{MODALITY_CONFIG[mod]?.label ?? mod}</button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-black uppercase tracking-[0.16em] mb-3">Contato</h4>
-              <ul className="space-y-2 text-sm text-blue-100/85">
-                <li>Fale conosco</li>
-                <li>Contato comercial</li>
-                <li>Seja um parceiro</li>
-              </ul>
-
-              <div className="mt-5 rounded-xl bg-white/10 border border-white/15 p-3 text-xs">
-                <p className="font-black uppercase tracking-wider mb-1">Parceiros</p>
-                {partners.length === 0 ? (
-                  <p className="text-blue-100/80">Nenhum parceiro cadastrado</p>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-3">
-                    {partners.map((partner) => (
-                      <div
-                        key={`${partner.name}-${partner.logoUrl}`}
-                        className="inline-flex items-center gap-2 rounded-md bg-white/10 px-2.5 py-1.5"
-                      >
-                        <img
-                          src={partner.logoUrl}
-                          alt={partner.name}
-                          className="h-5 w-5 rounded bg-white p-0.5 object-contain"
-                        />
-                        <span className="text-[11px] text-blue-100/90">{partner.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-blue-100/80">
-            <p>© Liga Escolar Guarulhense 2026. Todos os direitos reservados.</p>
-            <p className="font-semibold">Facebook • Youtube • Instagram</p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter
+        footerLogoUrl={footerLogoUrl}
+        partners={partners}
+        modalities={modalitiesInOrder}
+        modalityLabelByKey={Object.fromEntries(modalitiesInOrder.map((mod) => [mod, MODALITY_CONFIG[mod]?.label ?? mod]))}
+        onHomeClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        onAboutClick={() => document.getElementById("sobre")?.scrollIntoView({ behavior: "smooth" })}
+        onNewsClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })}
+        onModalityClick={scrollToModality}
+      />
     </div>
   );
 }
