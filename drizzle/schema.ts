@@ -1,5 +1,6 @@
 import {
   int,
+  longtext,
   mysqlEnum,
   mysqlTable,
   text,
@@ -91,9 +92,9 @@ export type InsertMatch = typeof matches.$inferInsert;
 
 export const siteSettings = mysqlTable("site_settings", {
   id: int("id").autoincrement().primaryKey(),
-  mainLogoUrl: text("mainLogoUrl"),
-  footerLogoUrl: text("footerLogoUrl"),
-  partnersJson: text("partnersJson"),
+  mainLogoUrl: longtext("mainLogoUrl"),
+  footerLogoUrl: longtext("footerLogoUrl"),
+  partnersJson: longtext("partnersJson"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 

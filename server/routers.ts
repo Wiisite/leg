@@ -912,8 +912,16 @@ const siteRouter = router({
         const { mimeType, buffer } = decodeDataUrl(dataUrl);
         const extension = extensionFromMime(mimeType);
         const key = `site-settings/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
-        const uploaded = await storagePut(key, buffer, mimeType);
-        return uploaded.url;
+        try {
+          const uploaded = await storagePut(key, buffer, mimeType);
+          return uploaded.url;
+        } catch (error: any) {
+          const message = String(error?.message || "");
+          if (message.includes("Storage proxy credentials missing")) {
+            return dataUrl;
+          }
+          throw error;
+        }
       };
 
       const resolvedMainLogoUrl =

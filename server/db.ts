@@ -54,6 +54,24 @@ export async function getDb() {
           }
 
           try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN mainLogoUrl LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN footerLogoUrl LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN partnersJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
             await _db!.execute(
               sql.raw(
                 "ALTER TABLE matches MODIFY COLUMN phase ENUM('group','quarterfinal','semifinal','third_place','final') NOT NULL"
