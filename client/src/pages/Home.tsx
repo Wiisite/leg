@@ -109,7 +109,7 @@ export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isHeaderShrunk, setIsHeaderShrunk] = useState(false);
+  const [logoShrinkProgress, setLogoShrinkProgress] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
@@ -197,11 +197,18 @@ export default function Home() {
   }, [heroSlides.length]);
 
   useEffect(() => {
-    const onScroll = () => setIsHeaderShrunk(window.scrollY > 24);
+    const onScroll = () => {
+      const maxScroll = 140;
+      const progress = Math.min(1, window.scrollY / maxScroll);
+      setLogoShrinkProgress(progress);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const logoScale = 1 - 0.36 * logoShrinkProgress;
+  const logoTop = 88 - 12 * logoShrinkProgress;
 
   const slideSports = (direction: "left" | "right") => {
     if (!sliderRef.current) return;
@@ -264,8 +271,14 @@ export default function Home() {
               <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Modalidade</button>
             </nav>
 
-            <div className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-300 ${isHeaderShrunk ? "top-[76%]" : "top-[88%]"}`}>
-              <div className={`drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)] transition-all duration-300 ${isHeaderShrunk ? "w-24 h-24 md:w-28 md:h-28" : "w-36 h-36 md:w-44 md:h-44"}`}>
+            <div
+              className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-150"
+              style={{ top: `${logoTop}%` }}
+            >
+              <div
+                className="w-36 h-36 md:w-44 md:h-44 drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)] origin-center transition-transform duration-150"
+                style={{ transform: `scale(${logoScale})` }}
+              >
                 <img src={mainLogoUrl} alt="Logo LEG" className="w-full h-full object-contain" />
               </div>
             </div>
@@ -412,6 +425,43 @@ export default function Home() {
                 </article>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section id="sobre" className="container mb-10">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 md:p-10 shadow-sm">
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#D50000] mb-3">Quem Somos</p>
+          <h2 className="text-3xl md:text-5xl font-black leading-tight text-[#05206F] mb-4">
+            O verdadeiro espírito do esporte escolar
+          </h2>
+          <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-4xl">
+            A Liga Escolar Guarulhense nasce com o objetivo de se tornar referência esportiva para crianças e
+            adolescentes matriculados nas escolas do município, oferecendo competições com organização, respeito e
+            oportunidade de sociabilização no ambiente educacional.
+          </p>
+        </div>
+      </section>
+
+      <section className="container mb-14">
+        <div className="relative overflow-hidden rounded-3xl border border-slate-200 min-h-[280px] md:min-h-[320px] shadow-lg">
+          <img
+            src="https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1600&q=80"
+            alt="Equipe esportiva em destaque"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#08123E]/88 via-[#08123E]/72 to-[#08123E]/45" />
+
+          <div className="relative h-full p-7 md:p-10 flex flex-col justify-end max-w-3xl text-white">
+            <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100 mb-3">Destaque LEG</p>
+            <h3 className="text-3xl md:text-5xl font-black leading-tight mb-3">Junte-se à nossa equipe</h3>
+            <p className="text-red-100/95 text-sm md:text-base mb-6">Ser o número #1 é o nosso verdadeiro objetivo.</p>
+            <Button
+              onClick={() => document.getElementById("sobre")?.scrollIntoView({ behavior: "smooth" })}
+              className="h-11 px-6 w-fit bg-white text-[#05206F] hover:bg-[#D50000] hover:text-white font-black uppercase tracking-[0.12em]"
+            >
+              Conheça mais
+            </Button>
           </div>
         </div>
       </section>
