@@ -117,6 +117,10 @@ export default function Home() {
 
   const mainLogoUrl = siteSettings?.mainLogoUrl?.trim() ? siteSettings.mainLogoUrl : "/logo.png";
   const footerLogoUrl = siteSettings?.footerLogoUrl?.trim() ? siteSettings.footerLogoUrl : mainLogoUrl;
+  const homeHighlightImageUrl =
+    siteSettings?.homeHighlightImageUrl?.trim()
+      ? siteSettings.homeHighlightImageUrl
+      : "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1600&q=80";
   const partners = siteSettings?.partners ?? [];
 
   const groupedTournaments = useMemo(() => {
@@ -399,7 +403,7 @@ export default function Home() {
 
           <div
             ref={sliderRef}
-            className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex gap-4 overflow-x-auto md:overflow-visible pb-2 snap-x snap-mandatory md:flex-wrap md:justify-center [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {modalitiesInOrder.map((modality) => {
               const config = MODALITY_CONFIG[modality];
@@ -429,13 +433,19 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="sobre" className="container mb-10">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 md:p-10 shadow-sm">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#D50000] mb-3">Quem Somos</p>
-          <h2 className="text-3xl md:text-5xl font-black leading-tight text-[#05206F] mb-4">
+      <section id="sobre" className="relative min-h-[420px] md:min-h-[520px] overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center md:bg-fixed"
+          style={{ backgroundImage: "url(https://images.unsplash.com/photo-1577223625816-7546f13df25d?auto=format&fit=crop&w=1800&q=80)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#07174B]/92 via-[#07174B]/82 to-[#07174B]/50" />
+
+        <div className="container relative py-16 md:py-24 text-white">
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-red-100 mb-3">Quem Somos</p>
+          <h2 className="text-4xl md:text-6xl font-black leading-tight mb-5 max-w-4xl">
             O verdadeiro espírito do esporte escolar
           </h2>
-          <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-4xl">
+          <p className="text-red-100 text-sm md:text-lg leading-relaxed max-w-4xl">
             A Liga Escolar Guarulhense nasce com o objetivo de se tornar referência esportiva para crianças e
             adolescentes matriculados nas escolas do município, oferecendo competições com organização, respeito e
             oportunidade de sociabilização no ambiente educacional.
@@ -443,26 +453,23 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="container mb-14">
-        <div className="relative overflow-hidden rounded-3xl border border-slate-200 min-h-[280px] md:min-h-[320px] shadow-lg">
-          <img
-            src="https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1600&q=80"
-            alt="Equipe esportiva em destaque"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#08123E]/88 via-[#08123E]/72 to-[#08123E]/45" />
+      <section className="relative min-h-[380px] md:min-h-[500px] overflow-hidden mb-14">
+        <div
+          className="absolute inset-0 bg-cover bg-center md:bg-fixed"
+          style={{ backgroundImage: `url(${homeHighlightImageUrl})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#08123E]/90 via-[#08123E]/75 to-[#08123E]/50" />
 
-          <div className="relative h-full p-7 md:p-10 flex flex-col justify-end max-w-3xl text-white">
-            <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100 mb-3">Destaque LEG</p>
-            <h3 className="text-3xl md:text-5xl font-black leading-tight mb-3">Junte-se à nossa equipe</h3>
-            <p className="text-red-100/95 text-sm md:text-base mb-6">Ser o número #1 é o nosso verdadeiro objetivo.</p>
-            <Button
-              onClick={() => document.getElementById("sobre")?.scrollIntoView({ behavior: "smooth" })}
-              className="h-11 px-6 w-fit bg-white text-[#05206F] hover:bg-[#D50000] hover:text-white font-black uppercase tracking-[0.12em]"
-            >
-              Conheça mais
-            </Button>
-          </div>
+        <div className="container relative h-full py-16 md:py-24 flex flex-col justify-end max-w-3xl text-white">
+          <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100 mb-3">Destaque LEG</p>
+          <h3 className="text-4xl md:text-6xl font-black leading-tight mb-3">Junte-se à nossa equipe</h3>
+          <p className="text-red-100/95 text-sm md:text-lg mb-6">Ser o número #1 é o nosso verdadeiro objetivo.</p>
+          <Button
+            onClick={() => document.getElementById("sobre")?.scrollIntoView({ behavior: "smooth" })}
+            className="h-11 px-6 w-fit bg-white text-[#05206F] hover:bg-[#D50000] hover:text-white font-black uppercase tracking-[0.12em]"
+          >
+            Conheça mais
+          </Button>
         </div>
       </section>
 

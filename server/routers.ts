@@ -867,8 +867,10 @@ const siteRouter = router({
       z.object({
         mainLogoUrl: z.string().trim().max(2048).optional(),
         footerLogoUrl: z.string().trim().max(2048).optional(),
+        homeHighlightImageUrl: z.string().trim().max(2048).optional(),
         mainLogoFileDataUrl: z.string().max(10_000_000).optional(),
         footerLogoFileDataUrl: z.string().max(10_000_000).optional(),
+        homeHighlightImageFileDataUrl: z.string().max(10_000_000).optional(),
         partners: z
           .array(
             z.object({
@@ -934,6 +936,11 @@ const siteRouter = router({
           ? await uploadImage("footer-logo", input.footerLogoFileDataUrl)
           : undefined;
 
+      const resolvedHomeHighlightImageUrl =
+        input.homeHighlightImageFileDataUrl && input.homeHighlightImageFileDataUrl.length > 0
+          ? await uploadImage("home-highlight", input.homeHighlightImageFileDataUrl)
+          : undefined;
+
       const resolvedPartners = input.partners
         ? await Promise.all(
             input.partners.map(async (p, index) => {
@@ -973,6 +980,11 @@ const siteRouter = router({
           ? { footerLogoUrl: resolvedFooterLogoUrl }
           : input.footerLogoUrl !== undefined
             ? { footerLogoUrl: input.footerLogoUrl.length > 0 ? input.footerLogoUrl : null }
+          : {}),
+        ...(resolvedHomeHighlightImageUrl !== undefined
+          ? { homeHighlightImageUrl: resolvedHomeHighlightImageUrl }
+          : input.homeHighlightImageUrl !== undefined
+            ? { homeHighlightImageUrl: input.homeHighlightImageUrl.length > 0 ? input.homeHighlightImageUrl : null }
           : {}),
         ...(resolvedPartners !== undefined
           ? {

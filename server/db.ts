@@ -46,7 +46,7 @@ export async function getDb() {
           try {
             await _db!.execute(
               sql.raw(
-                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, partnersJson TEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
+                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, partnersJson TEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
               )
             );
           } catch (e) {
@@ -61,6 +61,18 @@ export async function getDb() {
 
           try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN footerLogoUrl LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN homeHighlightImageUrl LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso a coluna já exista
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHighlightImageUrl LONGTEXT NULL"));
           } catch (e) {
             // Ignora erro caso já esteja no tipo correto
           }
@@ -328,6 +340,7 @@ export async function getSiteSettings() {
     return {
       mainLogoUrl: null,
       footerLogoUrl: null,
+      homeHighlightImageUrl: null,
       partners: [] as SitePartner[],
     };
   }
@@ -339,6 +352,7 @@ export async function getSiteSettings() {
     return {
       mainLogoUrl: null,
       footerLogoUrl: null,
+      homeHighlightImageUrl: null,
       partners: [] as SitePartner[],
     };
   }
@@ -363,6 +377,7 @@ export async function getSiteSettings() {
   return {
     mainLogoUrl: row.mainLogoUrl,
     footerLogoUrl: row.footerLogoUrl,
+    homeHighlightImageUrl: row.homeHighlightImageUrl,
     partners,
   };
 }
@@ -370,6 +385,7 @@ export async function getSiteSettings() {
 export async function upsertSiteSettings(data: {
   mainLogoUrl?: string | null;
   footerLogoUrl?: string | null;
+  homeHighlightImageUrl?: string | null;
   partners?: SitePartner[];
 }) {
   const db = await getDb();
@@ -381,11 +397,13 @@ export async function upsertSiteSettings(data: {
   const patch: {
     mainLogoUrl?: string | null;
     footerLogoUrl?: string | null;
+    homeHighlightImageUrl?: string | null;
     partnersJson?: string | null;
   } = {};
 
   if (data.mainLogoUrl !== undefined) patch.mainLogoUrl = data.mainLogoUrl;
   if (data.footerLogoUrl !== undefined) patch.footerLogoUrl = data.footerLogoUrl;
+  if (data.homeHighlightImageUrl !== undefined) patch.homeHighlightImageUrl = data.homeHighlightImageUrl;
   if (data.partners !== undefined) patch.partnersJson = JSON.stringify(data.partners);
 
   if (existing && Object.keys(patch).length === 0) {
@@ -398,6 +416,7 @@ export async function upsertSiteSettings(data: {
     await db.insert(siteSettings).values({
       mainLogoUrl: data.mainLogoUrl ?? null,
       footerLogoUrl: data.footerLogoUrl ?? null,
+      homeHighlightImageUrl: data.homeHighlightImageUrl ?? null,
       partnersJson: JSON.stringify(data.partners ?? []),
     });
   }

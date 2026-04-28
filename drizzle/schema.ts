@@ -94,6 +94,7 @@ export const siteSettings = mysqlTable("site_settings", {
   id: int("id").autoincrement().primaryKey(),
   mainLogoUrl: longtext("mainLogoUrl"),
   footerLogoUrl: longtext("footerLogoUrl"),
+  homeHighlightImageUrl: longtext("homeHighlightImageUrl"),
   partnersJson: longtext("partnersJson"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

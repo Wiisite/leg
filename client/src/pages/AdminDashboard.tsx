@@ -432,6 +432,8 @@ function SiteSettingsSection() {
   const [mainLogoFileDataUrl, setMainLogoFileDataUrl] = useState<string | undefined>(undefined);
   const [footerLogoUrl, setFooterLogoUrl] = useState("");
   const [footerLogoFileDataUrl, setFooterLogoFileDataUrl] = useState<string | undefined>(undefined);
+  const [homeHighlightImageUrl, setHomeHighlightImageUrl] = useState("");
+  const [homeHighlightImageFileDataUrl, setHomeHighlightImageFileDataUrl] = useState<string | undefined>(undefined);
   const [partners, setPartners] = useState<{ name: string; logoUrl: string; logoFileDataUrl?: string }[]>([]);
 
   const toDataUrl = (file: File) =>
@@ -448,6 +450,8 @@ function SiteSettingsSection() {
     setMainLogoFileDataUrl(undefined);
     setFooterLogoUrl(settings.footerLogoUrl || "");
     setFooterLogoFileDataUrl(undefined);
+    setHomeHighlightImageUrl(settings.homeHighlightImageUrl || "");
+    setHomeHighlightImageFileDataUrl(undefined);
     setPartners((settings.partners || []).map((p) => ({ name: p.name, logoUrl: p.logoUrl })));
   }, [settings]);
 
@@ -494,8 +498,10 @@ function SiteSettingsSection() {
     updateMutation.mutate({
       mainLogoUrl,
       footerLogoUrl,
+      homeHighlightImageUrl,
       ...(mainLogoFileDataUrl ? { mainLogoFileDataUrl } : {}),
       ...(footerLogoFileDataUrl ? { footerLogoFileDataUrl } : {}),
+      ...(homeHighlightImageFileDataUrl ? { homeHighlightImageFileDataUrl } : {}),
       partners: cleanPartners,
     });
   };
@@ -574,6 +580,41 @@ function SiteSettingsSection() {
               <Image className="w-6 h-6 text-slate-300" />
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
+        <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Imagem de Destaque da Home (Sessão Grande)</label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              setHomeHighlightImageFileDataUrl(await toDataUrl(file));
+            } catch {
+              toast.error("Não foi possível carregar a imagem de destaque.");
+            }
+          }}
+          className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
+        />
+        <input
+          value={homeHighlightImageUrl}
+          onChange={(e) => setHomeHighlightImageUrl(e.target.value)}
+          placeholder="https://... (opcional se enviar upload)"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl h-11 px-3 text-sm"
+        />
+        <div className="h-28 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+          {homeHighlightImageFileDataUrl || homeHighlightImageUrl ? (
+            <img
+              src={homeHighlightImageFileDataUrl || homeHighlightImageUrl}
+              alt="Imagem de destaque da Home"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <Image className="w-6 h-6 text-slate-300" />
+          )}
         </div>
       </div>
 
