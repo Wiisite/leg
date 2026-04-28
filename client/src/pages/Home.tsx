@@ -182,14 +182,15 @@ export default function Home() {
     return featured.map((tournament) => {
       const modalityLabel = MODALITY_CONFIG[tournament.modality]?.label ?? "Modalidade";
       const statusLabel = STATUS_LABELS[tournament.status]?.label ?? "Em andamento";
+      const modalityKey = String(tournament.modality || "futsal").toLowerCase();
       return {
         id: `hero-${tournament.id}`,
         badge: `${modalityLabel} • ${tournament.category}`,
         title: tournament.name.toUpperCase(),
         description: `Status atual: ${statusLabel}. Acesse a página para acompanhar tabela, partidas e classificações.`,
-        cta: "Acessar página",
-        imageUrl: getHomeHeroImage(String(tournament.modality || "futsal")),
-        onClick: () => navigate(`/tournament/${tournament.id}`),
+        cta: "Acessar modalidade",
+        imageUrl: getHomeHeroImage(modalityKey),
+        onClick: () => navigate(`/modalidade/${modalityKey}`),
       };
     });
   }, [groupedTournaments, navigate, homeHeroImages]);
@@ -322,7 +323,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative bg-[#D50000] text-white pt-32 pb-16 overflow-hidden">
+      <section className="relative bg-[#D50000] text-white pt-20 pb-16 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -bottom-20 -right-20 h-80 w-80 border border-white/15 rounded-full" />
           <div className="absolute -top-28 -left-10 h-72 w-72 border border-white/15 rounded-full" />
@@ -330,7 +331,7 @@ export default function Home() {
         </div>
 
         <div className="relative">
-          <div className="relative w-full overflow-hidden border-y border-white/30 min-h-[430px] md:min-h-[560px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#9E0000]">
+          <div className="relative w-full overflow-hidden border-y border-white/30 min-h-[460px] md:min-h-[620px] shadow-[0_20px_50px_rgba(0,0,0,0.35)] bg-[#9E0000]">
             {heroSlides.map((slide, index) => (
               <article
                 key={slide.id}
