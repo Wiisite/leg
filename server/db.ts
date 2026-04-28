@@ -14,6 +14,10 @@ export type SitePartner = {
   logoUrl: string;
 };
 
+const MODALITY_KEYS = ["futsal", "basquete", "volei", "handebol"] as const;
+type ModalityKey = (typeof MODALITY_KEYS)[number];
+export type SiteModalityImageMap = Partial<Record<ModalityKey, string>>;
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -46,7 +50,7 @@ export async function getDb() {
           try {
             await _db!.execute(
               sql.raw(
-                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, partnersJson TEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
+                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, homeHeroImagesJson LONGTEXT NULL, modalityBannerImagesJson LONGTEXT NULL, partnersJson TEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
               )
             );
           } catch (e) {
@@ -73,6 +77,30 @@ export async function getDb() {
 
           try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHighlightImageUrl LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN homeHeroImagesJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso a coluna já exista
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHeroImagesJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN modalityBannerImagesJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso a coluna já exista
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN modalityBannerImagesJson LONGTEXT NULL"));
           } catch (e) {
             // Ignora erro caso já esteja no tipo correto
           }
@@ -335,12 +363,32 @@ export async function getMatchById(matchId: number) {
 // ─── Site Settings ─────────────────────────────────────────────────────────────
 
 export async function getSiteSettings() {
+  const parseModalityImageMap = (value: string | null | undefined): SiteModalityImageMap => {
+    if (!value) return {};
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== "object") return {};
+      const out: SiteModalityImageMap = {};
+      for (const key of MODALITY_KEYS) {
+        const candidate = (parsed as Record<string, unknown>)[key];
+        if (typeof candidate === "string" && candidate.trim().length > 0) {
+          out[key] = candidate;
+        }
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  };
+
   const db = await getDb();
   if (!db) {
     return {
       mainLogoUrl: null,
       footerLogoUrl: null,
       homeHighlightImageUrl: null,
+      homeHeroImages: {} as SiteModalityImageMap,
+      modalityBannerImages: {} as SiteModalityImageMap,
       partners: [] as SitePartner[],
     };
   }
@@ -353,6 +401,8 @@ export async function getSiteSettings() {
       mainLogoUrl: null,
       footerLogoUrl: null,
       homeHighlightImageUrl: null,
+      homeHeroImages: {} as SiteModalityImageMap,
+      modalityBannerImages: {} as SiteModalityImageMap,
       partners: [] as SitePartner[],
     };
   }
@@ -378,6 +428,8 @@ export async function getSiteSettings() {
     mainLogoUrl: row.mainLogoUrl,
     footerLogoUrl: row.footerLogoUrl,
     homeHighlightImageUrl: row.homeHighlightImageUrl,
+    homeHeroImages: parseModalityImageMap(row.homeHeroImagesJson),
+    modalityBannerImages: parseModalityImageMap(row.modalityBannerImagesJson),
     partners,
   };
 }
@@ -386,6 +438,8 @@ export async function upsertSiteSettings(data: {
   mainLogoUrl?: string | null;
   footerLogoUrl?: string | null;
   homeHighlightImageUrl?: string | null;
+  homeHeroImages?: SiteModalityImageMap;
+  modalityBannerImages?: SiteModalityImageMap;
   partners?: SitePartner[];
 }) {
   const db = await getDb();
@@ -398,12 +452,16 @@ export async function upsertSiteSettings(data: {
     mainLogoUrl?: string | null;
     footerLogoUrl?: string | null;
     homeHighlightImageUrl?: string | null;
+    homeHeroImagesJson?: string | null;
+    modalityBannerImagesJson?: string | null;
     partnersJson?: string | null;
   } = {};
 
   if (data.mainLogoUrl !== undefined) patch.mainLogoUrl = data.mainLogoUrl;
   if (data.footerLogoUrl !== undefined) patch.footerLogoUrl = data.footerLogoUrl;
   if (data.homeHighlightImageUrl !== undefined) patch.homeHighlightImageUrl = data.homeHighlightImageUrl;
+  if (data.homeHeroImages !== undefined) patch.homeHeroImagesJson = JSON.stringify(data.homeHeroImages);
+  if (data.modalityBannerImages !== undefined) patch.modalityBannerImagesJson = JSON.stringify(data.modalityBannerImages);
   if (data.partners !== undefined) patch.partnersJson = JSON.stringify(data.partners);
 
   if (existing && Object.keys(patch).length === 0) {
@@ -417,6 +475,8 @@ export async function upsertSiteSettings(data: {
       mainLogoUrl: data.mainLogoUrl ?? null,
       footerLogoUrl: data.footerLogoUrl ?? null,
       homeHighlightImageUrl: data.homeHighlightImageUrl ?? null,
+      homeHeroImagesJson: JSON.stringify(data.homeHeroImages ?? {}),
+      modalityBannerImagesJson: JSON.stringify(data.modalityBannerImages ?? {}),
       partnersJson: JSON.stringify(data.partners ?? []),
     });
   }

@@ -121,7 +121,14 @@ export default function Home() {
     siteSettings?.homeHighlightImageUrl?.trim()
       ? siteSettings.homeHighlightImageUrl
       : "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1600&q=80";
+  const homeHeroImages = siteSettings?.homeHeroImages ?? {};
   const partners = siteSettings?.partners ?? [];
+
+  const getHomeHeroImage = (modality: string) => {
+    const configured = homeHeroImages[modality as keyof typeof homeHeroImages];
+    if (typeof configured === "string" && configured.trim().length > 0) return configured;
+    return HERO_IMAGE_BY_MODALITY[modality] ?? HERO_IMAGE_BY_MODALITY.futsal;
+  };
 
   const groupedTournaments = useMemo(() => {
     return tournaments?.reduce((acc, t) => {
@@ -156,7 +163,7 @@ export default function Home() {
           title: "5ª COPA LEG DE FUTSAL",
           description: "Acompanhe jogos, classificação e os melhores momentos da principal modalidade da LEG.",
           cta: "Acessar modalidade",
-          imageUrl: HERO_IMAGE_BY_MODALITY.futsal,
+          imageUrl: getHomeHeroImage("futsal"),
           onClick: () => navigate("/modalidade/futsal"),
         },
         {
@@ -165,7 +172,7 @@ export default function Home() {
           title: "2ª COPA LEG DE VOLEIBOL",
           description: "Confira os destaques da rodada e acesse rapidamente a página da competição.",
           cta: "Ver detalhes",
-          imageUrl: HERO_IMAGE_BY_MODALITY.volei,
+          imageUrl: getHomeHeroImage("volei"),
           onClick: () => navigate("/modalidade/volei"),
         },
       ];
@@ -180,11 +187,11 @@ export default function Home() {
         title: tournament.name.toUpperCase(),
         description: `Status atual: ${statusLabel}. Acesse a página para acompanhar tabela, partidas e classificações.`,
         cta: "Acessar página",
-        imageUrl: HERO_IMAGE_BY_MODALITY[tournament.modality] ?? HERO_IMAGE_BY_MODALITY.futsal,
+        imageUrl: getHomeHeroImage(String(tournament.modality || "futsal")),
         onClick: () => navigate(`/tournament/${tournament.id}`),
       };
     });
-  }, [groupedTournaments, navigate]);
+  }, [groupedTournaments, navigate, homeHeroImages]);
 
   const [heroIndex, setHeroIndex] = useState(0);
 

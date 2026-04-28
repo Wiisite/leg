@@ -13,6 +13,13 @@ const MODALITY_CONFIG: Record<string, { label: string; accent: string; icon: any
   handebol: { label: "Handebol", accent: "#B00000", icon: Dumbbell, navLabel: "Handebol" },
 };
 
+const DEFAULT_MODALITY_BANNER_IMAGE: Record<string, string> = {
+  futsal: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1800&q=80",
+  basquete: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1800&q=80",
+  volei: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=1800&q=80",
+  handebol: "https://images.unsplash.com/photo-1592656094267-764a45160876?auto=format&fit=crop&w=1800&q=80",
+};
+
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
   group_stage: { label: "Fase de Grupos", color: "bg-blue-100 text-blue-700" },
@@ -33,8 +40,13 @@ export default function ModalityPage() {
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
 
   const mainLogoUrl = siteSettings?.mainLogoUrl?.trim() ? siteSettings.mainLogoUrl : "/logo.png";
+  const modalityBannerImages = siteSettings?.modalityBannerImages ?? {};
 
   const config = MODALITY_CONFIG[modality];
+  const modalityBannerImageUrl =
+    (typeof modalityBannerImages[modality as keyof typeof modalityBannerImages] === "string"
+      ? modalityBannerImages[modality as keyof typeof modalityBannerImages]
+      : "") || DEFAULT_MODALITY_BANNER_IMAGE[modality] || DEFAULT_MODALITY_BANNER_IMAGE.futsal;
 
   const list = useMemo(
     () => (tournaments || []).filter((t) => String(t.modality || "").toLowerCase() === modality),
@@ -215,6 +227,28 @@ export default function ModalityPage() {
           </div>
         )}
       </main>
+
+      <section className="relative min-h-[320px] md:min-h-[420px] overflow-hidden mt-6">
+        <div
+          className="absolute inset-0 bg-cover bg-center md:bg-fixed"
+          style={{ backgroundImage: `url(${modalityBannerImageUrl})` }}
+        />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(90deg, ${config.accent}E8 0%, ${config.accent}B8 48%, ${config.accent}7A 100%)` }} />
+
+        <div className="container relative py-14 md:py-20 text-white max-w-3xl">
+          <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-white/85 mb-3">Destaque da modalidade</p>
+          <h2 className="text-3xl md:text-5xl font-black leading-tight mb-3">{config.label} em evidência</h2>
+          <p className="text-sm md:text-lg text-white/90 mb-6">
+            Acompanhe os campeonatos, resultados e tudo que está movimentando o {config.label.toLowerCase()} na LEG.
+          </p>
+          <Button
+            onClick={() => navigate("/")}
+            className="h-11 px-6 w-fit bg-white text-slate-900 hover:bg-slate-100 font-black uppercase tracking-[0.12em]"
+          >
+            Ver Home
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

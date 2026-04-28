@@ -95,6 +95,8 @@ export const siteSettings = mysqlTable("site_settings", {
   mainLogoUrl: longtext("mainLogoUrl"),
   footerLogoUrl: longtext("footerLogoUrl"),
   homeHighlightImageUrl: longtext("homeHighlightImageUrl"),
+  homeHeroImagesJson: longtext("homeHeroImagesJson"),
+  modalityBannerImagesJson: longtext("modalityBannerImagesJson"),
   partnersJson: longtext("partnersJson"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

@@ -425,6 +425,21 @@ function StaffSection() {
 }
 
 function SiteSettingsSection() {
+  const modalities = ["futsal", "basquete", "volei", "handebol"] as const;
+  type ModalityKey = (typeof modalities)[number];
+  const modalityLabels: Record<ModalityKey, string> = {
+    futsal: "Futsal",
+    basquete: "Basquete",
+    volei: "Vôlei",
+    handebol: "Handebol",
+  };
+  const emptyModalityMap: Record<ModalityKey, string> = {
+    futsal: "",
+    basquete: "",
+    volei: "",
+    handebol: "",
+  };
+
   const utils = trpc.useUtils();
   const { data: settings } = trpc.site.getSettings.useQuery();
 
@@ -434,6 +449,10 @@ function SiteSettingsSection() {
   const [footerLogoFileDataUrl, setFooterLogoFileDataUrl] = useState<string | undefined>(undefined);
   const [homeHighlightImageUrl, setHomeHighlightImageUrl] = useState("");
   const [homeHighlightImageFileDataUrl, setHomeHighlightImageFileDataUrl] = useState<string | undefined>(undefined);
+  const [homeHeroImages, setHomeHeroImages] = useState<Record<ModalityKey, string>>(emptyModalityMap);
+  const [homeHeroImageFiles, setHomeHeroImageFiles] = useState<Partial<Record<ModalityKey, string>>>({});
+  const [modalityBannerImages, setModalityBannerImages] = useState<Record<ModalityKey, string>>(emptyModalityMap);
+  const [modalityBannerImageFiles, setModalityBannerImageFiles] = useState<Partial<Record<ModalityKey, string>>>({});
   const [partners, setPartners] = useState<{ name: string; logoUrl: string; logoFileDataUrl?: string }[]>([]);
 
   const toDataUrl = (file: File) =>
@@ -452,6 +471,20 @@ function SiteSettingsSection() {
     setFooterLogoFileDataUrl(undefined);
     setHomeHighlightImageUrl(settings.homeHighlightImageUrl || "");
     setHomeHighlightImageFileDataUrl(undefined);
+    setHomeHeroImages({
+      futsal: settings.homeHeroImages?.futsal || "",
+      basquete: settings.homeHeroImages?.basquete || "",
+      volei: settings.homeHeroImages?.volei || "",
+      handebol: settings.homeHeroImages?.handebol || "",
+    });
+    setHomeHeroImageFiles({});
+    setModalityBannerImages({
+      futsal: settings.modalityBannerImages?.futsal || "",
+      basquete: settings.modalityBannerImages?.basquete || "",
+      volei: settings.modalityBannerImages?.volei || "",
+      handebol: settings.modalityBannerImages?.handebol || "",
+    });
+    setModalityBannerImageFiles({});
     setPartners((settings.partners || []).map((p) => ({ name: p.name, logoUrl: p.logoUrl })));
   }, [settings]);
 
@@ -486,6 +519,12 @@ function SiteSettingsSection() {
     setPartners((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const normalizeModalityMap = (map: Record<ModalityKey, string>) =>
+    modalities.reduce((acc, key) => {
+      acc[key] = map[key].trim();
+      return acc;
+    }, {} as Record<ModalityKey, string>);
+
   const saveSettings = () => {
     const cleanPartners = partners
       .map((p) => ({
@@ -499,9 +538,13 @@ function SiteSettingsSection() {
       mainLogoUrl,
       footerLogoUrl,
       homeHighlightImageUrl,
+      homeHeroImages: normalizeModalityMap(homeHeroImages),
+      modalityBannerImages: normalizeModalityMap(modalityBannerImages),
       ...(mainLogoFileDataUrl ? { mainLogoFileDataUrl } : {}),
       ...(footerLogoFileDataUrl ? { footerLogoFileDataUrl } : {}),
       ...(homeHighlightImageFileDataUrl ? { homeHighlightImageFileDataUrl } : {}),
+      ...(Object.keys(homeHeroImageFiles).length > 0 ? { homeHeroImageFiles } : {}),
+      ...(Object.keys(modalityBannerImageFiles).length > 0 ? { modalityBannerImageFiles } : {}),
       partners: cleanPartners,
     });
   };
@@ -615,6 +658,104 @@ function SiteSettingsSection() {
           ) : (
             <Image className="w-6 h-6 text-slate-300" />
           )}
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 className="font-display text-lg font-semibold text-slate-900">Banner principal da Home (slider)</h3>
+          <p className="text-xs text-slate-500">Defina a imagem de cada modalidade exibida no banner/slide da Home.</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {modalities.map((modality) => (
+            <div key={`home-hero-${modality}`} className="rounded-xl border border-slate-100 p-3 space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">{modalityLabels[modality]}</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const dataUrl = await toDataUrl(file);
+                    setHomeHeroImageFiles((prev) => ({ ...prev, [modality]: dataUrl }));
+                  } catch {
+                    toast.error("Não foi possível carregar a imagem do banner da Home.");
+                  }
+                }}
+                className="w-full text-xs text-slate-500 file:mr-2 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
+              />
+              <input
+                value={homeHeroImages[modality]}
+                onChange={(e) =>
+                  setHomeHeroImages((prev) => ({
+                    ...prev,
+                    [modality]: e.target.value,
+                  }))
+                }
+                placeholder="https://... (opcional se enviar upload)"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+              />
+              <div className="h-20 rounded-lg border border-dashed border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
+                {homeHeroImageFiles[modality] || homeHeroImages[modality] ? (
+                  <img src={homeHeroImageFiles[modality] || homeHeroImages[modality]} alt={`Banner Home ${modalityLabels[modality]}`} className="h-full w-full object-cover" />
+                ) : (
+                  <Image className="w-5 h-5 text-slate-300" />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 className="font-display text-lg font-semibold text-slate-900">Banner das páginas de modalidade</h3>
+          <p className="text-xs text-slate-500">Imagem fixa exibida no final de cada página de modalidade (Futsal, Basquete, Vôlei e Handebol).</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {modalities.map((modality) => (
+            <div key={`modality-banner-${modality}`} className="rounded-xl border border-slate-100 p-3 space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">{modalityLabels[modality]}</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const dataUrl = await toDataUrl(file);
+                    setModalityBannerImageFiles((prev) => ({ ...prev, [modality]: dataUrl }));
+                  } catch {
+                    toast.error("Não foi possível carregar a imagem do banner da modalidade.");
+                  }
+                }}
+                className="w-full text-xs text-slate-500 file:mr-2 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
+              />
+              <input
+                value={modalityBannerImages[modality]}
+                onChange={(e) =>
+                  setModalityBannerImages((prev) => ({
+                    ...prev,
+                    [modality]: e.target.value,
+                  }))
+                }
+                placeholder="https://... (opcional se enviar upload)"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+              />
+              <div className="h-20 rounded-lg border border-dashed border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
+                {modalityBannerImageFiles[modality] || modalityBannerImages[modality] ? (
+                  <img
+                    src={modalityBannerImageFiles[modality] || modalityBannerImages[modality]}
+                    alt={`Banner ${modalityLabels[modality]}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Image className="w-5 h-5 text-slate-300" />
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -868,9 +868,41 @@ const siteRouter = router({
         mainLogoUrl: z.string().trim().max(2048).optional(),
         footerLogoUrl: z.string().trim().max(2048).optional(),
         homeHighlightImageUrl: z.string().trim().max(2048).optional(),
+        homeHeroImages: z
+          .object({
+            futsal: z.string().trim().max(2048).optional(),
+            basquete: z.string().trim().max(2048).optional(),
+            volei: z.string().trim().max(2048).optional(),
+            handebol: z.string().trim().max(2048).optional(),
+          })
+          .optional(),
+        modalityBannerImages: z
+          .object({
+            futsal: z.string().trim().max(2048).optional(),
+            basquete: z.string().trim().max(2048).optional(),
+            volei: z.string().trim().max(2048).optional(),
+            handebol: z.string().trim().max(2048).optional(),
+          })
+          .optional(),
         mainLogoFileDataUrl: z.string().max(10_000_000).optional(),
         footerLogoFileDataUrl: z.string().max(10_000_000).optional(),
         homeHighlightImageFileDataUrl: z.string().max(10_000_000).optional(),
+        homeHeroImageFiles: z
+          .object({
+            futsal: z.string().max(10_000_000).optional(),
+            basquete: z.string().max(10_000_000).optional(),
+            volei: z.string().max(10_000_000).optional(),
+            handebol: z.string().max(10_000_000).optional(),
+          })
+          .optional(),
+        modalityBannerImageFiles: z
+          .object({
+            futsal: z.string().max(10_000_000).optional(),
+            basquete: z.string().max(10_000_000).optional(),
+            volei: z.string().max(10_000_000).optional(),
+            handebol: z.string().max(10_000_000).optional(),
+          })
+          .optional(),
         partners: z
           .array(
             z.object({
@@ -941,6 +973,46 @@ const siteRouter = router({
           ? await uploadImage("home-highlight", input.homeHighlightImageFileDataUrl)
           : undefined;
 
+      const modalities = ["futsal", "basquete", "volei", "handebol"] as const;
+
+      const resolveModalityImageMap = async (
+        urlMap: Partial<Record<(typeof modalities)[number], string>> | undefined,
+        fileMap: Partial<Record<(typeof modalities)[number], string>> | undefined,
+        prefix: string
+      ) => {
+        const result: Record<string, string | null> = {};
+        let hasAnyChange = false;
+
+        for (const modality of modalities) {
+          const fileData = fileMap?.[modality];
+          if (fileData && fileData.length > 0) {
+            result[modality] = await uploadImage(`${prefix}-${modality}`, fileData);
+            hasAnyChange = true;
+            continue;
+          }
+
+          if (urlMap && Object.prototype.hasOwnProperty.call(urlMap, modality)) {
+            const trimmed = (urlMap[modality] || "").trim();
+            result[modality] = trimmed.length > 0 ? trimmed : null;
+            hasAnyChange = true;
+          }
+        }
+
+        return hasAnyChange ? result : undefined;
+      };
+
+      const resolvedHomeHeroImages = await resolveModalityImageMap(
+        input.homeHeroImages,
+        input.homeHeroImageFiles,
+        "home-hero"
+      );
+
+      const resolvedModalityBannerImages = await resolveModalityImageMap(
+        input.modalityBannerImages,
+        input.modalityBannerImageFiles,
+        "modality-banner"
+      );
+
       const resolvedPartners = input.partners
         ? await Promise.all(
             input.partners.map(async (p, index) => {
@@ -985,6 +1057,16 @@ const siteRouter = router({
           ? { homeHighlightImageUrl: resolvedHomeHighlightImageUrl }
           : input.homeHighlightImageUrl !== undefined
             ? { homeHighlightImageUrl: input.homeHighlightImageUrl.length > 0 ? input.homeHighlightImageUrl : null }
+          : {}),
+        ...(resolvedHomeHeroImages !== undefined
+          ? {
+              homeHeroImages: resolvedHomeHeroImages,
+            }
+          : {}),
+        ...(resolvedModalityBannerImages !== undefined
+          ? {
+              modalityBannerImages: resolvedModalityBannerImages,
+            }
           : {}),
         ...(resolvedPartners !== undefined
           ? {
