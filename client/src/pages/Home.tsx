@@ -169,7 +169,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="relative bg-[#D50000] text-white overflow-hidden">
+        <div className="relative bg-[#D50000] text-white overflow-visible">
           <div className="pointer-events-none absolute inset-0 opacity-25">
             <div className="absolute -left-16 top-0 h-full w-48 bg-[#B80000] skew-x-[-30deg]" />
             <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
@@ -182,8 +182,8 @@ export default function Home() {
               <button onClick={() => document.getElementById("modalidades")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Modalidade</button>
             </nav>
 
-            <div className="absolute left-1/2 top-[56%] -translate-x-1/2 -translate-y-1/2 z-20">
-              <div className="w-32 h-32 md:w-36 md:h-36 drop-shadow-[0_14px_30px_rgba(0,0,0,0.35)]">
+            <div className="absolute left-1/2 top-[88%] -translate-x-1/2 -translate-y-1/2 z-30">
+              <div className="w-36 h-36 md:w-44 md:h-44 drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)]">
                 <img src={mainLogoUrl} alt="Logo LEG" className="w-full h-full object-contain" />
               </div>
             </div>
@@ -215,7 +215,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative bg-[#D50000] text-white pt-24 pb-32 overflow-hidden">
+      <section className="relative bg-[#D50000] text-white pt-32 pb-32 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -bottom-20 -right-20 h-80 w-80 border border-white/15 rounded-full" />
           <div className="absolute -top-28 -left-10 h-72 w-72 border border-white/15 rounded-full" />
