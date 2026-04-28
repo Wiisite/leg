@@ -20,6 +20,32 @@ import {
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
+function CourtIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} style={style} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M12 5v14" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M3 12h3" />
+      <path d="M18 12h3" />
+    </svg>
+  );
+}
+
+function HandballIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} style={style} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 4a8 8 0 0 1 0 16" />
+      <path d="M12 4a8 8 0 0 0 0 16" />
+      <path d="M4.8 9.2c2 .7 3.7 1.7 5 2.8" />
+      <path d="M14.2 12c1.3 1.1 3 2.1 5 2.8" />
+      <path d="M4.8 14.8c2-.7 3.7-1.7 5-2.8" />
+      <path d="M14.2 12c1.3-1.1 3-2.1 5-2.8" />
+    </svg>
+  );
+}
+
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
   group_stage: { label: "Fase de Grupos", color: "bg-blue-100 text-blue-700" },
@@ -35,7 +61,7 @@ const MODALITY_CONFIG: Record<
   futsal: {
     label: "Futsal",
     navLabel: "Futsal",
-    icon: Swords,
+    icon: CourtIcon,
     accent: "#D50000",
     lightAccent: "#FFE8E8",
   },
@@ -56,7 +82,7 @@ const MODALITY_CONFIG: Record<
   handebol: {
     label: "Handebol",
     navLabel: "Handebol",
-    icon: Target,
+    icon: HandballIcon,
     accent: "#B00000",
     lightAccent: "#FFECEC",
   },

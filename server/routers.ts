@@ -22,6 +22,7 @@ import { matches, teams, tournaments } from "../drizzle/schema";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
+import { storagePut } from "./storage";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 
 // ─── Standings helper ──────────────────────────────────────────────────────────
@@ -866,11 +867,14 @@ const siteRouter = router({
       z.object({
         mainLogoUrl: z.string().trim().max(2048).optional(),
         footerLogoUrl: z.string().trim().max(2048).optional(),
+        mainLogoFileDataUrl: z.string().max(10_000_000).optional(),
+        footerLogoFileDataUrl: z.string().max(10_000_000).optional(),
         partners: z
           .array(
             z.object({
               name: z.string().trim().min(1).max(120),
-              logoUrl: z.string().trim().min(1).max(2048),
+              logoUrl: z.string().trim().max(2048).optional(),
+              logoFileDataUrl: z.string().max(10_000_000).optional(),
             })
           )
           .optional(),
@@ -881,19 +885,90 @@ const siteRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Apenas o Administrador Master pode alterar o site" });
       }
 
+      const decodeDataUrl = (dataUrl: string) => {
+        const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+        if (!match) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Formato de imagem inválido para upload" });
+        }
+        return {
+          mimeType: match[1],
+          buffer: Buffer.from(match[2], "base64"),
+        };
+      };
+
+      const extensionFromMime = (mimeType: string) => {
+        const map: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/jpg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp",
+          "image/gif": "gif",
+          "image/svg+xml": "svg",
+        };
+        return map[mimeType.toLowerCase()] || "bin";
+      };
+
+      const uploadImage = async (prefix: string, dataUrl: string) => {
+        const { mimeType, buffer } = decodeDataUrl(dataUrl);
+        const extension = extensionFromMime(mimeType);
+        const key = `site-settings/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+        const uploaded = await storagePut(key, buffer, mimeType);
+        return uploaded.url;
+      };
+
+      const resolvedMainLogoUrl =
+        input.mainLogoFileDataUrl && input.mainLogoFileDataUrl.length > 0
+          ? await uploadImage("main-logo", input.mainLogoFileDataUrl)
+          : undefined;
+
+      const resolvedFooterLogoUrl =
+        input.footerLogoFileDataUrl && input.footerLogoFileDataUrl.length > 0
+          ? await uploadImage("footer-logo", input.footerLogoFileDataUrl)
+          : undefined;
+
+      const resolvedPartners = input.partners
+        ? await Promise.all(
+            input.partners.map(async (p, index) => {
+              const trimmedName = p.name.trim();
+              if (!trimmedName) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Nome do parceiro é obrigatório" });
+              }
+
+              if (p.logoFileDataUrl && p.logoFileDataUrl.length > 0) {
+                const uploadedLogoUrl = await uploadImage(`partner-${index + 1}`, p.logoFileDataUrl);
+                return {
+                  name: trimmedName,
+                  logoUrl: uploadedLogoUrl,
+                };
+              }
+
+              const trimmedLogoUrl = p.logoUrl?.trim() || "";
+              if (!trimmedLogoUrl) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: `Logo do parceiro \"${trimmedName}\" é obrigatório` });
+              }
+
+              return {
+                name: trimmedName,
+                logoUrl: trimmedLogoUrl,
+              };
+            })
+          )
+        : undefined;
+
       return upsertSiteSettings({
-        ...(input.mainLogoUrl !== undefined
-          ? { mainLogoUrl: input.mainLogoUrl.length > 0 ? input.mainLogoUrl : null }
+        ...(resolvedMainLogoUrl !== undefined
+          ? { mainLogoUrl: resolvedMainLogoUrl }
+          : input.mainLogoUrl !== undefined
+            ? { mainLogoUrl: input.mainLogoUrl.length > 0 ? input.mainLogoUrl : null }
           : {}),
-        ...(input.footerLogoUrl !== undefined
-          ? { footerLogoUrl: input.footerLogoUrl.length > 0 ? input.footerLogoUrl : null }
+        ...(resolvedFooterLogoUrl !== undefined
+          ? { footerLogoUrl: resolvedFooterLogoUrl }
+          : input.footerLogoUrl !== undefined
+            ? { footerLogoUrl: input.footerLogoUrl.length > 0 ? input.footerLogoUrl : null }
           : {}),
-        ...(input.partners !== undefined
+        ...(resolvedPartners !== undefined
           ? {
-              partners: input.partners.map((p) => ({
-                name: p.name,
-                logoUrl: p.logoUrl,
-              })),
+              partners: resolvedPartners,
             }
           : {}),
       });

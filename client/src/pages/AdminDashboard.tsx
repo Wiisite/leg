@@ -429,14 +429,26 @@ function SiteSettingsSection() {
   const { data: settings } = trpc.site.getSettings.useQuery();
 
   const [mainLogoUrl, setMainLogoUrl] = useState("");
+  const [mainLogoFileDataUrl, setMainLogoFileDataUrl] = useState<string | undefined>(undefined);
   const [footerLogoUrl, setFooterLogoUrl] = useState("");
-  const [partners, setPartners] = useState<{ name: string; logoUrl: string }[]>([]);
+  const [footerLogoFileDataUrl, setFooterLogoFileDataUrl] = useState<string | undefined>(undefined);
+  const [partners, setPartners] = useState<{ name: string; logoUrl: string; logoFileDataUrl?: string }[]>([]);
+
+  const toDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Falha ao ler imagem"));
+      reader.readAsDataURL(file);
+    });
 
   useEffect(() => {
     if (!settings) return;
     setMainLogoUrl(settings.mainLogoUrl || "");
+    setMainLogoFileDataUrl(undefined);
     setFooterLogoUrl(settings.footerLogoUrl || "");
-    setPartners(settings.partners || []);
+    setFooterLogoFileDataUrl(undefined);
+    setPartners((settings.partners || []).map((p) => ({ name: p.name, logoUrl: p.logoUrl })));
   }, [settings]);
 
   const updateMutation = trpc.site.updateSettings.useMutation({
@@ -447,7 +459,7 @@ function SiteSettingsSection() {
     onError: (e) => toast.error(e.message),
   });
 
-  const updatePartner = (index: number, patch: { name?: string; logoUrl?: string }) => {
+  const updatePartner = (index: number, patch: { name?: string; logoUrl?: string; logoFileDataUrl?: string }) => {
     setPartners((prev) =>
       prev.map((partner, i) =>
         i === index
@@ -455,6 +467,7 @@ function SiteSettingsSection() {
               ...partner,
               ...(patch.name !== undefined ? { name: patch.name } : {}),
               ...(patch.logoUrl !== undefined ? { logoUrl: patch.logoUrl } : {}),
+              ...(patch.logoFileDataUrl !== undefined ? { logoFileDataUrl: patch.logoFileDataUrl } : {}),
             }
           : partner
       )
@@ -471,12 +484,18 @@ function SiteSettingsSection() {
 
   const saveSettings = () => {
     const cleanPartners = partners
-      .map((p) => ({ name: p.name.trim(), logoUrl: p.logoUrl.trim() }))
-      .filter((p) => p.name.length > 0 && p.logoUrl.length > 0);
+      .map((p) => ({
+        name: p.name.trim(),
+        logoUrl: p.logoUrl.trim(),
+        logoFileDataUrl: p.logoFileDataUrl,
+      }))
+      .filter((p) => p.name.length > 0 && (p.logoUrl.length > 0 || !!p.logoFileDataUrl));
 
     updateMutation.mutate({
       mainLogoUrl,
       footerLogoUrl,
+      ...(mainLogoFileDataUrl ? { mainLogoFileDataUrl } : {}),
+      ...(footerLogoFileDataUrl ? { footerLogoFileDataUrl } : {}),
       partners: cleanPartners,
     });
   };
@@ -498,14 +517,28 @@ function SiteSettingsSection() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
           <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Logo Principal (Header)</label>
           <input
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                setMainLogoFileDataUrl(await toDataUrl(file));
+              } catch {
+                toast.error("Não foi possível carregar a imagem.");
+              }
+            }}
+            className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
+          />
+          <input
             value={mainLogoUrl}
             onChange={(e) => setMainLogoUrl(e.target.value)}
-            placeholder="https://..."
+            placeholder="https://... (opcional se enviar upload)"
             className="w-full bg-slate-50 border border-slate-200 rounded-xl h-11 px-3 text-sm"
           />
           <div className="h-20 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center">
-            {mainLogoUrl ? (
-              <img src={mainLogoUrl} alt="Logo principal" className="max-h-16 max-w-full object-contain" />
+            {mainLogoFileDataUrl || mainLogoUrl ? (
+              <img src={mainLogoFileDataUrl || mainLogoUrl} alt="Logo principal" className="max-h-16 max-w-full object-contain" />
             ) : (
               <Image className="w-6 h-6 text-slate-300" />
             )}
@@ -515,14 +548,28 @@ function SiteSettingsSection() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
           <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Logo do Rodapé</label>
           <input
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                setFooterLogoFileDataUrl(await toDataUrl(file));
+              } catch {
+                toast.error("Não foi possível carregar a imagem.");
+              }
+            }}
+            className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
+          />
+          <input
             value={footerLogoUrl}
             onChange={(e) => setFooterLogoUrl(e.target.value)}
-            placeholder="https://..."
+            placeholder="https://... (opcional se enviar upload)"
             className="w-full bg-slate-50 border border-slate-200 rounded-xl h-11 px-3 text-sm"
           />
           <div className="h-20 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center">
-            {footerLogoUrl ? (
-              <img src={footerLogoUrl} alt="Logo do rodapé" className="max-h-16 max-w-full object-contain" />
+            {footerLogoFileDataUrl || footerLogoUrl ? (
+              <img src={footerLogoFileDataUrl || footerLogoUrl} alt="Logo do rodapé" className="max-h-16 max-w-full object-contain" />
             ) : (
               <Image className="w-6 h-6 text-slate-300" />
             )}
@@ -546,7 +593,7 @@ function SiteSettingsSection() {
         ) : (
           <div className="space-y-3">
             {partners.map((partner, index) => (
-              <div key={index} className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end rounded-xl border border-slate-100 p-3">
+              <div key={index} className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] items-end rounded-xl border border-slate-100 p-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Nome</label>
                   <input
@@ -561,9 +608,34 @@ function SiteSettingsSection() {
                   <input
                     value={partner.logoUrl}
                     onChange={(e) => updatePartner(index, { logoUrl: e.target.value })}
-                    placeholder="https://..."
+                    placeholder="https://... (opcional)"
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
                   />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Upload da Logo</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const dataUrl = await toDataUrl(file);
+                        updatePartner(index, { logoFileDataUrl: dataUrl });
+                      } catch {
+                        toast.error("Não foi possível carregar a imagem do parceiro.");
+                      }
+                    }}
+                    className="w-full text-xs text-slate-500 file:mr-2 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
+                  />
+                  {(partner.logoFileDataUrl || partner.logoUrl) && (
+                    <img
+                      src={partner.logoFileDataUrl || partner.logoUrl}
+                      alt={`Logo ${partner.name || "parceiro"}`}
+                      className="h-8 w-8 rounded bg-slate-100 border border-slate-200 p-0.5 object-contain"
+                    />
+                  )}
                 </div>
                 <Button
                   type="button"
