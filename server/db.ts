@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, matches, teams, tournaments, users } from "../drizzle/schema";
+import { InsertUser, matches, siteSettings, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 import { migrate } from "drizzle-orm/mysql2/migrator";
@@ -8,6 +8,11 @@ import path from "path";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _migrated = false;
+
+export type SitePartner = {
+  name: string;
+  logoUrl: string;
+};
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -37,6 +42,16 @@ export async function getDb() {
           await fixColumn("tournaments", "homeAndAway", "INT NOT NULL DEFAULT 0");
           await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
           await fixColumn("users", "password", "TEXT NULL");
+
+          try {
+            await _db!.execute(
+              sql.raw(
+                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, partnersJson TEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
+              )
+            );
+          } catch (e) {
+            // Ignora erro para manter startup resiliente
+          }
 
           try {
             await _db!.execute(
@@ -285,4 +300,89 @@ export async function getMatchById(matchId: number) {
   if (!db) return undefined;
   const result = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1);
   return result[0];
+}
+
+// ─── Site Settings ─────────────────────────────────────────────────────────────
+
+export async function getSiteSettings() {
+  const db = await getDb();
+  if (!db) {
+    return {
+      mainLogoUrl: null,
+      footerLogoUrl: null,
+      partners: [] as SitePartner[],
+    };
+  }
+
+  const rows = await db.select().from(siteSettings).limit(1);
+  const row = rows[0];
+
+  if (!row) {
+    return {
+      mainLogoUrl: null,
+      footerLogoUrl: null,
+      partners: [] as SitePartner[],
+    };
+  }
+
+  let partners: SitePartner[] = [];
+  if (row.partnersJson) {
+    try {
+      const parsed = JSON.parse(row.partnersJson);
+      if (Array.isArray(parsed)) {
+        partners = parsed
+          .filter((p) => p && typeof p.name === "string" && typeof p.logoUrl === "string")
+          .map((p) => ({
+            name: p.name,
+            logoUrl: p.logoUrl,
+          }));
+      }
+    } catch (e) {
+      partners = [];
+    }
+  }
+
+  return {
+    mainLogoUrl: row.mainLogoUrl,
+    footerLogoUrl: row.footerLogoUrl,
+    partners,
+  };
+}
+
+export async function upsertSiteSettings(data: {
+  mainLogoUrl?: string | null;
+  footerLogoUrl?: string | null;
+  partners?: SitePartner[];
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+
+  const rows = await db.select().from(siteSettings).limit(1);
+  const existing = rows[0];
+
+  const patch: {
+    mainLogoUrl?: string | null;
+    footerLogoUrl?: string | null;
+    partnersJson?: string | null;
+  } = {};
+
+  if (data.mainLogoUrl !== undefined) patch.mainLogoUrl = data.mainLogoUrl;
+  if (data.footerLogoUrl !== undefined) patch.footerLogoUrl = data.footerLogoUrl;
+  if (data.partners !== undefined) patch.partnersJson = JSON.stringify(data.partners);
+
+  if (existing && Object.keys(patch).length === 0) {
+    return getSiteSettings();
+  }
+
+  if (existing) {
+    await db.update(siteSettings).set(patch).where(eq(siteSettings.id, existing.id));
+  } else {
+    await db.insert(siteSettings).values({
+      mainLogoUrl: data.mainLogoUrl ?? null,
+      footerLogoUrl: data.footerLogoUrl ?? null,
+      partnersJson: JSON.stringify(data.partners ?? []),
+    });
+  }
+
+  return getSiteSettings();
 }

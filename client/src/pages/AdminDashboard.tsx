@@ -17,6 +17,8 @@ import {
   Plus,
   Trash2,
   AlertCircle,
+  Image,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -160,6 +162,14 @@ export default function AdminDashboard() {
                 Equipe
               </button>
             )}
+            {user?.openId === "admin-master" && (
+              <button 
+                onClick={() => setView("site")}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "site" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                Site
+              </button>
+            )}
             <button 
               onClick={() => setView("profile")}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "profile" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
@@ -287,6 +297,10 @@ export default function AdminDashboard() {
           <StaffSection />
         )}
 
+        {view === "site" && user?.openId === "admin-master" && (
+          <SiteSettingsSection />
+        )}
+
         {view === "profile" && (
           <ProfileSection />
         )}
@@ -405,6 +419,165 @@ function StaffSection() {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function SiteSettingsSection() {
+  const utils = trpc.useUtils();
+  const { data: settings } = trpc.site.getSettings.useQuery();
+
+  const [mainLogoUrl, setMainLogoUrl] = useState("");
+  const [footerLogoUrl, setFooterLogoUrl] = useState("");
+  const [partners, setPartners] = useState<{ name: string; logoUrl: string }[]>([]);
+
+  useEffect(() => {
+    if (!settings) return;
+    setMainLogoUrl(settings.mainLogoUrl || "");
+    setFooterLogoUrl(settings.footerLogoUrl || "");
+    setPartners(settings.partners || []);
+  }, [settings]);
+
+  const updateMutation = trpc.site.updateSettings.useMutation({
+    onSuccess: () => {
+      utils.site.getSettings.invalidate();
+      toast.success("Configurações do site atualizadas!");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updatePartner = (index: number, patch: { name?: string; logoUrl?: string }) => {
+    setPartners((prev) =>
+      prev.map((partner, i) =>
+        i === index
+          ? {
+              ...partner,
+              ...(patch.name !== undefined ? { name: patch.name } : {}),
+              ...(patch.logoUrl !== undefined ? { logoUrl: patch.logoUrl } : {}),
+            }
+          : partner
+      )
+    );
+  };
+
+  const addPartner = () => {
+    setPartners((prev) => [...prev, { name: "", logoUrl: "" }]);
+  };
+
+  const removePartner = (index: number) => {
+    setPartners((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const saveSettings = () => {
+    const cleanPartners = partners
+      .map((p) => ({ name: p.name.trim(), logoUrl: p.logoUrl.trim() }))
+      .filter((p) => p.name.length > 0 && p.logoUrl.length > 0);
+
+    updateMutation.mutate({
+      mainLogoUrl,
+      footerLogoUrl,
+      partners: cleanPartners,
+    });
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="font-display text-xl font-semibold text-foreground">Configurações do Site</h2>
+          <p className="text-sm text-muted-foreground">Gerencie logo principal, logo do rodapé e parceiros exibidos na Home.</p>
+        </div>
+        <Button className="bg-red text-white font-bold" onClick={saveSettings} disabled={updateMutation.isPending}>
+          <Save className="w-4 h-4 mr-1.5" />
+          Salvar
+        </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
+          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Logo Principal (Header)</label>
+          <input
+            value={mainLogoUrl}
+            onChange={(e) => setMainLogoUrl(e.target.value)}
+            placeholder="https://..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl h-11 px-3 text-sm"
+          />
+          <div className="h-20 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center">
+            {mainLogoUrl ? (
+              <img src={mainLogoUrl} alt="Logo principal" className="max-h-16 max-w-full object-contain" />
+            ) : (
+              <Image className="w-6 h-6 text-slate-300" />
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
+          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Logo do Rodapé</label>
+          <input
+            value={footerLogoUrl}
+            onChange={(e) => setFooterLogoUrl(e.target.value)}
+            placeholder="https://..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl h-11 px-3 text-sm"
+          />
+          <div className="h-20 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center">
+            {footerLogoUrl ? (
+              <img src={footerLogoUrl} alt="Logo do rodapé" className="max-h-16 max-w-full object-contain" />
+            ) : (
+              <Image className="w-6 h-6 text-slate-300" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-lg font-semibold text-slate-900">Parceiros</h3>
+          <Button size="sm" variant="outline" onClick={addPartner}>
+            <Plus className="w-4 h-4 mr-1" />
+            Adicionar parceiro
+          </Button>
+        </div>
+
+        {partners.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+            Nenhum parceiro cadastrado.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {partners.map((partner, index) => (
+              <div key={index} className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end rounded-xl border border-slate-100 p-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Nome</label>
+                  <input
+                    value={partner.name}
+                    onChange={(e) => updatePartner(index, { name: e.target.value })}
+                    placeholder="Ex: APEFI"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Logo URL</label>
+                  <input
+                    value={partner.logoUrl}
+                    onChange={(e) => updatePartner(index, { logoUrl: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="text-slate-400 hover:text-red hover:bg-red/5"
+                  onClick={() => removePartner(index)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -69,6 +69,11 @@ export default function Home() {
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
+  const { data: siteSettings } = trpc.site.getSettings.useQuery();
+
+  const mainLogoUrl = siteSettings?.mainLogoUrl?.trim() ? siteSettings.mainLogoUrl : "/logo.png";
+  const footerLogoUrl = siteSettings?.footerLogoUrl?.trim() ? siteSettings.footerLogoUrl : mainLogoUrl;
+  const partners = siteSettings?.partners ?? [];
 
   const groupedTournaments = useMemo(() => {
     return tournaments?.reduce((acc, t) => {
@@ -153,7 +158,7 @@ export default function Home() {
 
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
               <div className="w-20 h-20 rounded-full bg-white shadow-2xl p-2">
-                <img src="/logo.png" alt="LEG" className="w-full h-full object-contain" />
+                <img src={mainLogoUrl} alt="Logo LEG" className="w-full h-full object-contain" />
               </div>
             </div>
 
@@ -364,7 +369,7 @@ export default function Home() {
           <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr] border-b border-white/15 pb-10">
             <div id="sobre">
               <div className="flex items-center gap-3 mb-4">
-                <img src="/logo.png" alt="LEG" className="w-12 h-12 rounded-lg bg-white p-1" />
+                <img src={footerLogoUrl} alt="Logo LEG rodapé" className="w-12 h-12 rounded-lg bg-white p-1 object-contain" />
                 <div>
                   <p className="font-black text-2xl leading-none">LIGA ESCOLAR</p>
                   <p className="font-black text-xs tracking-[0.2em] text-red-200">GUARULHENSE</p>
@@ -414,7 +419,25 @@ export default function Home() {
 
               <div className="mt-5 rounded-xl bg-white/10 border border-white/15 p-3 text-xs">
                 <p className="font-black uppercase tracking-wider mb-1">Parceiros</p>
-                <p className="text-blue-100/80">APEFI • Wiisite</p>
+                {partners.length === 0 ? (
+                  <p className="text-blue-100/80">Nenhum parceiro cadastrado</p>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-3">
+                    {partners.map((partner) => (
+                      <div
+                        key={`${partner.name}-${partner.logoUrl}`}
+                        className="inline-flex items-center gap-2 rounded-md bg-white/10 px-2.5 py-1.5"
+                      >
+                        <img
+                          src={partner.logoUrl}
+                          alt={partner.name}
+                          className="h-5 w-5 rounded bg-white p-0.5 object-contain"
+                        />
+                        <span className="text-[11px] text-blue-100/90">{partner.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

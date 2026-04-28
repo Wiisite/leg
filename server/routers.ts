@@ -14,6 +14,8 @@ import {
   updateTournamentStatus,
   updateTournament,
   getDb,
+  getSiteSettings,
+  upsertSiteSettings,
 } from "./db";
 import { eq, and, sql } from "drizzle-orm";
 import { matches, teams, tournaments } from "../drizzle/schema";
@@ -854,6 +856,50 @@ const seedRouter = router({
   }),
 });
 
+const siteRouter = router({
+  getSettings: publicProcedure.query(async () => {
+    return getSiteSettings();
+  }),
+
+  updateSettings: protectedProcedure
+    .input(
+      z.object({
+        mainLogoUrl: z.string().trim().max(2048).optional(),
+        footerLogoUrl: z.string().trim().max(2048).optional(),
+        partners: z
+          .array(
+            z.object({
+              name: z.string().trim().min(1).max(120),
+              logoUrl: z.string().trim().min(1).max(2048),
+            })
+          )
+          .optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user?.openId !== "admin-master") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Apenas o Administrador Master pode alterar o site" });
+      }
+
+      return upsertSiteSettings({
+        ...(input.mainLogoUrl !== undefined
+          ? { mainLogoUrl: input.mainLogoUrl.length > 0 ? input.mainLogoUrl : null }
+          : {}),
+        ...(input.footerLogoUrl !== undefined
+          ? { footerLogoUrl: input.footerLogoUrl.length > 0 ? input.footerLogoUrl : null }
+          : {}),
+        ...(input.partners !== undefined
+          ? {
+              partners: input.partners.map((p) => ({
+                name: p.name,
+                logoUrl: p.logoUrl,
+              })),
+            }
+          : {}),
+      });
+    }),
+});
+
 // ─── App Router ────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -1017,6 +1063,7 @@ export const appRouter = router({
   }),
   tournament: tournamentRouter,
   match: matchRouter,
+  site: siteRouter,
   seed: seedRouter,
 });
 

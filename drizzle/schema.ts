@@ -86,3 +86,16 @@ export const matches = mysqlTable("matches", {
 
 export type Match = typeof matches.$inferSelect;
 export type InsertMatch = typeof matches.$inferInsert;
+
+// ─── Site Settings ─────────────────────────────────────────────────────────────
+
+export const siteSettings = mysqlTable("site_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  mainLogoUrl: text("mainLogoUrl"),
+  footerLogoUrl: text("footerLogoUrl"),
+  partnersJson: text("partnersJson"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SiteSettings = typeof siteSettings.$inferSelect;
+export type InsertSiteSettings = typeof siteSettings.$inferInsert;
