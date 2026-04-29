@@ -122,11 +122,11 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:block">{user?.name}</span>
+            <span className="text-sm text-white/85 hidden sm:block">{user?.name}</span>
             <Button
               size="sm"
               variant="outline"
-              className="border-border/60 text-muted-foreground hover:text-foreground text-xs"
+              className="border-white/35 bg-white/5 text-white hover:bg-white/12 hover:text-white text-xs"
               onClick={() => logout()}
             >
               <LogOut className="w-3.5 h-3.5 mr-1.5" />
