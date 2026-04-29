@@ -48,6 +48,7 @@ export async function getDb() {
           await fixColumn("teams", "logo", "TEXT NULL");
           await fixColumn("teams", "groupName", "VARCHAR(2) NULL");
           await fixColumn("matches", "bracket", "ENUM('ouro','prata') NULL");
+          await fixColumn("matches", "voleiSetsJson", "LONGTEXT NULL");
           await fixColumn("tournaments", "homeAndAway", "INT NOT NULL DEFAULT 0");
           await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
           await fixColumn("users", "password", "TEXT NULL");

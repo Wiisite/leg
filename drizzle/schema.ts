@@ -78,6 +78,7 @@ export const matches = mysqlTable("matches", {
   awayTeamId: int("awayTeamId").notNull(),
   homeScore: int("homeScore"),
   awayScore: int("awayScore"),
+  voleiSetsJson: longtext("voleiSetsJson"),
   time: varchar("time", { length: 20 }),
   location: varchar("location", { length: 255 }),
   status: mysqlEnum("status", ["scheduled", "finished"]).default("scheduled").notNull(),

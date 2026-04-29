@@ -33,6 +33,7 @@ type MatchForModal = {
   awayTeamId: number; 
   homeScore: number | null; 
   awayScore: number | null;
+  voleiSetsJson?: string | null;
   time?: string | null;
   location?: string | null;
   status?: string;
@@ -76,22 +77,69 @@ function ScoreModal({
   teams: { id: number; name: string; shortName: string; color: string; logo?: string | null }[];
   modality?: string;
   onClose: () => void;
-  onSave: (matchId: number, home: number, away: number, time: string, location: string) => void;
+  onSave: (
+    matchId: number,
+    home: number,
+    away: number,
+    time: string,
+    location: string,
+    voleiSets?: { home: number; away: number }[]
+  ) => void;
 }) {
   const isVolei = modality === "volei";
+  const isBasquete = modality === "basquete";
   const homeTeam = teams.find((t) => t.id === match.homeTeamId);
   const awayTeam = teams.find((t) => t.id === match.awayTeamId);
   const [home, setHome] = useState(match.homeScore ?? 0);
   const [away, setAway] = useState(match.awayScore ?? 0);
   const [time, setTime] = useState(match.time ?? "");
   const [location, setLocation] = useState(match.location ?? "");
+  const [voleiSetsInput, setVoleiSetsInput] = useState<{ home: string; away: string }[]>(() => {
+    if (!match.voleiSetsJson) return [{ home: "", away: "" }, { home: "", away: "" }, { home: "", away: "" }];
+    try {
+      const parsed = JSON.parse(match.voleiSetsJson);
+      if (!Array.isArray(parsed)) return [{ home: "", away: "" }, { home: "", away: "" }, { home: "", away: "" }];
+      const normalized = parsed
+        .map((set) => ({
+          home: Number(set?.home),
+          away: Number(set?.away),
+        }))
+        .filter((set) => Number.isFinite(set.home) && Number.isFinite(set.away) && set.home >= 0 && set.away >= 0)
+        .slice(0, 3)
+        .map((set) => ({ home: String(set.home), away: String(set.away) }));
 
-  const voleiValid = !isVolei || (
-    (home === 3 && away >= 0 && away <= 2) ||
-    (away === 3 && home >= 0 && home <= 2) ||
-    (home === 2 && away >= 0 && away <= 1) ||
-    (away === 2 && home >= 0 && home <= 1)
-  );
+      while (normalized.length < 3) {
+        normalized.push({ home: "", away: "" });
+      }
+      return normalized;
+    } catch {
+      return [{ home: "", away: "" }, { home: "", away: "" }, { home: "", away: "" }];
+    }
+  });
+
+  const parsedVoleiSets = voleiSetsInput
+    .map((set) => ({
+      home: set.home.trim() === "" ? NaN : Number(set.home),
+      away: set.away.trim() === "" ? NaN : Number(set.away),
+    }))
+    .filter((set) => Number.isFinite(set.home) && Number.isFinite(set.away) && set.home >= 0 && set.away >= 0)
+    .map((set) => ({ home: Math.floor(set.home), away: Math.floor(set.away) }));
+
+  const voleiHomeSets = parsedVoleiSets.reduce((acc, set) => acc + (set.home > set.away ? 1 : 0), 0);
+  const voleiAwaySets = parsedVoleiSets.reduce((acc, set) => acc + (set.away > set.home ? 1 : 0), 0);
+  const hasSetDraw = parsedVoleiSets.some((set) => set.home === set.away);
+  const hasVoleiWinner = voleiHomeSets === 2 || voleiAwaySets === 2;
+  const voleiHasEnoughSets = parsedVoleiSets.length >= 2 && parsedVoleiSets.length <= 3;
+  const invalidStraightWinIn3Sets =
+    parsedVoleiSets.length === 3 &&
+    ((voleiHomeSets === 2 && voleiAwaySets === 0) || (voleiAwaySets === 2 && voleiHomeSets === 0));
+  const voleiValid =
+    !isVolei ||
+    (voleiHasEnoughSets && !hasSetDraw && hasVoleiWinner && !invalidStraightWinIn3Sets);
+
+  const effectiveHome = isVolei ? voleiHomeSets : home;
+  const effectiveAway = isVolei ? voleiAwaySets : away;
+  const basqueteValid = !isBasquete || effectiveHome !== effectiveAway;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -113,19 +161,27 @@ function ScoreModal({
               <input
                 type="number"
                 min={0}
-                max={isVolei ? 3 : undefined}
-                value={home}
-                onChange={(e) => setHome(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all"
+                max={isVolei ? 2 : undefined}
+                value={isVolei ? effectiveHome : home}
+                onChange={(e) => {
+                  if (isVolei) return;
+                  setHome(Math.max(0, parseInt(e.target.value) || 0));
+                }}
+                readOnly={isVolei}
+                className={`w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all ${isVolei ? "cursor-not-allowed opacity-80" : ""}`}
               />
               <span className="text-slate-200 font-black text-xl">×</span>
               <input
                 type="number"
                 min={0}
-                max={isVolei ? 3 : undefined}
-                value={away}
-                onChange={(e) => setAway(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all"
+                max={isVolei ? 2 : undefined}
+                value={isVolei ? effectiveAway : away}
+                onChange={(e) => {
+                  if (isVolei) return;
+                  setAway(Math.max(0, parseInt(e.target.value) || 0));
+                }}
+                readOnly={isVolei}
+                className={`w-16 h-16 text-center text-4xl font-black bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-red transition-all ${isVolei ? "cursor-not-allowed opacity-80" : ""}`}
               />
             </div>
           </div>
@@ -167,19 +223,63 @@ function ScoreModal({
           </div>
         </div>
 
-        {isVolei && !voleiValid && (home > 0 || away > 0) && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-center">
-            <p className="text-[11px] font-bold text-red-500">Placar inválido para vôlei. Placares válidos: 3×0, 3×1, 3×2, 2×0, 2×1</p>
+        {isVolei && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+            <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3">Placares por set (melhor de 3)</p>
+            <div className="space-y-2">
+              {voleiSetsInput.map((set, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    value={set.home}
+                    onChange={(e) => {
+                      const next = [...voleiSetsInput];
+                      next[idx] = { ...next[idx], home: e.target.value };
+                      setVoleiSetsInput(next);
+                    }}
+                    placeholder="0"
+                    className="w-full px-2 py-2 text-center text-sm font-black bg-white border border-amber-200 rounded-lg focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="text-xs font-black text-amber-600">×</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={set.away}
+                    onChange={(e) => {
+                      const next = [...voleiSetsInput];
+                      next[idx] = { ...next[idx], away: e.target.value };
+                      setVoleiSetsInput(next);
+                    }}
+                    placeholder="0"
+                    className="w-full px-2 py-2 text-center text-sm font-black bg-white border border-amber-200 rounded-lg focus:outline-none focus:border-amber-400"
+                  />
+                  <span className="text-[10px] font-black text-amber-700 uppercase tracking-wider">Set {idx + 1}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {isVolei && voleiValid && (home > 0 || away > 0) && (
+        {isVolei && !voleiValid && parsedVoleiSets.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-center">
+            <p className="text-[11px] font-bold text-red-500">Resultado inválido no vôlei. Informe 2 ou 3 sets, sem empate por set, com placar final 2×0 ou 2×1.</p>
+          </div>
+        )}
+
+        {isBasquete && !basqueteValid && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-center">
+            <p className="text-[11px] font-bold text-red-500">No basquete não existe empate. Informe um vencedor da partida.</p>
+          </div>
+        )}
+
+        {isVolei && voleiValid && parsedVoleiSets.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
             <div className="flex items-center justify-between text-[11px]">
               <span className="font-bold text-amber-700">
                 {(() => {
-                  const w = Math.max(home, away), l = Math.min(home, away);
-                  const dominant = (w === 3 && l <= 1) || (w === 2 && l === 0);
+                  const w = Math.max(effectiveHome, effectiveAway), l = Math.min(effectiveHome, effectiveAway);
+                  const dominant = w === 2 && l === 0;
                   return dominant ? "Vitória direta → 3 pts / 0 pts" : "Vitória apertada → 2 pts / 1 pt";
                 })()}
               </span>
@@ -195,9 +295,18 @@ function ScoreModal({
             Cancelar
           </button>
           <button
-            className={`flex-[2] bg-red hover:bg-red-600 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl shadow-xl shadow-red/20 transition-all active:scale-95 ${isVolei && !voleiValid ? 'opacity-40 cursor-not-allowed' : ''}`}
-            disabled={isVolei && !voleiValid}
-            onClick={() => onSave(match.id, home, away, time, location)}
+            className={`flex-[2] bg-red hover:bg-red-600 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl shadow-xl shadow-red/20 transition-all active:scale-95 ${(isVolei && !voleiValid) || (isBasquete && !basqueteValid) ? 'opacity-40 cursor-not-allowed' : ''}`}
+            disabled={(isVolei && !voleiValid) || (isBasquete && !basqueteValid)}
+            onClick={() =>
+              onSave(
+                match.id,
+                effectiveHome,
+                effectiveAway,
+                time,
+                location,
+                isVolei ? parsedVoleiSets : undefined
+              )
+            }
           >
             SALVAR RESULTADO
           </button>
@@ -335,6 +444,12 @@ function MatchCardCompact({
 
 function StandingsTable({ standings, modality }: { standings: any[]; modality?: string }) {
   const isVolei = modality === "volei";
+  const hideDrawColumn = modality === "volei" || modality === "basquete";
+  const formatRatio = (value: number | null | undefined) => {
+    if (typeof value !== "number" || Number.isNaN(value)) return "0.000";
+    return value.toFixed(3);
+  };
+
   return (
     <div className="overflow-x-auto rounded-[32px] border border-slate-100 shadow-sm bg-white">
       <table className="w-full border-collapse">
@@ -342,12 +457,23 @@ function StandingsTable({ standings, modality }: { standings: any[]; modality?: 
           <tr className="bg-slate-50/50">
             <th className="py-6 px-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">#</th>
             <th className="py-6 px-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Equipe</th>
+            <th className="py-6 px-6 text-center text-[10px] font-black text-red uppercase tracking-widest w-20">Pts</th>
             <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">J</th>
             <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">V</th>
-            {!isVolei && <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">E</th>}
+            {!hideDrawColumn && <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">E</th>}
             <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">D</th>
-            <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">{isVolei ? "SS" : "SG"}</th>
-            <th className="py-6 px-6 text-center text-[10px] font-black text-red uppercase tracking-widest w-20">Pts</th>
+            {isVolei ? (
+              <>
+                <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Sets Ganhos</th>
+                <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Sets Perdidos</th>
+                <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Sets Average</th>
+                <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Ganhos</th>
+                <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Sofridos</th>
+                <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Average</th>
+              </>
+            ) : (
+              <th className="py-6 px-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-12">SG</th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
@@ -365,14 +491,25 @@ function StandingsTable({ standings, modality }: { standings: any[]; modality?: 
                   </div>
                 </div>
               </td>
-              <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.played}</td>
-              <td className="py-5 px-3 text-center text-sm font-black text-green-600">{s.won}</td>
-              {!isVolei && <td className="py-5 px-3 text-center text-sm font-black text-amber-500">{s.drawn}</td>}
-              <td className="py-5 px-3 text-center text-sm font-black text-red-500">{s.lost}</td>
-              <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.goalDiff > 0 ? `+${s.goalDiff}` : s.goalDiff}</td>
               <td className="py-5 px-6 text-center">
                 <span className="text-lg font-black text-red">{s.points}</span>
               </td>
+              <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.played}</td>
+              <td className="py-5 px-3 text-center text-sm font-black text-green-600">{s.won}</td>
+              {!hideDrawColumn && <td className="py-5 px-3 text-center text-sm font-black text-amber-500">{s.drawn}</td>}
+              <td className="py-5 px-3 text-center text-sm font-black text-red-500">{s.lost}</td>
+              {isVolei ? (
+                <>
+                  <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.setsWon ?? s.goalsFor}</td>
+                  <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.setsLost ?? s.goalsAgainst}</td>
+                  <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{formatRatio(s.setsAverage)}</td>
+                  <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.pointsWon ?? 0}</td>
+                  <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.pointsLost ?? 0}</td>
+                  <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{formatRatio(s.pointsAverage)}</td>
+                </>
+              ) : (
+                <td className="py-5 px-3 text-center text-sm font-black text-slate-600">{s.goalDiff > 0 ? `+${s.goalDiff}` : s.goalDiff}</td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -840,8 +977,22 @@ export default function TournamentDetail() {
           teams={teams}
           modality={tournament.modality}
           onClose={() => setEditingMatch(null)}
-          onSave={(matchId: number, home: number, away: number, time: string, location: string) =>
-            updateScore.mutate({ matchId, homeScore: home, awayScore: away, time, location })
+          onSave={(
+            matchId: number,
+            home: number,
+            away: number,
+            time: string,
+            location: string,
+            voleiSets?: { home: number; away: number }[]
+          ) =>
+            updateScore.mutate({
+              matchId,
+              homeScore: home,
+              awayScore: away,
+              voleiSets,
+              time,
+              location,
+            })
           }
         />
       )}

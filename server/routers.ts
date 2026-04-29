@@ -40,8 +40,39 @@ type StandingEntry = {
   goalsAgainst: number;
   goalDiff: number;
   points: number;
+  setsWon?: number;
+  setsLost?: number;
+  setsAverage?: number;
+  pointsWon?: number;
+  pointsLost?: number;
+  pointsAverage?: number;
   logo: string | null;
 };
+
+type VoleiSetScore = {
+  home: number;
+  away: number;
+};
+
+function parseVoleiSetsJson(value: string | null | undefined): VoleiSetScore[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const home = Number((item as Record<string, unknown>).home);
+        const away = Number((item as Record<string, unknown>).away);
+        if (!Number.isFinite(home) || !Number.isFinite(away)) return null;
+        if (home < 0 || away < 0) return null;
+        return { home, away };
+      })
+      .filter((set): set is VoleiSetScore => !!set);
+  } catch {
+    return [];
+  }
+}
 
 function computeStandings(
   teamList: { id: number; name: string; shortName: string; color: string; logo: string | null }[],
@@ -50,6 +81,7 @@ function computeStandings(
     awayTeamId: number;
     homeScore: number | null;
     awayScore: number | null;
+    voleiSetsJson?: string | null;
     status: string;
   }[],
   pointsPerWin: number = 3,
@@ -80,49 +112,84 @@ function computeStandings(
     const home = map.get(m.homeTeamId);
     const away = map.get(m.awayTeamId);
     if (!home || !away) continue;
+
     home.played++;
     away.played++;
-    home.goalsFor += m.homeScore;
-    home.goalsAgainst += m.awayScore;
-    away.goalsFor += m.awayScore;
-    away.goalsAgainst += m.homeScore;
+
     if (modality === "volei") {
+      const setScores = parseVoleiSetsJson(m.voleiSetsJson);
+      const parsedHomeSets = setScores.reduce((acc, set) => acc + (set.home > set.away ? 1 : 0), 0);
+      const parsedAwaySets = setScores.reduce((acc, set) => acc + (set.away > set.home ? 1 : 0), 0);
+
+      const homeSets = setScores.length > 0 ? parsedHomeSets : m.homeScore;
+      const awaySets = setScores.length > 0 ? parsedAwaySets : m.awayScore;
+
+      if (homeSets === awaySets) continue;
+
+      home.goalsFor += homeSets;
+      home.goalsAgainst += awaySets;
+      away.goalsFor += awaySets;
+      away.goalsAgainst += homeSets;
+
+      const homeRallyPoints =
+        setScores.length > 0 ? setScores.reduce((acc, set) => acc + set.home, 0) : homeSets;
+      const awayRallyPoints =
+        setScores.length > 0 ? setScores.reduce((acc, set) => acc + set.away, 0) : awaySets;
+
+      home.pointsWon = (home.pointsWon ?? 0) + homeRallyPoints;
+      home.pointsLost = (home.pointsLost ?? 0) + awayRallyPoints;
+      away.pointsWon = (away.pointsWon ?? 0) + awayRallyPoints;
+      away.pointsLost = (away.pointsLost ?? 0) + homeRallyPoints;
+
       // No vôlei não existe empate — sempre há um vencedor
-      const homeWon = m.homeScore! > m.awayScore!;
+      const homeWon = homeSets > awaySets;
       const winner = homeWon ? home : away;
       const loser = homeWon ? away : home;
-      const winnerSets = homeWon ? m.homeScore! : m.awayScore!;
-      const loserSets = homeWon ? m.awayScore! : m.homeScore!;
+      const winnerSets = homeWon ? homeSets : awaySets;
+      const loserSets = homeWon ? awaySets : homeSets;
 
       winner.won++;
       loser.lost++;
 
-      // Melhor de 5 (3x0, 3x1, 3x2) ou Melhor de 3 (2x0, 2x1)
-      // Vitória direta (3x0, 3x1, 2x0): 3 pts vencedor / 0 pts perdedor
-      // Vitória apertada (3x2, 2x1):     2 pts vencedor / 1 pt perdedor
-      const isDominant =
-        (winnerSets === 3 && loserSets <= 1) ||
-        (winnerSets === 2 && loserSets === 0);
+      // Melhor de 3 sets (2x0 ou 2x1)
+      // Vitória direta (2x0): 3 pts vencedor / 0 pts perdedor
+      // Vitória apertada (2x1): 2 pts vencedor / 1 pt perdedor
+      const isDominant = winnerSets === 2 && loserSets === 0;
 
       if (isDominant) {
         winner.points += 3;
         loser.points += 0;
       } else {
-        // 3x2 ou 2x1
+        // 2x1
         winner.points += 2;
         loser.points += 1;
       }
     } else if (m.homeScore! > m.awayScore!) {
+      home.goalsFor += m.homeScore;
+      home.goalsAgainst += m.awayScore;
+      away.goalsFor += m.awayScore;
+      away.goalsAgainst += m.homeScore;
+
       home.won++;
       home.points += pointsPerWin;
       away.lost++;
       away.points += pointsPerLoss;
     } else if (m.homeScore! < m.awayScore!) {
+      home.goalsFor += m.homeScore;
+      home.goalsAgainst += m.awayScore;
+      away.goalsFor += m.awayScore;
+      away.goalsAgainst += m.homeScore;
+
       away.won++;
       away.points += pointsPerWin;
       home.lost++;
       home.points += pointsPerLoss;
     } else {
+      home.goalsFor += m.homeScore;
+      home.goalsAgainst += m.awayScore;
+      away.goalsFor += m.awayScore;
+      away.goalsAgainst += m.homeScore;
+
       home.drawn++;
       away.drawn++;
       home.points += pointsPerDraw;
@@ -132,9 +199,27 @@ function computeStandings(
   const entries = Array.from(map.values());
   for (const entry of entries) {
     entry.goalDiff = entry.goalsFor - entry.goalsAgainst;
+    if (modality === "volei") {
+      entry.setsWon = entry.goalsFor;
+      entry.setsLost = entry.goalsAgainst;
+      entry.setsAverage = entry.goalsAgainst > 0 ? entry.goalsFor / entry.goalsAgainst : entry.goalsFor;
+      entry.pointsWon = entry.pointsWon ?? 0;
+      entry.pointsLost = entry.pointsLost ?? 0;
+      entry.pointsAverage =
+        entry.pointsLost > 0 ? entry.pointsWon / entry.pointsLost : entry.pointsWon;
+    }
   }
   return entries.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
+    if (modality === "volei") {
+      const setsAverageA = a.setsAverage ?? 0;
+      const setsAverageB = b.setsAverage ?? 0;
+      if (setsAverageB !== setsAverageA) return setsAverageB - setsAverageA;
+
+      const pointsAverageA = a.pointsAverage ?? 0;
+      const pointsAverageB = b.pointsAverage ?? 0;
+      if (pointsAverageB !== pointsAverageA) return pointsAverageB - pointsAverageA;
+    }
     if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
     return b.goalsFor - a.goalsFor;
   });
@@ -858,6 +943,15 @@ const matchRouter = router({
         matchId: z.number(),
         homeScore: z.number().min(0).optional(),
         awayScore: z.number().min(0).optional(),
+        voleiSets: z
+          .array(
+            z.object({
+              home: z.number().int().min(0),
+              away: z.number().int().min(0),
+            })
+          )
+          .max(3)
+          .optional(),
         time: z.string().max(20).optional(),
         location: z.string().max(255).optional(),
       })
@@ -869,19 +963,75 @@ const matchRouter = router({
       const db = await getDb();
       if (!db) throw new Error("DB not available");
 
+      const tournament = await getTournamentById(match.tournamentId);
+      if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
+
+      let effectiveHomeScore = input.homeScore;
+      let effectiveAwayScore = input.awayScore;
+      let voleiSetsJson: string | undefined;
+
+      if (tournament.modality === "volei" && input.voleiSets !== undefined) {
+        const normalizedSets = input.voleiSets
+          .map((set) => ({
+            home: Math.floor(set.home),
+            away: Math.floor(set.away),
+          }))
+          .filter((set) => !(set.home === 0 && set.away === 0));
+
+        if (normalizedSets.length < 2 || normalizedSets.length > 3) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No vôlei, informe 2 ou 3 sets válidos.",
+          });
+        }
+
+        let homeSetWins = 0;
+        let awaySetWins = 0;
+        for (const set of normalizedSets) {
+          if (set.home === set.away) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "No vôlei não existe empate por set.",
+            });
+          }
+          if (set.home > set.away) homeSetWins++;
+          else awaySetWins++;
+        }
+
+        const hasWinner = homeSetWins === 2 || awaySetWins === 2;
+        if (!hasWinner) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Resultado inválido: uma equipe precisa vencer 2 sets.",
+          });
+        }
+
+        if (normalizedSets.length === 3 && (homeSetWins === 2 && awaySetWins === 0 || awaySetWins === 2 && homeSetWins === 0)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Resultado inválido: partida 2×0 deve ter apenas 2 sets lançados.",
+          });
+        }
+
+        effectiveHomeScore = homeSetWins;
+        effectiveAwayScore = awaySetWins;
+        voleiSetsJson = JSON.stringify(normalizedSets);
+      }
+
+      const hasScoreUpdate = effectiveHomeScore !== undefined && effectiveAwayScore !== undefined;
+
       await db
         .update(matches)
         .set({
-          ...(input.homeScore !== undefined ? { homeScore: input.homeScore, status: "finished" } : {}),
-          ...(input.awayScore !== undefined ? { awayScore: input.awayScore, status: "finished" } : {}),
+          ...(effectiveHomeScore !== undefined ? { homeScore: effectiveHomeScore, status: "finished" } : {}),
+          ...(effectiveAwayScore !== undefined ? { awayScore: effectiveAwayScore, status: "finished" } : {}),
+          ...(voleiSetsJson !== undefined ? { voleiSetsJson } : {}),
           ...(input.time !== undefined ? { time: input.time } : {}),
           ...(input.location !== undefined ? { location: input.location } : {}),
         })
         .where(eq(matches.id, input.matchId));
 
-      if (match.phase === "group" && input.homeScore !== undefined && input.awayScore !== undefined) {
-        const tournament = await getTournamentById(match.tournamentId);
-        if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
+      if (match.phase === "group" && hasScoreUpdate) {
 
         const isAdvancedModality =
           tournament.modality === "handebol" ||
@@ -911,9 +1061,7 @@ const matchRouter = router({
         }
       }
 
-      if (match.phase === "final" && input.homeScore !== undefined && input.awayScore !== undefined) {
-        const tournament = await getTournamentById(match.tournamentId);
-        if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
+      if (match.phase === "final" && hasScoreUpdate) {
 
         const isAdvancedModality =
           tournament.modality === "handebol" ||
@@ -925,7 +1073,7 @@ const matchRouter = router({
 
         if (!isAdvancedModality) {
           const winner =
-            input.homeScore >= input.awayScore ? match.homeTeamId : match.awayTeamId;
+            effectiveHomeScore! >= effectiveAwayScore! ? match.homeTeamId : match.awayTeamId;
           const championTeam = teamList.find((t) => t.id === winner);
           await updateTournamentStatus(match.tournamentId, "finished", championTeam?.name);
           return { ok: true };
@@ -941,9 +1089,9 @@ const matchRouter = router({
           return { ok: true };
         }
 
-        const ouroHomeScore = ouroFinal.id === match.id ? input.homeScore : ouroFinal.homeScore;
-        const ouroAwayScore = ouroFinal.id === match.id ? input.awayScore : ouroFinal.awayScore;
-        if (ouroHomeScore === null || ouroAwayScore === null || hasOpenKnockout) {
+        const ouroHomeScore = ouroFinal.id === match.id ? effectiveHomeScore : ouroFinal.homeScore;
+        const ouroAwayScore = ouroFinal.id === match.id ? effectiveAwayScore : ouroFinal.awayScore;
+        if (ouroHomeScore == null || ouroAwayScore == null || hasOpenKnockout) {
           return { ok: true };
         }
 
@@ -993,6 +1141,13 @@ const seedRouter = router({
       results.push("Coluna bracket adicionada em matches!");
     } catch (e: any) {
       results.push("matches.bracket: " + e.message);
+    }
+    // Coluna voleiSetsJson em matches
+    try {
+      await db.execute(sql`ALTER TABLE matches ADD COLUMN voleiSetsJson LONGTEXT NULL`);
+      results.push("Coluna voleiSetsJson adicionada em matches!");
+    } catch (e: any) {
+      results.push("matches.voleiSetsJson: " + e.message);
     }
     // Coluna homeAndAway em tournaments
     try {
