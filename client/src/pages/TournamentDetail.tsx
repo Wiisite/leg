@@ -358,41 +358,41 @@ function MatchCard({
   const finished = match.homeScore !== null;
 
   return (
-    <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm hover:shadow-xl transition-all group border-b-4 border-b-slate-100">
+    <div className="bg-slate-50/95 border border-slate-200 p-6 rounded-[32px] shadow-sm hover:shadow-md hover:border-slate-300 transition-all group border-b-4 border-b-slate-300">
       <div className="flex items-center justify-between gap-4 mb-8">
         <div className="flex-1 flex flex-col items-center gap-3">
           <TeamBadge team={home} size="md" />
-          <span className="text-[11px] font-black text-slate-800 uppercase text-center leading-tight min-h-[2.5rem] flex items-center justify-center px-2">{home?.name}</span>
+          <span className="text-[11px] font-black text-slate-700 uppercase text-center leading-tight min-h-[2.5rem] flex items-center justify-center px-2">{home?.name}</span>
         </div>
         
         <div className="flex flex-col items-center gap-2 px-4">
           <div className="flex items-center gap-4">
-            <span className={`text-4xl font-black ${finished ? 'text-slate-800' : 'text-slate-200'}`}>
+            <span className={`text-4xl font-black ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
               {match.homeScore ?? "0"}
             </span>
-            <span className="text-slate-200 font-black text-xl">×</span>
-            <span className={`text-4xl font-black ${finished ? 'text-slate-800' : 'text-slate-200'}`}>
+            <span className="text-slate-300 font-black text-xl">×</span>
+            <span className={`text-4xl font-black ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
               {match.awayScore ?? "0"}
             </span>
           </div>
-          <div className="px-3 py-1 bg-red/5 rounded-full border border-red/10">
-            <span className="text-[9px] font-black text-red uppercase tracking-widest">VS</span>
+          <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-300">
+            <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">VS</span>
           </div>
         </div>
 
         <div className="flex-1 flex flex-col items-center gap-3">
           <TeamBadge team={away} size="md" />
-          <span className="text-[11px] font-black text-slate-800 uppercase text-center leading-tight min-h-[2.5rem] flex items-center justify-center px-2">{away?.name}</span>
+          <span className="text-[11px] font-black text-slate-700 uppercase text-center leading-tight min-h-[2.5rem] flex items-center justify-center px-2">{away?.name}</span>
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+      <div className="flex items-center justify-between pt-6 border-t border-slate-200">
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2 text-slate-400">
+          <div className="flex items-center gap-2 text-slate-500">
             <Clock className="w-3.5 h-3.5" />
             <span className="text-[10px] font-black uppercase tracking-wider">{match.time || "A DEFINIR"}</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-400">
+          <div className="flex items-center gap-2 text-slate-500">
             <MapPin className="w-3.5 h-3.5" />
             <span className="text-[10px] font-black uppercase tracking-wider truncate max-w-[120px]">{match.location || "A DEFINIR"}</span>
           </div>
@@ -402,7 +402,7 @@ function MatchCard({
           <Button 
             size="sm" 
             onClick={() => onEdit(match)}
-            className="bg-slate-50 hover:bg-red hover:text-white text-slate-400 text-[10px] font-black uppercase px-6 rounded-2xl transition-all shadow-sm active:scale-95"
+            className="bg-slate-100 hover:bg-slate-700 hover:text-white text-slate-600 text-[10px] font-black uppercase px-6 rounded-2xl transition-all shadow-sm active:scale-95"
           >
             {finished ? "Editar" : "Registrar"}
           </Button>
@@ -428,20 +428,20 @@ function MatchCardCompact({
   const finished = match.homeScore !== null;
 
   return (
-    <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm hover:shadow-lg transition-all border-b-4 border-b-slate-100">
+    <div className="bg-slate-50/95 border border-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-slate-300 transition-all border-b-4 border-b-slate-300">
       <div className="flex items-center justify-between gap-3">
         <div className="flex-1 flex flex-col items-center gap-2">
           <TeamBadge team={home} size="md" />
-          <span className="text-[10px] font-black text-slate-800 uppercase text-center leading-tight">{home?.shortName}</span>
+          <span className="text-[10px] font-black text-slate-700 uppercase text-center leading-tight">{home?.shortName}</span>
         </div>
 
         <div className="flex flex-col items-center gap-1.5 px-2">
           <div className="flex items-center gap-3">
-            <span className={`text-2xl font-black ${finished ? 'text-slate-800' : 'text-slate-200'}`}>
+            <span className={`text-2xl font-black ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
               {match.homeScore ?? "0"}
             </span>
             <span className="text-slate-300 font-black text-sm">×</span>
-            <span className={`text-2xl font-black ${finished ? 'text-slate-800' : 'text-slate-200'}`}>
+            <span className={`text-2xl font-black ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
               {match.awayScore ?? "0"}
             </span>
           </div>
@@ -449,16 +449,16 @@ function MatchCardCompact({
 
         <div className="flex-1 flex flex-col items-center gap-2">
           <TeamBadge team={away} size="md" />
-          <span className="text-[10px] font-black text-slate-800 uppercase text-center leading-tight">{away?.shortName}</span>
+          <span className="text-[10px] font-black text-slate-700 uppercase text-center leading-tight">{away?.shortName}</span>
         </div>
       </div>
 
       {isAdmin && onEdit && (
-        <div className="mt-3 pt-3 border-t border-slate-50 text-center">
+        <div className="mt-3 pt-3 border-t border-slate-200 text-center">
           <Button 
             size="sm" 
             onClick={() => onEdit(match)}
-            className="bg-slate-50 hover:bg-red hover:text-white text-slate-400 text-[9px] font-black uppercase px-4 py-1 rounded-xl transition-all shadow-sm active:scale-95"
+            className="bg-slate-100 hover:bg-slate-700 hover:text-white text-slate-600 text-[9px] font-black uppercase px-4 py-1 rounded-xl transition-all shadow-sm active:scale-95"
           >
             {finished ? "Editar" : "Registrar"}
           </Button>
@@ -1517,11 +1517,11 @@ export default function TournamentDetail() {
                       {groupMatches.map(m => m.round).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b).map(roundNum => (
                         <div key={roundNum}>
                           <div className="flex items-center gap-4 mb-6">
-                            <div className="h-px flex-1 bg-slate-200" />
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50 px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                            <div className="h-px flex-1 bg-slate-300" />
+                            <h3 className="text-xs font-black text-slate-700 uppercase tracking-[0.2em] bg-slate-100 px-4 py-1.5 rounded-full border border-slate-300 shadow-sm">
                               {roundNum}ª Rodada
                             </h3>
-                            <div className="h-px flex-1 bg-slate-200" />
+                            <div className="h-px flex-1 bg-slate-300" />
                           </div>
                           <div className="grid gap-3 sm:grid-cols-2 max-w-3xl mx-auto">
                             {groupMatches.filter(m => m.round === roundNum).map((m) => (
@@ -1560,9 +1560,9 @@ export default function TournamentDetail() {
                     {allRounds.map(roundNum => (
                       <div key={roundNum}>
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="h-px flex-1 bg-slate-200" />
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{roundNum}ª Rodada</span>
-                          <div className="h-px flex-1 bg-slate-200" />
+                          <div className="h-px flex-1 bg-slate-300" />
+                          <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-full border border-slate-300">{roundNum}ª Rodada</span>
+                          <div className="h-px flex-1 bg-slate-300" />
                         </div>
                         <div className="grid grid-cols-2 gap-4 max-w-5xl mx-auto">
                           {groupData.map(({ gName, gMatches }) => (
