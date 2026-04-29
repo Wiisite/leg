@@ -1024,6 +1024,40 @@ export default function TournamentDetail() {
     },
   };
   const activeTheme = MODALITY_THEME[tournament.modality] ?? MODALITY_THEME.futsal;
+  const modalityPattern = useMemo(() => {
+    if (tournament.modality === "futsal") {
+      return (
+        <>
+          <div className="absolute top-[180px] left-[6%] hidden xl:block w-[360px] h-[220px] rounded-[34px] border border-white/30" />
+          <div className="absolute top-[180px] left-[calc(6%+160px)] hidden xl:block w-[46px] h-[46px] rounded-full border border-white/30" />
+        </>
+      );
+    }
+    if (tournament.modality === "basquete") {
+      return (
+        <>
+          <div className="absolute top-[160px] right-[8%] hidden xl:block w-[320px] h-[320px] rounded-full border border-white/25" />
+          <div className="absolute top-[250px] right-[13%] hidden xl:block w-[190px] h-[190px] rounded-full border border-dashed border-white/30" />
+          <div className="absolute top-[300px] right-[18%] hidden xl:block w-[92px] h-[24px] rounded-md border border-white/35" />
+        </>
+      );
+    }
+    if (tournament.modality === "volei") {
+      return (
+        <>
+          <div className="absolute top-[220px] left-0 right-0 hidden lg:block h-px border-t border-dashed border-white/30" />
+          <div className="absolute top-[272px] left-0 right-0 hidden lg:block h-px border-t border-dashed border-white/30" />
+          <div className="absolute top-[246px] left-0 right-0 hidden lg:block h-[24px] bg-[repeating-linear-gradient(90deg,_transparent_0px,_transparent_14px,_rgba(255,255,255,0.24)_14px,_rgba(255,255,255,0.24)_15px)]" />
+        </>
+      );
+    }
+    return (
+      <>
+        <div className="absolute top-[170px] right-[7%] hidden xl:block w-[340px] h-[220px] rounded-t-[220px] border border-b-0 border-white/30" />
+        <div className="absolute top-[190px] right-[10%] hidden xl:block w-[280px] h-[180px] rounded-t-[180px] border border-b-0 border-white/20" />
+      </>
+    );
+  }, [tournament.modality]);
 
   const tabs: { id: Tab; label: string; icon: typeof Trophy }[] = [
     { id: "groups", label: "Grupos", icon: Users },
@@ -1038,6 +1072,7 @@ export default function TournamentDetail() {
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className={`absolute -top-20 -left-16 w-72 h-72 rounded-full blur-3xl ${activeTheme.glowA}`} />
         <div className={`absolute top-44 -right-20 w-80 h-80 rounded-full blur-3xl ${activeTheme.glowB}`} />
+        {modalityPattern}
         <div className="absolute top-36 right-8 hidden md:block text-[92px] font-black tracking-[0.35em] text-white/20 leading-none">
           {activeTheme.watermark}
         </div>
