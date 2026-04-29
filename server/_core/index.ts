@@ -10,14 +10,42 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 
-const REGULATION_FILE_BY_MODALITY: Record<string, string> = {
-  futsal: "LEG_Regulamento_Futsal_2026_Oficial_futsal.pdf",
-  basquete: "LEG_Regulamento_Basquetebol_2026_Oficial.pdf",
-  volei: "LEG_Regulament_Voleibol_2026_Oficial .pdf",
-  handebol: "LEG_Regulamento_Handebol_2026_Oficial _handebol.pdf",
+const REGULATION_FILE_CANDIDATES_BY_MODALITY: Record<string, string[]> = {
+  futsal: [
+    "LEG_Regulamento_Futsal_2026_Oficial_futsal.pdf",
+    "LEG_Regulamento_Futsal_2026_Oficial_futsal",
+  ],
+  basquete: [
+    "LEG_Regulamento_Basquetebol_2026_Oficial.pdf",
+    "LEG_Regulamento_Basquetebol_2026_Oficial",
+  ],
+  volei: [
+    "LEG_Regulament_Voleibol_2026_Oficial .pdf",
+    "LEG_Regulament_Voleibol_2026_Oficial",
+  ],
+  handebol: [
+    "LEG_Regulamento_Handebol_2026_Oficial _handebol.pdf",
+    "LEG_Regulamento_Handebol_2026_Oficial _handebol",
+  ],
 };
 
-function resolveRegulationFilePath(fileName: string): string | null {
+const REGULATION_KEYWORD_BY_MODALITY: Record<string, string> = {
+  futsal: "futsal",
+  basquete: "basquete",
+  volei: "volei",
+  handebol: "handebol",
+};
+
+function normalizeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function resolveRegulationFilePath(modality: string): string | null {
+  const fileNames = REGULATION_FILE_CANDIDATES_BY_MODALITY[modality] ?? [];
+  const modalityKeyword = REGULATION_KEYWORD_BY_MODALITY[modality] ?? modality;
   const baseDirs = [
     process.cwd(),
     path.resolve(process.cwd(), ".."),
@@ -27,14 +55,35 @@ function resolveRegulationFilePath(fileName: string): string | null {
     path.resolve(process.cwd(), "client/public"),
   ];
 
-  const candidates = baseDirs.flatMap((baseDir) => [
-    path.join(baseDir, fileName),
-    path.join(baseDir, "regulamentos", fileName),
-  ]);
+  const candidateDirs = baseDirs.flatMap((baseDir) => [baseDir, path.join(baseDir, "regulamentos")]);
 
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return candidate;
+  for (const candidateDir of candidateDirs) {
+    for (const fileName of fileNames) {
+      const candidate = path.join(candidateDir, fileName);
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  // fallback: localiza por padrão de nome para suportar pequenas variações no arquivo final
+  for (const candidateDir of candidateDirs) {
+    try {
+      const files = fs.readdirSync(candidateDir);
+      const match = files.find((file) => {
+        const normalized = normalizeText(file);
+        return (
+          normalized.includes("regulament") &&
+          normalized.includes(modalityKeyword) &&
+          (normalized.endsWith(".pdf") || !normalized.includes("."))
+        );
+      });
+
+      if (match) {
+        return path.join(candidateDir, match);
+      }
+    } catch {
+      // diretório não existe neste ambiente; segue para o próximo
     }
   }
 
@@ -80,14 +129,12 @@ async function startServer() {
   app.get("/api/regulamentos/:modality", (req, res) => {
     try {
       const modality = String(req.params.modality || "").toLowerCase();
-      const fileName = REGULATION_FILE_BY_MODALITY[modality];
-
-      if (!fileName) {
+      if (!REGULATION_FILE_CANDIDATES_BY_MODALITY[modality]) {
         res.status(404).json({ message: "Modalidade de regulamento não encontrada" });
         return;
       }
 
-      const filePath = resolveRegulationFilePath(fileName);
+      const filePath = resolveRegulationFilePath(modality);
       if (!filePath) {
         res.status(404).json({ message: "Arquivo de regulamento não encontrado no servidor" });
         return;
