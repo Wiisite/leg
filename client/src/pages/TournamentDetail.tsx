@@ -957,6 +957,7 @@ export default function TournamentDetail() {
     teams.length === 4 && !hasKnockoutMatches && singleGroupStandings.length >= 4
       ? singleGroupStandings.slice(0, 4)
       : [];
+  const canShowFinalClassification = tournament.status === "finished" && classificationTop4.length === 4;
   const championDisplayName = tournament.champion || classificationTop4[0]?.teamName || "A definir";
 
   const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -1517,7 +1518,7 @@ export default function TournamentDetail() {
               <div className="space-y-6">
                 <StandingsTable standings={standings as any[]} modality={tournament.modality} />
 
-                {classificationTop4.length === 4 && (
+                {canShowFinalClassification && (
                   <div className="rounded-2xl border border-amber-200/70 bg-amber-50/40 p-5">
                     <p className="text-xs font-black uppercase tracking-widest text-amber-700 mb-4">
                       Classificação final (grupo único)
@@ -1636,7 +1637,7 @@ export default function TournamentDetail() {
               Finais
             </h2>
             {finalMatches.length === 0 && thirdPlaceMatches.length === 0 ? (
-              classificationTop4.length === 4 ? (
+              canShowFinalClassification ? (
                 <div className="space-y-6 max-w-2xl">
                   <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-5">
                     <p className="text-xs font-black uppercase tracking-widest text-emerald-700 mb-4">
