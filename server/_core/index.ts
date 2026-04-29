@@ -25,9 +25,6 @@ function resolveRegulationFilePath(fileName: string): string | null {
     path.resolve(process.cwd(), "public"),
     path.resolve(process.cwd(), "dist/public"),
     path.resolve(process.cwd(), "client/public"),
-    path.resolve(__dirname, "../../.."),
-    path.resolve(__dirname, "../../../public"),
-    path.resolve(__dirname, "../../../dist/public"),
   ];
 
   const candidates = baseDirs.flatMap((baseDir) => [
@@ -81,27 +78,34 @@ async function startServer() {
   registerOAuthRoutes(app);
 
   app.get("/api/regulamentos/:modality", (req, res) => {
-    const modality = String(req.params.modality || "").toLowerCase();
-    const fileName = REGULATION_FILE_BY_MODALITY[modality];
+    try {
+      const modality = String(req.params.modality || "").toLowerCase();
+      const fileName = REGULATION_FILE_BY_MODALITY[modality];
 
-    if (!fileName) {
-      res.status(404).json({ message: "Modalidade de regulamento não encontrada" });
-      return;
-    }
-
-    const filePath = resolveRegulationFilePath(fileName);
-    if (!filePath) {
-      res.status(404).json({ message: "Arquivo de regulamento não encontrado no servidor" });
-      return;
-    }
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.sendFile(filePath, (err) => {
-      if (!err) return;
-      if (!res.headersSent) {
-        res.status(404).json({ message: "Arquivo de regulamento não encontrado no servidor" });
+      if (!fileName) {
+        res.status(404).json({ message: "Modalidade de regulamento não encontrada" });
+        return;
       }
-    });
+
+      const filePath = resolveRegulationFilePath(fileName);
+      if (!filePath) {
+        res.status(404).json({ message: "Arquivo de regulamento não encontrado no servidor" });
+        return;
+      }
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.sendFile(filePath, (err) => {
+        if (!err) return;
+        if (!res.headersSent) {
+          res.status(404).json({ message: "Arquivo de regulamento não encontrado no servidor" });
+        }
+      });
+    } catch (error) {
+      console.error("[Regulamentos] Erro ao servir PDF:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Erro interno ao carregar regulamento" });
+      }
+    }
   });
 
   // tRPC API
