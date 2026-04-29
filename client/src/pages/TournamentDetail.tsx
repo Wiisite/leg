@@ -999,10 +999,10 @@ export default function TournamentDetail() {
       detailPills: ["Quadra", "Bola no pe", "Jogo rapido"],
     },
     basquete: {
-      pageBg: "linear-gradient(180deg, #efe4d2 0%, #e6d3b8 46%, #f1e7d8 100%)",
-      headerBg: "linear-gradient(135deg, #e4d2b6 0%, #efe1cc 100%)",
-      glowA: "bg-amber-300/35",
-      glowB: "bg-orange-400/20",
+      pageBg: "linear-gradient(160deg, #b8cff2 0%, #cfdef6 45%, #f1c4cb 100%)",
+      headerBg: "linear-gradient(135deg, #9fbcea 0%, #c2d5f3 52%, #eaa9b4 100%)",
+      glowA: "bg-blue-400/35",
+      glowB: "bg-red-400/30",
       watermark: "BASQUETE",
       detailPills: ["Garrafao", "3 pontos", "Transicao"],
     },
@@ -1076,10 +1076,10 @@ export default function TournamentDetail() {
         <div className={`absolute -top-20 -left-16 w-72 h-72 rounded-full blur-3xl ${activeTheme.glowA}`} />
         <div className={`absolute top-44 -right-20 w-80 h-80 rounded-full blur-3xl ${activeTheme.glowB}`} />
         {modalityPattern}
-        <div className="absolute top-36 right-8 hidden md:block text-[92px] font-black tracking-[0.35em] text-white/20 leading-none">
+        <div className="absolute top-36 right-8 hidden md:block text-[92px] font-black tracking-[0.35em] text-white/30 leading-none">
           {activeTheme.watermark}
         </div>
-        <div className="absolute bottom-24 left-8 hidden lg:block text-[66px] font-black tracking-[0.24em] text-white/15 leading-none rotate-[-8deg]">
+        <div className="absolute bottom-24 left-8 hidden lg:block text-[66px] font-black tracking-[0.24em] text-white/20 leading-none rotate-[-8deg]">
           {activeTheme.watermark}
         </div>
       </div>
