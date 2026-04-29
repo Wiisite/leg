@@ -9,7 +9,8 @@ import {
   Users,
   BarChart3,
   GitBranch,
-  Swords,
+  Medal,
+  Flag,
   Star,
   CheckCircle2,
   Clock,
@@ -982,12 +983,12 @@ export default function TournamentDetail() {
     { id: "groups", label: "Grupos", icon: Users },
     { id: "standings", label: "Classificação", icon: BarChart3 },
     { id: "bracket", label: "Chaveamento", icon: GitBranch },
-    { id: "semifinals", label: "Semifinais", icon: Swords },
+    { id: "semifinals", label: "Semifinais", icon: Medal },
     { id: "final", label: "Final", icon: Star },
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#dbe5ee]">
       {isEditingTournament && (
         <EditTournamentModal
           tournament={tournament as any}
@@ -1086,7 +1087,7 @@ export default function TournamentDetail() {
       </header>
 
       {/* Tournament Header */}
-      <div className="border-b border-border/40 py-10 bg-slate-50/30">
+      <div className="border-b border-border/40 py-10 bg-[#cfdbe6]">
         <div className="container">
           <div className="flex flex-col md:flex-row md:items-center gap-8">
             <div className="w-28 h-28 rounded-3xl bg-white border-2 border-red/10 shadow-xl flex items-center justify-center overflow-hidden shrink-0">
@@ -1113,7 +1114,7 @@ export default function TournamentDetail() {
                     <Users className="w-4 h-4 text-red/60" /> {teams.length} equipes
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Swords className="w-4 h-4 text-red/60" /> {matches.length} partidas
+                    <Flag className="w-4 h-4 text-red/60" /> {matches.length} partidas
                   </span>
                   <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 text-[10px]">
                     {tournament.modality}
@@ -1379,7 +1380,7 @@ export default function TournamentDetail() {
             </div>
             {groupMatches.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-border/40 rounded-2xl">
-                <Swords className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                <Flag className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm">
                   {isAuthenticated
                     ? 'Clique em "Sortear Confrontos" para criar os jogos'
@@ -1468,7 +1469,7 @@ export default function TournamentDetail() {
 
         {/* Standings Tab */}
         {activeTab === "standings" && (
-          <div>
+          <div className="rounded-3xl border border-[#0A2D78]/15 bg-gradient-to-b from-[#ebf1f8] to-[#dfe9f4] p-5 md:p-6">
             <h2 className="font-display text-xl font-semibold text-foreground mb-6">
               Classificação
             </h2>
@@ -1550,7 +1551,7 @@ export default function TournamentDetail() {
             </h2>
             {quarterMatches.length === 0 && semiMatches.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-border/40 rounded-2xl">
-                <Swords className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                <Medal className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm">
                   {isAuthenticated
                     ? 'Conclua a fase de grupos e clique em "Gerar Semifinais"'
