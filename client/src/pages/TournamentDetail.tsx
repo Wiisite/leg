@@ -979,6 +979,52 @@ export default function TournamentDetail() {
     handebol: "Handebol",
   };
 
+  const MODALITY_THEME: Record<
+    string,
+    {
+      pageBg: string;
+      headerBg: string;
+      glowA: string;
+      glowB: string;
+      watermark: string;
+      detailPills: string[];
+    }
+  > = {
+    futsal: {
+      pageBg: "bg-[linear-gradient(180deg,_#dbe5ee_0%,_#d4e0ea_55%,_#dbe5ee_100%)]",
+      headerBg: "bg-[linear-gradient(135deg,_#cdd9e4_0%,_#d7e4ee_100%)]",
+      glowA: "bg-emerald-300/30",
+      glowB: "bg-red/20",
+      watermark: "FUTSAL",
+      detailPills: ["Quadra", "Bola no pe", "Jogo rapido"],
+    },
+    basquete: {
+      pageBg: "bg-[linear-gradient(180deg,_#e0e7ef_0%,_#d9e3ed_55%,_#e0e7ef_100%)]",
+      headerBg: "bg-[linear-gradient(135deg,_#d6dfea_0%,_#e2eaf2_100%)]",
+      glowA: "bg-amber-300/35",
+      glowB: "bg-orange-400/20",
+      watermark: "BASQUETE",
+      detailPills: ["Garrafao", "3 pontos", "Transicao"],
+    },
+    volei: {
+      pageBg: "bg-[linear-gradient(180deg,_#dce6ef_0%,_#d5e1ec_55%,_#dce6ef_100%)]",
+      headerBg: "bg-[linear-gradient(135deg,_#d1ddea_0%,_#dde8f2_100%)]",
+      glowA: "bg-sky-300/30",
+      glowB: "bg-indigo-300/20",
+      watermark: "VOLEI",
+      detailPills: ["Rede", "Saque", "Bloqueio"],
+    },
+    handebol: {
+      pageBg: "bg-[linear-gradient(180deg,_#dee6ee_0%,_#d8e1eb_55%,_#dee6ee_100%)]",
+      headerBg: "bg-[linear-gradient(135deg,_#d4deea_0%,_#e0e8f1_100%)]",
+      glowA: "bg-blue-300/30",
+      glowB: "bg-cyan-300/20",
+      watermark: "HANDEBOL",
+      detailPills: ["Area 6m", "Ataque", "Defesa"],
+    },
+  };
+  const activeTheme = MODALITY_THEME[tournament.modality] ?? MODALITY_THEME.futsal;
+
   const tabs: { id: Tab; label: string; icon: typeof Trophy }[] = [
     { id: "groups", label: "Grupos", icon: Users },
     { id: "standings", label: "Classificação", icon: BarChart3 },
@@ -988,7 +1034,17 @@ export default function TournamentDetail() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#dbe5ee]">
+    <div className={`min-h-screen relative isolate overflow-hidden ${activeTheme.pageBg}`}>
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className={`absolute -top-20 -left-16 w-72 h-72 rounded-full blur-3xl ${activeTheme.glowA}`} />
+        <div className={`absolute top-44 -right-20 w-80 h-80 rounded-full blur-3xl ${activeTheme.glowB}`} />
+        <div className="absolute top-36 right-8 hidden md:block text-[92px] font-black tracking-[0.35em] text-white/20 leading-none">
+          {activeTheme.watermark}
+        </div>
+        <div className="absolute bottom-24 left-8 hidden lg:block text-[66px] font-black tracking-[0.24em] text-white/15 leading-none rotate-[-8deg]">
+          {activeTheme.watermark}
+        </div>
+      </div>
       {isEditingTournament && (
         <EditTournamentModal
           tournament={tournament as any}
@@ -1087,7 +1143,7 @@ export default function TournamentDetail() {
       </header>
 
       {/* Tournament Header */}
-      <div className="border-b border-border/40 py-10 bg-[#cfdbe6]">
+      <div className={`border-b border-border/40 py-10 ${activeTheme.headerBg}`}>
         <div className="container">
           <div className="flex flex-col md:flex-row md:items-center gap-8">
             <div className="w-28 h-28 rounded-3xl bg-white border-2 border-red/10 shadow-xl flex items-center justify-center overflow-hidden shrink-0">
@@ -1119,6 +1175,16 @@ export default function TournamentDetail() {
                   <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 text-[10px]">
                     {tournament.modality}
                   </span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {activeTheme.detailPills.map((pill) => (
+                    <span
+                      key={pill}
+                      className="px-3 py-1 rounded-full border border-white/70 bg-white/65 text-[10px] font-black uppercase tracking-wider text-slate-500"
+                    >
+                      {pill}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1398,7 +1464,7 @@ export default function TournamentDetail() {
                 if (!hasMultipleGroups) {
                   // Grupo único — exibe por rodada como antes
                   return (
-                    <div className="space-y-12">
+                    <div className="space-y-12 max-w-5xl mx-auto">
                       {groupMatches.map(m => m.round).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b).map(roundNum => (
                         <div key={roundNum}>
                           <div className="flex items-center gap-4 mb-6">
@@ -1408,7 +1474,7 @@ export default function TournamentDetail() {
                             </h3>
                             <div className="h-px flex-1 bg-slate-200" />
                           </div>
-                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="grid gap-3 sm:grid-cols-2 max-w-3xl mx-auto">
                             {groupMatches.filter(m => m.round === roundNum).map((m) => (
                               <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
                             ))}
@@ -1429,9 +1495,9 @@ export default function TournamentDetail() {
                 const allRounds = groupData.flatMap(g => g.rounds).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
 
                 return (
-                  <div className="space-y-6">
+                  <div className="space-y-6 max-w-6xl mx-auto">
                     {/* Group Headers */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 max-w-3xl mx-auto">
                       {groupData.map(({ gName }) => (
                         <div key={gName} className={`text-center py-2 rounded-xl border font-black text-xs uppercase tracking-[0.2em] ${
                           gName === "A" ? "bg-red/5 border-red/20 text-red" : "bg-blue-500/5 border-blue-500/20 text-blue-600"
@@ -1449,7 +1515,7 @@ export default function TournamentDetail() {
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{roundNum}ª Rodada</span>
                           <div className="h-px flex-1 bg-slate-200" />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4 max-w-5xl mx-auto">
                           {groupData.map(({ gName, gMatches }) => (
                             <div key={gName} className="space-y-3">
                               {gMatches.filter(m => m.round === roundNum).map((m) => (
