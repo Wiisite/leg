@@ -97,6 +97,7 @@ export const siteSettings = mysqlTable("site_settings", {
   footerLogoUrl: longtext("footerLogoUrl"),
   homeHighlightImageUrl: longtext("homeHighlightImageUrl"),
   homeHeroImagesJson: longtext("homeHeroImagesJson"),
+  homeHeroTitlesJson: longtext("homeHeroTitlesJson"),
   modalityBannerImagesJson: longtext("modalityBannerImagesJson"),
   partnersJson: longtext("partnersJson"),
   liveStreamsJson: longtext("liveStreamsJson"),

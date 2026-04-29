@@ -24,6 +24,7 @@ export type SiteChampionshipAddress = string;
 const MODALITY_KEYS = ["futsal", "basquete", "volei", "handebol"] as const;
 type ModalityKey = (typeof MODALITY_KEYS)[number];
 export type SiteModalityImageMap = Partial<Record<ModalityKey, string>>;
+export type SiteModalityTextMap = Partial<Record<ModalityKey, string>>;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -58,7 +59,7 @@ export async function getDb() {
           try {
             await _db!.execute(
               sql.raw(
-                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, homeHeroImagesJson LONGTEXT NULL, modalityBannerImagesJson LONGTEXT NULL, partnersJson TEXT NULL, liveStreamsJson LONGTEXT NULL, championshipAddressesJson LONGTEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
+                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, homeHeroImagesJson LONGTEXT NULL, homeHeroTitlesJson LONGTEXT NULL, modalityBannerImagesJson LONGTEXT NULL, partnersJson TEXT NULL, liveStreamsJson LONGTEXT NULL, championshipAddressesJson LONGTEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
               )
             );
           } catch (e) {
@@ -97,6 +98,18 @@ export async function getDb() {
 
           try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHeroImagesJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN homeHeroTitlesJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso a coluna já exista
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHeroTitlesJson LONGTEXT NULL"));
           } catch (e) {
             // Ignora erro caso já esteja no tipo correto
           }
@@ -413,6 +426,24 @@ export async function getSiteSettings() {
     }
   };
 
+  const parseModalityTextMap = (value: string | null | undefined): SiteModalityTextMap => {
+    if (!value) return {};
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== "object") return {};
+      const out: SiteModalityTextMap = {};
+      for (const key of MODALITY_KEYS) {
+        const candidate = (parsed as Record<string, unknown>)[key];
+        if (typeof candidate === "string" && candidate.trim().length > 0) {
+          out[key] = candidate.trim();
+        }
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  };
+
   const parseLiveStreams = (value: string | null | undefined): SiteLiveStream[] => {
     if (!value) return [];
     try {
@@ -455,6 +486,7 @@ export async function getSiteSettings() {
       footerLogoUrl: null,
       homeHighlightImageUrl: null,
       homeHeroImages: {} as SiteModalityImageMap,
+      homeHeroTitles: {} as SiteModalityTextMap,
       modalityBannerImages: {} as SiteModalityImageMap,
       partners: [] as SitePartner[],
       liveStreams: [] as SiteLiveStream[],
@@ -471,6 +503,7 @@ export async function getSiteSettings() {
       footerLogoUrl: null,
       homeHighlightImageUrl: null,
       homeHeroImages: {} as SiteModalityImageMap,
+      homeHeroTitles: {} as SiteModalityTextMap,
       modalityBannerImages: {} as SiteModalityImageMap,
       partners: [] as SitePartner[],
       liveStreams: [] as SiteLiveStream[],
@@ -500,6 +533,7 @@ export async function getSiteSettings() {
     footerLogoUrl: row.footerLogoUrl,
     homeHighlightImageUrl: row.homeHighlightImageUrl,
     homeHeroImages: parseModalityImageMap(row.homeHeroImagesJson),
+    homeHeroTitles: parseModalityTextMap((row as any).homeHeroTitlesJson),
     modalityBannerImages: parseModalityImageMap(row.modalityBannerImagesJson),
     partners,
     liveStreams: parseLiveStreams((row as any).liveStreamsJson),
@@ -512,6 +546,7 @@ export async function upsertSiteSettings(data: {
   footerLogoUrl?: string | null;
   homeHighlightImageUrl?: string | null;
   homeHeroImages?: SiteModalityImageMap;
+  homeHeroTitles?: SiteModalityTextMap;
   modalityBannerImages?: SiteModalityImageMap;
   partners?: SitePartner[];
   liveStreams?: SiteLiveStream[];
@@ -528,6 +563,7 @@ export async function upsertSiteSettings(data: {
     footerLogoUrl?: string | null;
     homeHighlightImageUrl?: string | null;
     homeHeroImagesJson?: string | null;
+    homeHeroTitlesJson?: string | null;
     modalityBannerImagesJson?: string | null;
     partnersJson?: string | null;
     liveStreamsJson?: string | null;
@@ -538,6 +574,7 @@ export async function upsertSiteSettings(data: {
   if (data.footerLogoUrl !== undefined) patch.footerLogoUrl = data.footerLogoUrl;
   if (data.homeHighlightImageUrl !== undefined) patch.homeHighlightImageUrl = data.homeHighlightImageUrl;
   if (data.homeHeroImages !== undefined) patch.homeHeroImagesJson = JSON.stringify(data.homeHeroImages);
+  if (data.homeHeroTitles !== undefined) patch.homeHeroTitlesJson = JSON.stringify(data.homeHeroTitles);
   if (data.modalityBannerImages !== undefined) patch.modalityBannerImagesJson = JSON.stringify(data.modalityBannerImages);
   if (data.partners !== undefined) patch.partnersJson = JSON.stringify(data.partners);
   if (data.liveStreams !== undefined) patch.liveStreamsJson = JSON.stringify(data.liveStreams);
@@ -555,6 +592,7 @@ export async function upsertSiteSettings(data: {
       footerLogoUrl: data.footerLogoUrl ?? null,
       homeHighlightImageUrl: data.homeHighlightImageUrl ?? null,
       homeHeroImagesJson: JSON.stringify(data.homeHeroImages ?? {}),
+      homeHeroTitlesJson: JSON.stringify(data.homeHeroTitles ?? {}),
       modalityBannerImagesJson: JSON.stringify(data.modalityBannerImages ?? {}),
       partnersJson: JSON.stringify(data.partners ?? []),
       liveStreamsJson: JSON.stringify(data.liveStreams ?? []),

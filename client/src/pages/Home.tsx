@@ -129,6 +129,7 @@ export default function Home() {
       ? siteSettings.homeHighlightImageUrl
       : "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1800&q=80";
   const homeHeroImages = siteSettings?.homeHeroImages ?? {};
+  const homeHeroTitles = siteSettings?.homeHeroTitles ?? {};
   const partners = siteSettings?.partners ?? [];
 
   const getHomeHeroImage = (modality: string) => {
@@ -147,10 +148,6 @@ export default function Home() {
   }, [tournaments]);
 
   const modalitiesInOrder = ["futsal", "basquete", "volei", "handebol"];
-  const modalitiesWithTournaments = useMemo(
-    () => modalitiesInOrder.filter((m) => (groupedTournaments?.[m]?.length || 0) > 0),
-    [groupedTournaments]
-  );
 
   const scrollToModality = (modality: string) => {
     document.getElementById(modality)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -171,48 +168,24 @@ export default function Home() {
   };
 
   const heroSlides = useMemo<HeroSlide[]>(() => {
-    const featured = modalitiesInOrder
-      .map((modality) => groupedTournaments?.[modality]?.[0])
-      .filter(Boolean) as NonNullable<typeof tournaments>;
+    return modalitiesInOrder.map((modalityKey) => {
+      const modalityLabel = MODALITY_CONFIG[modalityKey]?.label ?? "Modalidade";
+      const configuredTitle = homeHeroTitles[modalityKey as keyof typeof homeHeroTitles];
+      const title = typeof configuredTitle === "string" && configuredTitle.trim().length > 0
+        ? configuredTitle.trim()
+        : modalityLabel;
 
-    if (featured.length === 0) {
-      return [
-        {
-          id: "hero-futsal",
-          badge: "DESTAQUE DA TEMPORADA",
-          title: "5ª COPA LEG DE FUTSAL",
-          description: "Acompanhe jogos, classificação e os melhores momentos da principal modalidade da LEG.",
-          cta: "Acessar modalidade",
-          imageUrl: getHomeHeroImage("futsal"),
-          onClick: () => navigate("/modalidade/futsal"),
-        },
-        {
-          id: "hero-volei",
-          badge: "NOVIDADE",
-          title: "2ª COPA LEG DE VOLEIBOL",
-          description: "Confira os destaques da rodada e acesse rapidamente a página da competição.",
-          cta: "Ver detalhes",
-          imageUrl: getHomeHeroImage("volei"),
-          onClick: () => navigate("/modalidade/volei"),
-        },
-      ];
-    }
-
-    return featured.map((tournament) => {
-      const modalityLabel = MODALITY_CONFIG[tournament.modality]?.label ?? "Modalidade";
-      const statusLabel = STATUS_LABELS[tournament.status]?.label ?? "Em andamento";
-      const modalityKey = String(tournament.modality || "futsal").toLowerCase();
       return {
-        id: `hero-${tournament.id}`,
-        badge: `${modalityLabel} • ${tournament.category}`,
-        title: tournament.name.toUpperCase(),
-        description: `Status atual: ${statusLabel}. Acesse a página para acompanhar tabela, partidas e classificações.`,
+        id: `hero-${modalityKey}`,
+        badge: `Modalidade • ${modalityLabel}`,
+        title: title.toUpperCase(),
+        description: `Acompanhe campeonatos, partidas e classificações de ${modalityLabel.toLowerCase()} na plataforma da LEG.`,
         cta: "Acessar modalidade",
         imageUrl: getHomeHeroImage(modalityKey),
         onClick: () => navigate(`/modalidade/${modalityKey}`),
       };
     });
-  }, [groupedTournaments, navigate, homeHeroImages]);
+  }, [homeHeroTitles, navigate, homeHeroImages]);
 
   const championshipNews = useMemo(() => {
     const list = [...(tournaments ?? [])]

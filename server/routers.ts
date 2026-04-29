@@ -1186,6 +1186,14 @@ const siteRouter = router({
             handebol: z.string().trim().max(10_000_000).optional(),
           })
           .optional(),
+        homeHeroTitles: z
+          .object({
+            futsal: z.string().trim().max(120).optional(),
+            basquete: z.string().trim().max(120).optional(),
+            volei: z.string().trim().max(120).optional(),
+            handebol: z.string().trim().max(120).optional(),
+          })
+          .optional(),
         modalityBannerImages: z
           .object({
             futsal: z.string().trim().max(10_000_000).optional(),
@@ -1380,6 +1388,16 @@ const siteRouter = router({
         ...(resolvedHomeHeroImages !== undefined
           ? {
               homeHeroImages: resolvedHomeHeroImages,
+            }
+          : {}),
+        ...(input.homeHeroTitles !== undefined
+          ? {
+              homeHeroTitles: {
+                futsal: input.homeHeroTitles.futsal?.trim() || undefined,
+                basquete: input.homeHeroTitles.basquete?.trim() || undefined,
+                volei: input.homeHeroTitles.volei?.trim() || undefined,
+                handebol: input.homeHeroTitles.handebol?.trim() || undefined,
+              },
             }
           : {}),
         ...(resolvedModalityBannerImages !== undefined

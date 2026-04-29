@@ -450,6 +450,7 @@ function SiteSettingsSection() {
   const [homeHighlightImageUrl, setHomeHighlightImageUrl] = useState("");
   const [homeHighlightImageFileDataUrl, setHomeHighlightImageFileDataUrl] = useState<string | undefined>(undefined);
   const [homeHeroImages, setHomeHeroImages] = useState<Record<ModalityKey, string>>(emptyModalityMap);
+  const [homeHeroTitles, setHomeHeroTitles] = useState<Record<ModalityKey, string>>(emptyModalityMap);
   const [homeHeroImageFiles, setHomeHeroImageFiles] = useState<Partial<Record<ModalityKey, string>>>({});
   const [modalityBannerImages, setModalityBannerImages] = useState<Record<ModalityKey, string>>(emptyModalityMap);
   const [modalityBannerImageFiles, setModalityBannerImageFiles] = useState<Partial<Record<ModalityKey, string>>>({});
@@ -478,6 +479,12 @@ function SiteSettingsSection() {
       basquete: settings.homeHeroImages?.basquete || "",
       volei: settings.homeHeroImages?.volei || "",
       handebol: settings.homeHeroImages?.handebol || "",
+    });
+    setHomeHeroTitles({
+      futsal: settings.homeHeroTitles?.futsal || modalityLabels.futsal,
+      basquete: settings.homeHeroTitles?.basquete || modalityLabels.basquete,
+      volei: settings.homeHeroTitles?.volei || modalityLabels.volei,
+      handebol: settings.homeHeroTitles?.handebol || modalityLabels.handebol,
     });
     setHomeHeroImageFiles({});
     setModalityBannerImages({
@@ -588,6 +595,7 @@ function SiteSettingsSection() {
       footerLogoUrl,
       homeHighlightImageUrl,
       homeHeroImages: normalizeModalityMap(homeHeroImages),
+      homeHeroTitles: normalizeModalityMap(homeHeroTitles),
       modalityBannerImages: normalizeModalityMap(modalityBannerImages),
       ...(mainLogoFileDataUrl ? { mainLogoFileDataUrl } : {}),
       ...(footerLogoFileDataUrl ? { footerLogoFileDataUrl } : {}),
@@ -715,12 +723,23 @@ function SiteSettingsSection() {
       <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
         <div>
           <h3 className="font-display text-lg font-semibold text-slate-900">Banner principal da Home (slider)</h3>
-          <p className="text-xs text-slate-500">Defina a imagem de cada modalidade exibida no banner/slide da Home.</p>
+          <p className="text-xs text-slate-500">Defina os 4 slides fixos (um por modalidade): imagem + título + destino.</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           {modalities.map((modality) => (
             <div key={`home-hero-${modality}`} className="rounded-xl border border-slate-100 p-3 space-y-2">
               <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">{modalityLabels[modality]}</label>
+              <input
+                value={homeHeroTitles[modality]}
+                onChange={(e) =>
+                  setHomeHeroTitles((prev) => ({
+                    ...prev,
+                    [modality]: e.target.value,
+                  }))
+                }
+                placeholder={`Título do slide (${modalityLabels[modality]})`}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+              />
               <input
                 type="file"
                 accept="image/*"
@@ -754,6 +773,7 @@ function SiteSettingsSection() {
                   <Image className="w-5 h-5 text-slate-300" />
                 )}
               </div>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Destino do botão: /modalidade/{modality}</p>
             </div>
           ))}
         </div>
