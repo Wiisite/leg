@@ -314,7 +314,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F2F6] text-slate-900" style={{ fontFamily: "'Rajdhani', 'Segoe UI', sans-serif" }}>
+    <div className="min-h-screen bg-[#F0F2F6] text-slate-900">
       <header className="sticky top-0 z-50 shadow-xl">
         <div className="bg-[#05206F] text-white">
           <div className="container h-12 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.12em]">
@@ -380,6 +380,10 @@ export default function Home() {
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => goToExternalPage(LEGACY_CLINICAS_URL)} className="hover:text-red-100 transition-colors">Clínicas</button>
               <button onClick={() => goToExternalPage(LEGACY_QUIEN_SOMOS_URL)} className="hover:text-red-100 transition-colors">Quem Somos</button>
+              <button className="live-blink inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/65 bg-white/10 hover:bg-white/20 transition-colors">
+                <span className="h-2.5 w-2.5 rounded-full bg-white" />
+                Ao Vivo
+              </button>
               <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Contato</button>
             </nav>
 
@@ -397,6 +401,10 @@ export default function Home() {
                 <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="text-left">Home</button>
                 <button onClick={() => goToExternalPage(LEGACY_CLINICAS_URL)} className="text-left">Clínicas</button>
                 <button onClick={() => goToExternalPage(LEGACY_QUIEN_SOMOS_URL)} className="text-left">Quem Somos</button>
+                <button className="live-blink inline-flex items-center gap-2 text-left px-3 py-1.5 rounded-full border border-white/65 bg-white/10 w-fit">
+                  <span className="h-2.5 w-2.5 rounded-full bg-white" />
+                  Ao Vivo
+                </button>
                 <button onClick={() => scrollToSection("modalidades")} className="text-left">Modalidades</button>
                 <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Torneios</button>
                 <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Contato</button>
@@ -594,11 +602,8 @@ export default function Home() {
         <div className="container relative h-full py-16 md:py-24 flex flex-col items-center justify-center text-center max-w-4xl text-white">
           <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100 mb-3">Destaque LEG</p>
           <h3 className="text-4xl md:text-6xl font-black leading-[1.05] max-w-3xl">
-            Junte-se à nossa equipe
+            LEG cada vez mais forte e unida pelo esporte escolar
           </h3>
-          <p className="mt-4 text-red-100/95 text-2xl md:text-5xl font-black leading-tight max-w-3xl">
-            Ser o número <span className="text-[#D50000]">#1</span> é nosso verdadeiro objetivo
-          </p>
         </div>
       </section>
 

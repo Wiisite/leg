@@ -82,6 +82,7 @@
     @apply bg-background text-foreground;
     --font-sans: "Inter", system-ui, sans-serif;
     --font-display: "Inter", system-ui, sans-serif;
+    font-family: var(--font-sans);
   }
   h1, h2, h3 {
     font-family: var(--font-display);

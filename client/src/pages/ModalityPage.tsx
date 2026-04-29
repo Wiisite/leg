@@ -142,7 +142,7 @@ export default function ModalityPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F0F2F6] text-slate-900" style={{ fontFamily: "'Rajdhani', 'Segoe UI', sans-serif" }}>
+    <div className="min-h-screen bg-[#F0F2F6] text-slate-900">
       <header className="sticky top-0 z-50 shadow-xl">
         <div className="bg-[#05206F] text-white">
           <div className="container h-12 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.12em]">
