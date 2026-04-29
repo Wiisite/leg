@@ -3,7 +3,7 @@ import { getLoginUrl } from "@/const";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { ChevronRight, Contact, Dribbble, Dumbbell, LogOut, Menu, Target, Trophy, Volleyball, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Contact, Dribbble, Dumbbell, LogOut, Menu, Target, Trophy, Volleyball, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 
@@ -190,7 +190,27 @@ export default function ModalityPage() {
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => navigate("/")} className="hover:text-red-100 transition-colors">Home</button>
               <button onClick={() => (window.location.href = "/#torneios")} className="hover:text-red-100 transition-colors">Notícia</button>
-              <button onClick={() => document.getElementById("modality-list")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Modalidade</button>
+              <div className="relative group">
+                <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
+                  Modalidades
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <div className="absolute top-full left-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                  <div className="min-w-[200px] rounded-xl border border-white/30 bg-[#C80000] shadow-xl p-2">
+                    {modalitiesInOrder.map((modalityKey) => (
+                      <button
+                        key={`menu-mod-${modalityKey}`}
+                        onClick={() => navigate(`/modalidade/${modalityKey}`)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] transition-colors ${
+                          modalityKey === modality ? "bg-white text-[#C80000]" : "text-white hover:bg-white/15"
+                        }`}
+                      >
+                        {MODALITY_CONFIG[modalityKey]?.navLabel ?? modalityKey}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </nav>
 
             <div
@@ -223,7 +243,25 @@ export default function ModalityPage() {
             <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
               <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
                 <button onClick={() => navigate("/")} className="text-left">Home</button>
-                <button onClick={() => document.getElementById("modality-list")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Modalidade</button>
+                <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-100 mb-2">Modalidades</p>
+                  <div className="flex flex-col gap-1.5">
+                    {modalitiesInOrder.map((modalityKey) => (
+                      <button
+                        key={`mobile-mod-${modalityKey}`}
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          navigate(`/modalidade/${modalityKey}`);
+                        }}
+                        className={`text-left px-2 py-1.5 rounded text-[12px] font-black uppercase tracking-[0.12em] ${
+                          modalityKey === modality ? "bg-white text-[#C80000]" : "text-white hover:bg-white/15"
+                        }`}
+                      >
+                        {MODALITY_CONFIG[modalityKey]?.navLabel ?? modalityKey}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <button onClick={() => (window.location.href = "/#torneios")} className="text-left">Torneios</button>
                 <button onClick={() => (window.location.href = "/#rodape")} className="text-left">Contato</button>
               </div>
@@ -250,98 +288,92 @@ export default function ModalityPage() {
       </section>
 
       <main id="modality-list" className="container py-12">
-        {list.length === 0 ? (
-          <div className="rounded-3xl border border-slate-200 bg-white p-16 text-center">
-            <Trophy className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-black uppercase tracking-wide text-slate-500">Nenhum torneio ativo em {config.label}</h2>
-          </div>
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {list.map((t) => {
-              const status = STATUS_LABELS[t.status] ?? STATUS_LABELS.pending;
-              const Icon = MODALITY_CONFIG[modality]?.icon ?? Dumbbell;
-              return (
-                <article
-                  key={t.id}
-                  onClick={() => navigate(`/tournament/${t.id}`)}
-                  className="group cursor-pointer rounded-2xl p-5 bg-white/90 backdrop-blur-[2px] border border-white/70 shadow-[0_10px_24px_rgba(15,23,42,0.12)] hover:shadow-[0_16px_34px_rgba(15,23,42,0.18)] hover:bg-white/95 hover:-translate-y-1 transition-all"
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: config.accent }}>
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${status.color}`}>
-                      {status.label}
-                    </span>
-                  </div>
+        <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr] items-start">
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#D50000]">Campeonatos</p>
+                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-[#05206F]">Tabela de torneios</h2>
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{list.length} ativos</span>
+            </div>
 
-                  <h3 className="text-2xl font-black text-slate-900 mb-1 leading-tight uppercase group-hover:text-[#D50000] transition-colors">
-                    {t.name}
-                  </h3>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-5">{t.category}</p>
+            {list.length === 0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-16 text-center">
+                <Trophy className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <h2 className="text-2xl font-black uppercase tracking-wide text-slate-500">Nenhum torneio ativo em {config.label}</h2>
+              </div>
+            ) : (
+              <div className="grid gap-5 md:grid-cols-2">
+                {list.map((t) => {
+                  const status = STATUS_LABELS[t.status] ?? STATUS_LABELS.pending;
+                  const Icon = MODALITY_CONFIG[modality]?.icon ?? Dumbbell;
+                  return (
+                    <article
+                      key={t.id}
+                      onClick={() => navigate(`/tournament/${t.id}`)}
+                      className="group cursor-pointer rounded-2xl p-5 bg-white border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: config.accent }}>
+                          <Icon className="w-6 h-6 text-white" />
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${status.color}`}>
+                          {status.label}
+                        </span>
+                      </div>
 
-                  <div className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.13em] text-[#D50000] group-hover:text-[#05206F]">
-                    Ver campeonato
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </main>
+                      <h3 className="text-xl font-black text-slate-900 mb-1 leading-tight uppercase group-hover:text-[#D50000] transition-colors">
+                        {t.name}
+                      </h3>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-5">{t.category}</p>
 
-      <section className="relative isolate overflow-hidden mt-8 min-h-[340px] md:min-h-[460px]">
-        <div
-          className="absolute inset-0 bg-cover bg-center md:bg-fixed"
-          style={{ backgroundImage: `url(${modalityBannerImageUrl})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#060B1B]/82 via-[#0C1730]/68 to-[#111827]/56" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
+                      <div className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.13em] text-[#D50000] group-hover:text-[#05206F]">
+                        Ver campeonato
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
-        <div className="container relative py-12 md:py-20">
-          <div className="mx-auto max-w-5xl rounded-[28px] border border-white/20 bg-white/8 backdrop-blur-md shadow-[0_20px_55px_rgba(2,6,23,0.45)] px-6 py-8 md:px-10 md:py-12 text-white">
-            <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-red-100/95 mb-3 text-center">Destaques dos campeonatos</p>
-            <h2 className="text-3xl md:text-5xl font-black leading-tight mb-3 text-center">O que está acontecendo agora</h2>
-            <p className="text-sm md:text-lg text-white/90 leading-relaxed max-w-2xl mx-auto mb-8 text-center">
-              Atualizações recentes da modalidade com acesso direto para cada campeonato.
+          <aside className="rounded-3xl border border-[#05206F]/20 bg-[#05206F] text-white p-6 md:p-7 shadow-xl">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100 mb-2">Radar da modalidade</p>
+            <h3 className="text-2xl font-black leading-tight mb-2">O que está acontecendo agora</h3>
+            <p className="text-sm text-blue-100/90 leading-relaxed mb-5">
+              Atualizações recentes em um formato direto para evitar repetição visual com os cards de campeonatos.
             </p>
 
             {modalityNews.length === 0 ? (
-              <div className="rounded-2xl border border-white/20 bg-black/20 p-7 text-center">
-                <p className="text-sm font-bold text-white/90">Sem atualizações no momento.</p>
+              <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm font-bold text-blue-100/90">
+                Sem atualizações no momento.
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="space-y-3">
                 {modalityNews.map((news) => (
-                  <article
-                    key={`mod-news-${news.id}`}
-                    className="rounded-2xl border border-white/15 bg-black/15 backdrop-blur-[2px] p-5 shadow-sm hover:shadow-lg hover:bg-black/25 transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/15 text-white/90">
-                        {news.badgeLabel}
-                      </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/70">{news.formattedDate}</span>
+                  <article key={`mod-news-${news.id}`} className="rounded-xl border border-white/15 bg-white/10 px-4 py-3">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-red-100">{news.badgeLabel}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-100/80">{news.formattedDate}</span>
                     </div>
-
-                    <h4 className="text-lg font-black text-white leading-tight mb-2">{news.headline}</h4>
-                    <p className="text-sm text-white/85 mb-4 leading-relaxed">{news.summary}</p>
-
+                    <h4 className="text-sm font-black text-white leading-tight mb-1">{news.headline}</h4>
+                    <p className="text-xs text-blue-100/90 mb-3 leading-relaxed line-clamp-2">{news.summary}</p>
                     <button
                       onClick={() => navigate(`/tournament/${news.tournamentId}`)}
-                      className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.14em] text-red-100 hover:text-white"
+                      className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.14em] text-red-100 hover:text-white"
                     >
                       Ver campeonato
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </article>
                 ))}
               </div>
             )}
-          </div>
+          </aside>
         </div>
-      </section>
+      </main>
 
       <SiteFooter
         footerLogoUrl={footerLogoUrl}
