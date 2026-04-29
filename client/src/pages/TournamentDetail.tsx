@@ -70,12 +70,14 @@ function ScoreModal({
   match,
   teams,
   modality,
+  championshipAddresses,
   onClose,
   onSave,
 }: {
   match: MatchForModal;
   teams: { id: number; name: string; shortName: string; color: string; logo?: string | null }[];
   modality?: string;
+  championshipAddresses?: string[];
   onClose: () => void;
   onSave: (
     matchId: number,
@@ -94,6 +96,14 @@ function ScoreModal({
   const [away, setAway] = useState(match.awayScore ?? 0);
   const [time, setTime] = useState(match.time ?? "");
   const [location, setLocation] = useState(match.location ?? "");
+  const addressOptions = useMemo(
+    () => (championshipAddresses || []).map((address) => address.trim()).filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index),
+    [championshipAddresses]
+  );
+  const locationOptions = useMemo(() => {
+    if (location.trim().length === 0 || addressOptions.includes(location)) return addressOptions;
+    return [location, ...addressOptions];
+  }, [addressOptions, location]);
   const [voleiSetsInput, setVoleiSetsInput] = useState<{ home: string; away: string }[]>(() => {
     if (!match.voleiSetsJson) return [{ home: "", away: "" }, { home: "", away: "" }, { home: "", away: "" }];
     try {
@@ -211,13 +221,28 @@ function ScoreModal({
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Local</label>
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Ginásio"
-                  className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm"
-                />
+                {locationOptions.length > 0 ? (
+                  <select
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm appearance-none"
+                  >
+                    <option value="">Selecione um endereço</option>
+                    {locationOptions.map((address) => (
+                      <option key={address} value={address}>
+                        {address}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Ginásio"
+                    className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -976,6 +1001,7 @@ export default function TournamentDetail() {
           match={editingMatch}
           teams={teams}
           modality={tournament.modality}
+          championshipAddresses={siteSettings?.championshipAddresses || []}
           onClose={() => setEditingMatch(null)}
           onSave={(
             matchId: number,
@@ -1005,7 +1031,7 @@ export default function TournamentDetail() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-red"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(isAuthenticated ? "/admin" : "/")}
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>

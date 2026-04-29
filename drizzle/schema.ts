@@ -100,6 +100,7 @@ export const siteSettings = mysqlTable("site_settings", {
   modalityBannerImagesJson: longtext("modalityBannerImagesJson"),
   partnersJson: longtext("partnersJson"),
   liveStreamsJson: longtext("liveStreamsJson"),
+  championshipAddressesJson: longtext("championshipAddressesJson"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 

@@ -1230,6 +1230,7 @@ const siteRouter = router({
             })
           )
           .optional(),
+        championshipAddresses: z.array(z.string().trim().min(1).max(250)).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1397,6 +1398,13 @@ const siteRouter = router({
                 title: stream.title.trim(),
                 youtubeUrl: stream.youtubeUrl.trim(),
               })),
+            }
+          : {}),
+        ...(input.championshipAddresses !== undefined
+          ? {
+              championshipAddresses: input.championshipAddresses
+                .map((address) => address.trim())
+                .filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index),
             }
           : {}),
       });

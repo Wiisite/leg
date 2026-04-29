@@ -455,6 +455,7 @@ function SiteSettingsSection() {
   const [modalityBannerImageFiles, setModalityBannerImageFiles] = useState<Partial<Record<ModalityKey, string>>>({});
   const [partners, setPartners] = useState<{ name: string; logoUrl: string; logoFileDataUrl?: string }[]>([]);
   const [liveStreams, setLiveStreams] = useState<{ title: string; youtubeUrl: string }[]>([]);
+  const [championshipAddresses, setChampionshipAddresses] = useState<string[]>([]);
 
   const toDataUrl = (file: File) =>
     new Promise<string>((resolve, reject) => {
@@ -488,6 +489,7 @@ function SiteSettingsSection() {
     setModalityBannerImageFiles({});
     setPartners((settings.partners || []).map((p) => ({ name: p.name, logoUrl: p.logoUrl })));
     setLiveStreams((settings.liveStreams || []).map((stream) => ({ title: stream.title, youtubeUrl: stream.youtubeUrl })));
+    setChampionshipAddresses((settings.championshipAddresses || []).map((address) => address.trim()).filter((address) => address.length > 0));
   }, [settings]);
 
   const updateMutation = trpc.site.updateSettings.useMutation({
@@ -543,6 +545,18 @@ function SiteSettingsSection() {
     setLiveStreams((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const updateChampionshipAddress = (index: number, value: string) => {
+    setChampionshipAddresses((prev) => prev.map((address, i) => (i === index ? value : address)));
+  };
+
+  const addChampionshipAddress = () => {
+    setChampionshipAddresses((prev) => [...prev, ""]);
+  };
+
+  const removeChampionshipAddress = (index: number) => {
+    setChampionshipAddresses((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const normalizeModalityMap = (map: Record<ModalityKey, string>) =>
     modalities.reduce((acc, key) => {
       acc[key] = map[key].trim();
@@ -565,6 +579,10 @@ function SiteSettingsSection() {
       }))
       .filter((stream) => stream.title.length > 0 && stream.youtubeUrl.length > 0);
 
+    const cleanChampionshipAddresses = championshipAddresses
+      .map((address) => address.trim())
+      .filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index);
+
     updateMutation.mutate({
       mainLogoUrl,
       footerLogoUrl,
@@ -578,6 +596,7 @@ function SiteSettingsSection() {
       ...(Object.keys(modalityBannerImageFiles).length > 0 ? { modalityBannerImageFiles } : {}),
       partners: cleanPartners,
       liveStreams: cleanLiveStreams,
+      championshipAddresses: cleanChampionshipAddresses,
     });
   };
 
@@ -857,6 +876,50 @@ function SiteSettingsSection() {
                   variant="ghost"
                   className="text-slate-400 hover:text-red hover:bg-red/5"
                   onClick={() => removePartner(index)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-lg font-semibold text-slate-900">Endereços dos Campeonatos</h3>
+            <p className="text-xs text-slate-500">Cadastre os locais padrão para selecionar rapidamente ao registrar jogos.</p>
+          </div>
+          <Button size="sm" variant="outline" onClick={addChampionshipAddress}>
+            <Plus className="w-4 h-4 mr-1" />
+            Adicionar endereço
+          </Button>
+        </div>
+
+        {championshipAddresses.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+            Nenhum endereço cadastrado.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {championshipAddresses.map((address, index) => (
+              <div key={`championship-address-${index}`} className="grid gap-3 md:grid-cols-[1fr_auto] items-end rounded-xl border border-slate-100 p-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Endereço {index + 1}</label>
+                  <input
+                    value={address}
+                    onChange={(e) => updateChampionshipAddress(index, e.target.value)}
+                    placeholder="Ex: Ginásio Municipal - Rua X, 123"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="text-slate-400 hover:text-red hover:bg-red/5"
+                  onClick={() => removeChampionshipAddress(index)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

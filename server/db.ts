@@ -19,6 +19,8 @@ export type SiteLiveStream = {
   youtubeUrl: string;
 };
 
+export type SiteChampionshipAddress = string;
+
 const MODALITY_KEYS = ["futsal", "basquete", "volei", "handebol"] as const;
 type ModalityKey = (typeof MODALITY_KEYS)[number];
 export type SiteModalityImageMap = Partial<Record<ModalityKey, string>>;
@@ -56,7 +58,7 @@ export async function getDb() {
           try {
             await _db!.execute(
               sql.raw(
-                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, homeHeroImagesJson LONGTEXT NULL, modalityBannerImagesJson LONGTEXT NULL, partnersJson TEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
+                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, homeHeroImagesJson LONGTEXT NULL, modalityBannerImagesJson LONGTEXT NULL, partnersJson TEXT NULL, liveStreamsJson LONGTEXT NULL, championshipAddressesJson LONGTEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
               )
             );
           } catch (e) {
@@ -125,6 +127,18 @@ export async function getDb() {
 
           try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN liveStreamsJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN championshipAddressesJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso a coluna já exista
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN championshipAddressesJson LONGTEXT NULL"));
           } catch (e) {
             // Ignora erro caso já esteja no tipo correto
           }
@@ -421,6 +435,19 @@ export async function getSiteSettings() {
     }
   };
 
+  const parseChampionshipAddresses = (value: string | null | undefined): SiteChampionshipAddress[] => {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter((item, index, arr) => item.length > 0 && arr.indexOf(item) === index);
+    } catch {
+      return [];
+    }
+  };
+
   const db = await getDb();
   if (!db) {
     return {
@@ -431,6 +458,7 @@ export async function getSiteSettings() {
       modalityBannerImages: {} as SiteModalityImageMap,
       partners: [] as SitePartner[],
       liveStreams: [] as SiteLiveStream[],
+      championshipAddresses: [] as SiteChampionshipAddress[],
     };
   }
 
@@ -446,6 +474,7 @@ export async function getSiteSettings() {
       modalityBannerImages: {} as SiteModalityImageMap,
       partners: [] as SitePartner[],
       liveStreams: [] as SiteLiveStream[],
+      championshipAddresses: [] as SiteChampionshipAddress[],
     };
   }
 
@@ -474,6 +503,7 @@ export async function getSiteSettings() {
     modalityBannerImages: parseModalityImageMap(row.modalityBannerImagesJson),
     partners,
     liveStreams: parseLiveStreams((row as any).liveStreamsJson),
+    championshipAddresses: parseChampionshipAddresses((row as any).championshipAddressesJson),
   };
 }
 
@@ -485,6 +515,7 @@ export async function upsertSiteSettings(data: {
   modalityBannerImages?: SiteModalityImageMap;
   partners?: SitePartner[];
   liveStreams?: SiteLiveStream[];
+  championshipAddresses?: SiteChampionshipAddress[];
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -500,6 +531,7 @@ export async function upsertSiteSettings(data: {
     modalityBannerImagesJson?: string | null;
     partnersJson?: string | null;
     liveStreamsJson?: string | null;
+    championshipAddressesJson?: string | null;
   } = {};
 
   if (data.mainLogoUrl !== undefined) patch.mainLogoUrl = data.mainLogoUrl;
@@ -509,6 +541,7 @@ export async function upsertSiteSettings(data: {
   if (data.modalityBannerImages !== undefined) patch.modalityBannerImagesJson = JSON.stringify(data.modalityBannerImages);
   if (data.partners !== undefined) patch.partnersJson = JSON.stringify(data.partners);
   if (data.liveStreams !== undefined) patch.liveStreamsJson = JSON.stringify(data.liveStreams);
+  if (data.championshipAddresses !== undefined) patch.championshipAddressesJson = JSON.stringify(data.championshipAddresses);
 
   if (existing && Object.keys(patch).length === 0) {
     return getSiteSettings();
@@ -525,6 +558,7 @@ export async function upsertSiteSettings(data: {
       modalityBannerImagesJson: JSON.stringify(data.modalityBannerImages ?? {}),
       partnersJson: JSON.stringify(data.partners ?? []),
       liveStreamsJson: JSON.stringify(data.liveStreams ?? []),
+      championshipAddressesJson: JSON.stringify(data.championshipAddresses ?? []),
     });
   }
 
