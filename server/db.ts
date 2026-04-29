@@ -14,6 +14,11 @@ export type SitePartner = {
   logoUrl: string;
 };
 
+export type SiteLiveStream = {
+  title: string;
+  youtubeUrl: string;
+};
+
 const MODALITY_KEYS = ["futsal", "basquete", "volei", "handebol"] as const;
 type ModalityKey = (typeof MODALITY_KEYS)[number];
 export type SiteModalityImageMap = Partial<Record<ModalityKey, string>>;
@@ -107,6 +112,18 @@ export async function getDb() {
 
           try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN partnersJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso já esteja no tipo correto
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN liveStreamsJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erro caso a coluna já exista
+          }
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN liveStreamsJson LONGTEXT NULL"));
           } catch (e) {
             // Ignora erro caso já esteja no tipo correto
           }
@@ -381,6 +398,28 @@ export async function getSiteSettings() {
     }
   };
 
+  const parseLiveStreams = (value: string | null | undefined): SiteLiveStream[] => {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((item) => {
+          if (!item || typeof item !== "object") return null;
+          const title = typeof (item as Record<string, unknown>).title === "string" ? (item as Record<string, string>).title.trim() : "";
+          const youtubeUrl =
+            typeof (item as Record<string, unknown>).youtubeUrl === "string"
+              ? (item as Record<string, string>).youtubeUrl.trim()
+              : "";
+          if (!title || !youtubeUrl) return null;
+          return { title, youtubeUrl };
+        })
+        .filter((entry): entry is SiteLiveStream => !!entry);
+    } catch {
+      return [];
+    }
+  };
+
   const db = await getDb();
   if (!db) {
     return {
@@ -390,6 +429,7 @@ export async function getSiteSettings() {
       homeHeroImages: {} as SiteModalityImageMap,
       modalityBannerImages: {} as SiteModalityImageMap,
       partners: [] as SitePartner[],
+      liveStreams: [] as SiteLiveStream[],
     };
   }
 
@@ -404,6 +444,7 @@ export async function getSiteSettings() {
       homeHeroImages: {} as SiteModalityImageMap,
       modalityBannerImages: {} as SiteModalityImageMap,
       partners: [] as SitePartner[],
+      liveStreams: [] as SiteLiveStream[],
     };
   }
 
@@ -431,6 +472,7 @@ export async function getSiteSettings() {
     homeHeroImages: parseModalityImageMap(row.homeHeroImagesJson),
     modalityBannerImages: parseModalityImageMap(row.modalityBannerImagesJson),
     partners,
+    liveStreams: parseLiveStreams((row as any).liveStreamsJson),
   };
 }
 
@@ -441,6 +483,7 @@ export async function upsertSiteSettings(data: {
   homeHeroImages?: SiteModalityImageMap;
   modalityBannerImages?: SiteModalityImageMap;
   partners?: SitePartner[];
+  liveStreams?: SiteLiveStream[];
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -455,6 +498,7 @@ export async function upsertSiteSettings(data: {
     homeHeroImagesJson?: string | null;
     modalityBannerImagesJson?: string | null;
     partnersJson?: string | null;
+    liveStreamsJson?: string | null;
   } = {};
 
   if (data.mainLogoUrl !== undefined) patch.mainLogoUrl = data.mainLogoUrl;
@@ -463,6 +507,7 @@ export async function upsertSiteSettings(data: {
   if (data.homeHeroImages !== undefined) patch.homeHeroImagesJson = JSON.stringify(data.homeHeroImages);
   if (data.modalityBannerImages !== undefined) patch.modalityBannerImagesJson = JSON.stringify(data.modalityBannerImages);
   if (data.partners !== undefined) patch.partnersJson = JSON.stringify(data.partners);
+  if (data.liveStreams !== undefined) patch.liveStreamsJson = JSON.stringify(data.liveStreams);
 
   if (existing && Object.keys(patch).length === 0) {
     return getSiteSettings();
@@ -478,6 +523,7 @@ export async function upsertSiteSettings(data: {
       homeHeroImagesJson: JSON.stringify(data.homeHeroImages ?? {}),
       modalityBannerImagesJson: JSON.stringify(data.modalityBannerImages ?? {}),
       partnersJson: JSON.stringify(data.partners ?? []),
+      liveStreamsJson: JSON.stringify(data.liveStreams ?? []),
     });
   }
 

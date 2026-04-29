@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import LiveMatchesPage from "./pages/LiveMatchesPage";
 import ModalityPage from "./pages/ModalityPage";
 import TournamentDetail from "./pages/TournamentDetail";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -15,6 +16,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/ao-vivo" component={LiveMatchesPage} />
       <Route path="/login" component={Login} />
       <Route path="/modalidade/:modality" component={ModalityPage} />
       <Route path="/tournament/:id" component={TournamentDetail} />

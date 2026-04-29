@@ -1067,6 +1067,14 @@ const siteRouter = router({
             })
           )
           .optional(),
+        liveStreams: z
+          .array(
+            z.object({
+              title: z.string().trim().min(1).max(180),
+              youtubeUrl: z.string().trim().url().max(10_000_000),
+            })
+          )
+          .optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1226,6 +1234,14 @@ const siteRouter = router({
         ...(resolvedPartners !== undefined
           ? {
               partners: resolvedPartners,
+            }
+          : {}),
+        ...(input.liveStreams !== undefined
+          ? {
+              liveStreams: input.liveStreams.map((stream) => ({
+                title: stream.title.trim(),
+                youtubeUrl: stream.youtubeUrl.trim(),
+              })),
             }
           : {}),
       });

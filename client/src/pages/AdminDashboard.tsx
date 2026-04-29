@@ -454,6 +454,7 @@ function SiteSettingsSection() {
   const [modalityBannerImages, setModalityBannerImages] = useState<Record<ModalityKey, string>>(emptyModalityMap);
   const [modalityBannerImageFiles, setModalityBannerImageFiles] = useState<Partial<Record<ModalityKey, string>>>({});
   const [partners, setPartners] = useState<{ name: string; logoUrl: string; logoFileDataUrl?: string }[]>([]);
+  const [liveStreams, setLiveStreams] = useState<{ title: string; youtubeUrl: string }[]>([]);
 
   const toDataUrl = (file: File) =>
     new Promise<string>((resolve, reject) => {
@@ -486,6 +487,7 @@ function SiteSettingsSection() {
     });
     setModalityBannerImageFiles({});
     setPartners((settings.partners || []).map((p) => ({ name: p.name, logoUrl: p.logoUrl })));
+    setLiveStreams((settings.liveStreams || []).map((stream) => ({ title: stream.title, youtubeUrl: stream.youtubeUrl })));
   }, [settings]);
 
   const updateMutation = trpc.site.updateSettings.useMutation({
@@ -519,6 +521,28 @@ function SiteSettingsSection() {
     setPartners((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const updateLiveStream = (index: number, patch: { title?: string; youtubeUrl?: string }) => {
+    setLiveStreams((prev) =>
+      prev.map((stream, i) =>
+        i === index
+          ? {
+              ...stream,
+              ...(patch.title !== undefined ? { title: patch.title } : {}),
+              ...(patch.youtubeUrl !== undefined ? { youtubeUrl: patch.youtubeUrl } : {}),
+            }
+          : stream
+      )
+    );
+  };
+
+  const addLiveStream = () => {
+    setLiveStreams((prev) => [...prev, { title: "", youtubeUrl: "" }]);
+  };
+
+  const removeLiveStream = (index: number) => {
+    setLiveStreams((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const normalizeModalityMap = (map: Record<ModalityKey, string>) =>
     modalities.reduce((acc, key) => {
       acc[key] = map[key].trim();
@@ -534,6 +558,13 @@ function SiteSettingsSection() {
       }))
       .filter((p) => p.name.length > 0 && (p.logoUrl.length > 0 || !!p.logoFileDataUrl));
 
+    const cleanLiveStreams = liveStreams
+      .map((stream) => ({
+        title: stream.title.trim(),
+        youtubeUrl: stream.youtubeUrl.trim(),
+      }))
+      .filter((stream) => stream.title.length > 0 && stream.youtubeUrl.length > 0);
+
     updateMutation.mutate({
       mainLogoUrl,
       footerLogoUrl,
@@ -546,6 +577,7 @@ function SiteSettingsSection() {
       ...(Object.keys(homeHeroImageFiles).length > 0 ? { homeHeroImageFiles } : {}),
       ...(Object.keys(modalityBannerImageFiles).length > 0 ? { modalityBannerImageFiles } : {}),
       partners: cleanPartners,
+      liveStreams: cleanLiveStreams,
     });
   };
 
@@ -825,6 +857,59 @@ function SiteSettingsSection() {
                   variant="ghost"
                   className="text-slate-400 hover:text-red hover:bg-red/5"
                   onClick={() => removePartner(index)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-lg font-semibold text-slate-900">Jogos ao vivo</h3>
+            <p className="text-xs text-slate-500">Cadastre links do YouTube para aparecerem na página "Jogos ao Vivo".</p>
+          </div>
+          <Button size="sm" variant="outline" onClick={addLiveStream}>
+            <Plus className="w-4 h-4 mr-1" />
+            Adicionar link
+          </Button>
+        </div>
+
+        {liveStreams.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+            Nenhum link de transmissão cadastrado.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {liveStreams.map((stream, index) => (
+              <div key={`live-stream-${index}`} className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end rounded-xl border border-slate-100 p-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Título da transmissão</label>
+                  <input
+                    value={stream.title}
+                    onChange={(e) => updateLiveStream(index, { title: e.target.value })}
+                    placeholder="Ex: Futsal Sub-14 - Rodada 3"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">URL do YouTube</label>
+                  <input
+                    value={stream.youtubeUrl}
+                    onChange={(e) => updateLiveStream(index, { youtubeUrl: e.target.value })}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="text-slate-400 hover:text-red hover:bg-red/5"
+                  onClick={() => removeLiveStream(index)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

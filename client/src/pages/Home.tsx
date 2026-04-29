@@ -380,11 +380,14 @@ export default function Home() {
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => goToExternalPage(LEGACY_CLINICAS_URL)} className="hover:text-red-100 transition-colors">Clínicas</button>
               <button onClick={() => goToExternalPage(LEGACY_QUIEN_SOMOS_URL)} className="hover:text-red-100 transition-colors">Quem Somos</button>
-              <button className="live-blink inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/65 bg-white/10 hover:bg-white/20 transition-colors">
-                <span className="h-2.5 w-2.5 rounded-full bg-white" />
+              <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Contato</button>
+              <button
+                onClick={() => navigate("/ao-vivo")}
+                className="live-blink inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] text-white shadow-[0_0_16px_rgba(255,69,58,0.45)] hover:scale-[1.03] transition-all"
+              >
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-200" />
                 Ao Vivo
               </button>
-              <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Contato</button>
             </nav>
 
             <button
@@ -401,13 +404,16 @@ export default function Home() {
                 <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="text-left">Home</button>
                 <button onClick={() => goToExternalPage(LEGACY_CLINICAS_URL)} className="text-left">Clínicas</button>
                 <button onClick={() => goToExternalPage(LEGACY_QUIEN_SOMOS_URL)} className="text-left">Quem Somos</button>
-                <button className="live-blink inline-flex items-center gap-2 text-left px-3 py-1.5 rounded-full border border-white/65 bg-white/10 w-fit">
-                  <span className="h-2.5 w-2.5 rounded-full bg-white" />
-                  Ao Vivo
-                </button>
                 <button onClick={() => scrollToSection("modalidades")} className="text-left">Modalidades</button>
                 <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Torneios</button>
                 <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Contato</button>
+                <button
+                  onClick={() => navigate("/ao-vivo")}
+                  className="live-blink inline-flex items-center gap-2 text-left px-3 py-1.5 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] w-fit"
+                >
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-200" />
+                  Ao Vivo
+                </button>
               </div>
             </div>
           )}
