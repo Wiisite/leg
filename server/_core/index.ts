@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
+import fs from "fs";
 import net from "net";
 import path from "path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -15,6 +16,33 @@ const REGULATION_FILE_BY_MODALITY: Record<string, string> = {
   volei: "LEG_Regulament_Voleibol_2026_Oficial .pdf",
   handebol: "LEG_Regulamento_Handebol_2026_Oficial _handebol.pdf",
 };
+
+function resolveRegulationFilePath(fileName: string): string | null {
+  const baseDirs = [
+    process.cwd(),
+    path.resolve(process.cwd(), ".."),
+    path.resolve(process.cwd(), "../.."),
+    path.resolve(process.cwd(), "public"),
+    path.resolve(process.cwd(), "dist/public"),
+    path.resolve(process.cwd(), "client/public"),
+    path.resolve(__dirname, "../../.."),
+    path.resolve(__dirname, "../../../public"),
+    path.resolve(__dirname, "../../../dist/public"),
+  ];
+
+  const candidates = baseDirs.flatMap((baseDir) => [
+    path.join(baseDir, fileName),
+    path.join(baseDir, "regulamentos", fileName),
+  ]);
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -61,7 +89,13 @@ async function startServer() {
       return;
     }
 
-    const filePath = path.resolve(process.cwd(), fileName);
+    const filePath = resolveRegulationFilePath(fileName);
+    if (!filePath) {
+      res.status(404).json({ message: "Arquivo de regulamento não encontrado no servidor" });
+      return;
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
     res.sendFile(filePath, (err) => {
       if (!err) return;
       if (!res.headersSent) {
