@@ -41,6 +41,13 @@ type MatchForModal = {
   round?: number;
 };
 
+const DEFAULT_MODALITY_BANNER_IMAGE: Record<string, string> = {
+  futsal: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1800&q=80",
+  basquete: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1800&q=80",
+  volei: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=1800&q=80",
+  handebol: "https://images.unsplash.com/photo-1592656094267-764a45160876?auto=format&fit=crop&w=1800&q=80",
+};
+
 function TeamBadge({ team, size = "md", showName = false }: { team: any; size?: "sm" | "md" | "lg"; showName?: boolean }) {
   const sizes = { 
     sm: "w-8 h-8", 
@@ -971,6 +978,13 @@ export default function TournamentDetail() {
   const mainLogoUrl = siteSettings?.mainLogoUrl?.trim() ? siteSettings.mainLogoUrl : "/logo.png";
   const footerLogoUrl = siteSettings?.footerLogoUrl?.trim() ? siteSettings.footerLogoUrl : mainLogoUrl;
   const partners = siteSettings?.partners ?? [];
+  const modalityBannerImages = siteSettings?.modalityBannerImages ?? {};
+  const modalityBackgroundImageUrl =
+    (typeof modalityBannerImages[tournament.modality as keyof typeof modalityBannerImages] === "string"
+      ? modalityBannerImages[tournament.modality as keyof typeof modalityBannerImages]
+      : "") ||
+    DEFAULT_MODALITY_BANNER_IMAGE[tournament.modality] ||
+    DEFAULT_MODALITY_BANNER_IMAGE.futsal;
   const modalitiesInOrder = ["futsal", "basquete", "volei", "handebol"];
   const modalityLabels: Record<string, string> = {
     futsal: "Futsal",
@@ -1073,6 +1087,14 @@ export default function TournamentDetail() {
       style={{ backgroundImage: activeTheme.pageBg, backgroundColor: "#d4e0ea" }}
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-[0.36]"
+          style={{ backgroundImage: `url(${modalityBackgroundImageUrl})` }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,25,72,0.40)_0%,rgba(5,22,64,0.28)_42%,rgba(8,26,70,0.22)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_16%,rgba(208,30,50,0.26)_0%,transparent_46%),radial-gradient(circle_at_80%_20%,rgba(24,84,172,0.28)_0%,transparent_52%)]" />
+        <div className="absolute -left-24 top-0 h-full w-64 bg-[#B80000]/18 skew-x-[-25deg]" />
+        <div className="absolute -right-24 top-0 h-full w-72 bg-[#05206F]/20 skew-x-[-25deg]" />
         <div className={`absolute -top-20 -left-16 w-72 h-72 rounded-full blur-3xl ${activeTheme.glowA}`} />
         <div className={`absolute top-44 -right-20 w-80 h-80 rounded-full blur-3xl ${activeTheme.glowB}`} />
         {modalityPattern}
