@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge";
 
 type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final";
 
-type MatchForModal = { 
+type MatchForModal = {
   id: number; 
   homeTeamId: number; 
   awayTeamId: number; 
@@ -39,13 +39,6 @@ type MatchForModal = {
   location?: string | null;
   status?: string;
   round?: number;
-};
-
-const DEFAULT_MODALITY_BANNER_IMAGE: Record<string, string> = {
-  futsal: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1800&q=80",
-  basquete: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1800&q=80",
-  volei: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=1800&q=80",
-  handebol: "https://images.unsplash.com/photo-1592656094267-764a45160876?auto=format&fit=crop&w=1800&q=80",
 };
 
 function TeamBadge({ team, size = "md", showName = false }: { team: any; size?: "sm" | "md" | "lg"; showName?: boolean }) {
@@ -978,13 +971,6 @@ export default function TournamentDetail() {
   const mainLogoUrl = siteSettings?.mainLogoUrl?.trim() ? siteSettings.mainLogoUrl : "/logo.png";
   const footerLogoUrl = siteSettings?.footerLogoUrl?.trim() ? siteSettings.footerLogoUrl : mainLogoUrl;
   const partners = siteSettings?.partners ?? [];
-  const modalityBannerImages = siteSettings?.modalityBannerImages ?? {};
-  const modalityBackgroundImageUrl =
-    (typeof modalityBannerImages[tournament.modality as keyof typeof modalityBannerImages] === "string"
-      ? modalityBannerImages[tournament.modality as keyof typeof modalityBannerImages]
-      : "") ||
-    DEFAULT_MODALITY_BANNER_IMAGE[tournament.modality] ||
-    DEFAULT_MODALITY_BANNER_IMAGE.futsal;
   const modalitiesInOrder = ["futsal", "basquete", "volei", "handebol"];
   const modalityLabels: Record<string, string> = {
     futsal: "Futsal",
@@ -1005,34 +991,34 @@ export default function TournamentDetail() {
     }
   > = {
     futsal: {
-      pageBg: "linear-gradient(180deg, #dbe8f6 0%, #c8daed 48%, #d8e6f3 100%)",
-      headerBg: "linear-gradient(135deg, #c4d5e7 0%, #d5e3ef 100%)",
-      glowA: "bg-emerald-300/30",
-      glowB: "bg-red/20",
+      pageBg: "linear-gradient(165deg, #0d295f 0%, #123a7a 48%, #1a4d8d 100%)",
+      headerBg: "linear-gradient(130deg, #0e2f70 0%, #18458a 65%, #1e5598 100%)",
+      glowA: "bg-emerald-400/20",
+      glowB: "bg-red-500/20",
       watermark: "FUTSAL",
       detailPills: ["Quadra", "Bola no pe", "Jogo rapido"],
     },
     basquete: {
-      pageBg: "linear-gradient(160deg, #b8cff2 0%, #cfdef6 45%, #f1c4cb 100%)",
-      headerBg: "linear-gradient(135deg, #9fbcea 0%, #c2d5f3 52%, #eaa9b4 100%)",
-      glowA: "bg-blue-400/35",
-      glowB: "bg-red-400/30",
+      pageBg: "linear-gradient(160deg, #0a2158 0%, #153d83 44%, #7a1a35 100%)",
+      headerBg: "linear-gradient(140deg, #0d2d70 0%, #1a4f9a 52%, #9b1f45 100%)",
+      glowA: "bg-blue-500/25",
+      glowB: "bg-red-500/25",
       watermark: "BASQUETE",
       detailPills: ["Garrafao", "3 pontos", "Transicao"],
     },
     volei: {
-      pageBg: "linear-gradient(180deg, #ddeef5 0%, #cfe6f0 50%, #deedf4 100%)",
-      headerBg: "linear-gradient(135deg, #c9e1ec 0%, #d8ebf3 100%)",
-      glowA: "bg-sky-300/30",
-      glowB: "bg-indigo-300/20",
+      pageBg: "linear-gradient(165deg, #0a2a5f 0%, #0f3a78 52%, #1a4e8e 100%)",
+      headerBg: "linear-gradient(140deg, #0c3371 0%, #175191 100%)",
+      glowA: "bg-sky-400/20",
+      glowB: "bg-indigo-400/20",
       watermark: "VOLEI",
       detailPills: ["Rede", "Saque", "Bloqueio"],
     },
     handebol: {
-      pageBg: "linear-gradient(180deg, #e1e7ef 0%, #d0dbe9 50%, #e3e9f1 100%)",
-      headerBg: "linear-gradient(135deg, #ccd7e5 0%, #dbe4ee 100%)",
-      glowA: "bg-blue-300/30",
-      glowB: "bg-cyan-300/20",
+      pageBg: "linear-gradient(160deg, #0b244f 0%, #103667 48%, #1a4b82 100%)",
+      headerBg: "linear-gradient(140deg, #0d2f63 0%, #18447b 100%)",
+      glowA: "bg-blue-400/20",
+      glowB: "bg-cyan-400/18",
       watermark: "HANDEBOL",
       detailPills: ["Area 6m", "Ataque", "Defesa"],
     },
@@ -1042,33 +1028,37 @@ export default function TournamentDetail() {
     if (tournament.modality === "futsal") {
       return (
         <>
-          <div className="absolute top-[180px] left-[6%] hidden lg:block w-[360px] h-[220px] rounded-[34px] border border-white/45" />
-          <div className="absolute top-[180px] left-[calc(6%+160px)] hidden lg:block w-[46px] h-[46px] rounded-full border border-white/45" />
+          <div className="absolute top-[150px] left-[7%] hidden md:block w-[360px] h-[220px] rounded-[34px] border border-white/24" />
+          <div className="absolute top-[150px] left-[calc(7%+155px)] hidden md:block w-[50px] h-[50px] rounded-full border border-white/30" />
+          <div className="absolute top-[420px] left-[12%] hidden xl:block w-24 h-24 rounded-full border-2 border-dashed border-white/30" />
         </>
       );
     }
     if (tournament.modality === "basquete") {
       return (
         <>
-          <div className="absolute top-[160px] right-[8%] hidden lg:block w-[320px] h-[320px] rounded-full border border-white/40" />
-          <div className="absolute top-[250px] right-[13%] hidden lg:block w-[190px] h-[190px] rounded-full border border-dashed border-white/45" />
-          <div className="absolute top-[300px] right-[18%] hidden lg:block w-[92px] h-[24px] rounded-md border border-white/50" />
+          <div className="absolute top-[150px] right-[8%] hidden md:block w-[320px] h-[320px] rounded-full border border-white/24" />
+          <div className="absolute top-[238px] right-[13%] hidden md:block w-[186px] h-[186px] rounded-full border border-white/26" />
+          <div className="absolute top-[302px] right-[17%] hidden md:block w-[95px] h-[95px] rounded-full border-2 border-dashed border-white/32" />
+          <div className="absolute top-[334px] right-[11.5%] hidden md:block w-[120px] h-[26px] rounded-md border border-white/32" />
         </>
       );
     }
     if (tournament.modality === "volei") {
       return (
         <>
-          <div className="absolute top-[220px] left-0 right-0 hidden md:block h-px border-t border-dashed border-white/40" />
-          <div className="absolute top-[272px] left-0 right-0 hidden md:block h-px border-t border-dashed border-white/40" />
-          <div className="absolute top-[246px] left-0 right-0 hidden md:block h-[24px] bg-[repeating-linear-gradient(90deg,_transparent_0px,_transparent_14px,_rgba(255,255,255,0.3)_14px,_rgba(255,255,255,0.3)_15px)]" />
+          <div className="absolute top-[205px] left-0 right-0 hidden md:block h-px border-t border-dashed border-white/28" />
+          <div className="absolute top-[262px] left-0 right-0 hidden md:block h-px border-t border-dashed border-white/28" />
+          <div className="absolute top-[232px] left-0 right-0 hidden md:block h-[24px] bg-[repeating-linear-gradient(90deg,_transparent_0px,_transparent_14px,_rgba(255,255,255,0.26)_14px,_rgba(255,255,255,0.26)_15px)]" />
+          <div className="absolute top-[350px] right-[14%] hidden xl:block w-20 h-20 rounded-full border-2 border-white/30" />
         </>
       );
     }
     return (
       <>
-        <div className="absolute top-[170px] right-[7%] hidden lg:block w-[340px] h-[220px] rounded-t-[220px] border border-b-0 border-white/45" />
-        <div className="absolute top-[190px] right-[10%] hidden lg:block w-[280px] h-[180px] rounded-t-[180px] border border-b-0 border-white/30" />
+        <div className="absolute top-[150px] right-[8%] hidden md:block w-[350px] h-[230px] rounded-t-[230px] border border-b-0 border-white/24" />
+        <div className="absolute top-[176px] right-[11%] hidden md:block w-[300px] h-[190px] rounded-t-[190px] border border-b-0 border-white/24" />
+        <div className="absolute top-[350px] right-[20%] hidden xl:block w-20 h-20 rounded-full border-2 border-dashed border-white/32" />
       </>
     );
   })();
@@ -1084,24 +1074,20 @@ export default function TournamentDetail() {
   return (
     <div
       className="min-h-screen relative isolate overflow-hidden"
-      style={{ backgroundImage: activeTheme.pageBg, backgroundColor: "#d4e0ea" }}
+      style={{ backgroundImage: activeTheme.pageBg, backgroundColor: "#0d2d62" }}
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-[0.36]"
-          style={{ backgroundImage: `url(${modalityBackgroundImageUrl})` }}
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,25,72,0.40)_0%,rgba(5,22,64,0.28)_42%,rgba(8,26,70,0.22)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_16%,rgba(208,30,50,0.26)_0%,transparent_46%),radial-gradient(circle_at_80%_20%,rgba(24,84,172,0.28)_0%,transparent_52%)]" />
-        <div className="absolute -left-24 top-0 h-full w-64 bg-[#B80000]/18 skew-x-[-25deg]" />
-        <div className="absolute -right-24 top-0 h-full w-72 bg-[#05206F]/20 skew-x-[-25deg]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,16,45,0.34)_0%,rgba(4,18,48,0.22)_44%,rgba(4,16,45,0.28)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(221,26,56,0.24)_0%,transparent_44%),radial-gradient(circle_at_80%_18%,rgba(46,107,214,0.24)_0%,transparent_48%)]" />
+        <div className="absolute -left-24 top-0 h-full w-64 bg-[#D5153B]/14 skew-x-[-25deg]" />
+        <div className="absolute -right-24 top-0 h-full w-72 bg-[#1E5CC9]/16 skew-x-[-25deg]" />
         <div className={`absolute -top-20 -left-16 w-72 h-72 rounded-full blur-3xl ${activeTheme.glowA}`} />
         <div className={`absolute top-44 -right-20 w-80 h-80 rounded-full blur-3xl ${activeTheme.glowB}`} />
         {modalityPattern}
-        <div className="absolute top-36 right-8 hidden md:block text-[92px] font-black tracking-[0.35em] text-white/30 leading-none">
+        <div className="absolute top-36 right-8 hidden md:block text-[92px] font-black tracking-[0.35em] text-white/14 leading-none">
           {activeTheme.watermark}
         </div>
-        <div className="absolute bottom-24 left-8 hidden lg:block text-[66px] font-black tracking-[0.24em] text-white/20 leading-none rotate-[-8deg]">
+        <div className="absolute bottom-24 left-8 hidden lg:block text-[66px] font-black tracking-[0.24em] text-white/12 leading-none rotate-[-8deg]">
           {activeTheme.watermark}
         </div>
       </div>
