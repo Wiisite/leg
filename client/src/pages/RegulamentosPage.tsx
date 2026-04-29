@@ -21,7 +21,7 @@ export default function RegulamentosPage() {
     [activeModality]
   );
 
-  const fileUrl = `/api/regulamentos/${activeOption.key}`;
+  const fileUrl = `/regulamentos/${activeOption.key}.pdf`;
 
   return (
     <div className="min-h-screen bg-[#F0F2F6] text-slate-900">
