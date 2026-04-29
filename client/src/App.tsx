@@ -11,6 +11,7 @@ import TournamentDetail from "./pages/TournamentDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import CreateTournament from "./pages/CreateTournament";
 import Login from "./pages/Login";
+import RegulamentosPage from "./pages/RegulamentosPage";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/ao-vivo" component={LiveMatchesPage} />
       <Route path="/login" component={Login} />
       <Route path="/modalidade/:modality" component={ModalityPage} />
+      <Route path="/regulamentos" component={RegulamentosPage} />
       <Route path="/tournament/:id" component={TournamentDetail} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/create" component={CreateTournament} />

@@ -2,11 +2,19 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import path from "path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+
+const REGULATION_FILE_BY_MODALITY: Record<string, string> = {
+  futsal: "LEG_Regulamento_Futsal_2026_Oficial_futsal.pdf",
+  basquete: "LEG_Regulamento_Basquetebol_2026_Oficial.pdf",
+  volei: "LEG_Regulament_Voleibol_2026_Oficial .pdf",
+  handebol: "LEG_Regulamento_Handebol_2026_Oficial _handebol.pdf",
+};
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -43,6 +51,24 @@ async function startServer() {
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  app.get("/api/regulamentos/:modality", (req, res) => {
+    const modality = String(req.params.modality || "").toLowerCase();
+    const fileName = REGULATION_FILE_BY_MODALITY[modality];
+
+    if (!fileName) {
+      res.status(404).json({ message: "Modalidade de regulamento não encontrada" });
+      return;
+    }
+
+    const filePath = path.resolve(process.cwd(), fileName);
+    res.sendFile(filePath, (err) => {
+      if (!err) return;
+      if (!res.headersSent) {
+        res.status(404).json({ message: "Arquivo de regulamento não encontrado no servidor" });
+      }
+    });
+  });
 
   // tRPC API
   app.use(

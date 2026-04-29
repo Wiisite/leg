@@ -228,6 +228,7 @@ export default function ModalityPage() {
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => (window.location.href = "/#torneios")} className="hover:text-red-100 transition-colors">Clínicas</button>
               <button onClick={() => (window.location.href = "/#sobre")} className="hover:text-red-100 transition-colors">Quem Somos</button>
+              <button onClick={() => navigate("/regulamentos")} className="hover:text-red-100 transition-colors">Regulamento</button>
               <button onClick={() => (window.location.href = "/#rodape")} className="hover:text-red-100 transition-colors">Contato</button>
             </nav>
 
@@ -263,6 +264,15 @@ export default function ModalityPage() {
                   </div>
                 </div>
                 <button onClick={() => (window.location.href = "/#torneios")} className="text-left">Torneios</button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate("/regulamentos");
+                  }}
+                  className="text-left"
+                >
+                  Regulamento
+                </button>
                 <button onClick={() => (window.location.href = "/#rodape")} className="text-left">Contato</button>
               </div>
             </div>
@@ -287,21 +297,28 @@ export default function ModalityPage() {
         </div>
       </section>
 
-      <main id="modality-list" className="container py-12">
-        <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr] items-start">
+      <section className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center md:bg-fixed"
+          style={{ backgroundImage: `url(${modalityBannerImageUrl})` }}
+        />
+        <div className="absolute inset-0 bg-[#051327]/60" />
+
+        <main id="modality-list" className="container relative py-12">
+          <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr] items-start">
           <section>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#D50000]">Campeonatos</p>
-                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-[#05206F]">Tabela de torneios</h2>
+                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-white">Tabela de torneios</h2>
               </div>
-              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{list.length} ativos</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-100/80">{list.length} ativos</span>
             </div>
 
             {list.length === 0 ? (
-              <div className="rounded-3xl border border-slate-200 bg-white p-16 text-center">
-                <Trophy className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h2 className="text-2xl font-black uppercase tracking-wide text-slate-500">Nenhum torneio ativo em {config.label}</h2>
+              <div className="rounded-3xl border border-white/30 bg-white/20 backdrop-blur-md p-16 text-center">
+                <Trophy className="w-16 h-16 text-white/70 mx-auto mb-4" />
+                <h2 className="text-2xl font-black uppercase tracking-wide text-white">Nenhum torneio ativo em {config.label}</h2>
               </div>
             ) : (
               <div className="grid gap-5 md:grid-cols-2">
@@ -312,7 +329,7 @@ export default function ModalityPage() {
                     <article
                       key={t.id}
                       onClick={() => navigate(`/tournament/${t.id}`)}
-                      className="group cursor-pointer rounded-2xl p-5 bg-white border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                      className="group cursor-pointer rounded-2xl p-5 bg-white/82 backdrop-blur-[2px] border border-white/65 shadow-[0_8px_20px_rgba(2,6,23,0.2)] hover:shadow-[0_14px_30px_rgba(2,6,23,0.3)] hover:bg-white/88 hover:-translate-y-0.5 transition-all"
                     >
                       <div className="flex items-center justify-between mb-6">
                         <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: config.accent }}>
@@ -339,7 +356,7 @@ export default function ModalityPage() {
             )}
           </section>
 
-          <aside className="rounded-3xl border border-[#05206F]/20 bg-[#05206F] text-white p-6 md:p-7 shadow-xl">
+          <aside className="rounded-3xl border border-white/20 bg-[#05206F]/76 backdrop-blur-md text-white p-6 md:p-7 shadow-xl">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100 mb-2">Radar da modalidade</p>
             <h3 className="text-2xl font-black leading-tight mb-2">O que está acontecendo agora</h3>
             <p className="text-sm text-blue-100/90 leading-relaxed mb-5">
@@ -372,8 +389,9 @@ export default function ModalityPage() {
               </div>
             )}
           </aside>
-        </div>
-      </main>
+          </div>
+        </main>
+      </section>
 
       <SiteFooter
         footerLogoUrl={footerLogoUrl}

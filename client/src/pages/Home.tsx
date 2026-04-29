@@ -380,6 +380,7 @@ export default function Home() {
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => goToExternalPage(LEGACY_CLINICAS_URL)} className="hover:text-red-100 transition-colors">Clínicas</button>
               <button onClick={() => goToExternalPage(LEGACY_QUIEN_SOMOS_URL)} className="hover:text-red-100 transition-colors">Quem Somos</button>
+              <button onClick={() => navigate("/regulamentos")} className="hover:text-red-100 transition-colors">Regulamento</button>
               <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-red-100 transition-colors">Contato</button>
               <button
                 onClick={() => navigate("/ao-vivo")}
@@ -405,6 +406,7 @@ export default function Home() {
                 <button onClick={() => goToExternalPage(LEGACY_CLINICAS_URL)} className="text-left">Clínicas</button>
                 <button onClick={() => goToExternalPage(LEGACY_QUIEN_SOMOS_URL)} className="text-left">Quem Somos</button>
                 <button onClick={() => scrollToSection("modalidades")} className="text-left">Modalidades</button>
+                <button onClick={() => navigate("/regulamentos")} className="text-left">Regulamento</button>
                 <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Torneios</button>
                 <button onClick={() => document.getElementById("rodape")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Contato</button>
                 <button
