@@ -979,89 +979,13 @@ export default function TournamentDetail() {
     handebol: "Handebol",
   };
 
-  const MODALITY_THEME: Record<
-    string,
-    {
-      pageBg: string;
-      headerBg: string;
-      glowA: string;
-      glowB: string;
-      watermark: string;
-      detailPills: string[];
-    }
-  > = {
-    futsal: {
-      pageBg: "linear-gradient(165deg, #0d295f 0%, #123a7a 48%, #1a4d8d 100%)",
-      headerBg: "linear-gradient(130deg, #0e2f70 0%, #18458a 65%, #1e5598 100%)",
-      glowA: "bg-emerald-400/20",
-      glowB: "bg-red-500/20",
-      watermark: "FUTSAL",
-      detailPills: ["Quadra", "Bola no pe", "Jogo rapido"],
-    },
-    basquete: {
-      pageBg: "linear-gradient(160deg, #0a2158 0%, #153d83 44%, #7a1a35 100%)",
-      headerBg: "linear-gradient(140deg, #0d2d70 0%, #1a4f9a 52%, #9b1f45 100%)",
-      glowA: "bg-blue-500/25",
-      glowB: "bg-red-500/25",
-      watermark: "BASQUETE",
-      detailPills: ["Garrafao", "3 pontos", "Transicao"],
-    },
-    volei: {
-      pageBg: "linear-gradient(165deg, #0a2a5f 0%, #0f3a78 52%, #1a4e8e 100%)",
-      headerBg: "linear-gradient(140deg, #0c3371 0%, #175191 100%)",
-      glowA: "bg-sky-400/20",
-      glowB: "bg-indigo-400/20",
-      watermark: "VOLEI",
-      detailPills: ["Rede", "Saque", "Bloqueio"],
-    },
-    handebol: {
-      pageBg: "linear-gradient(160deg, #0b244f 0%, #103667 48%, #1a4b82 100%)",
-      headerBg: "linear-gradient(140deg, #0d2f63 0%, #18447b 100%)",
-      glowA: "bg-blue-400/20",
-      glowB: "bg-cyan-400/18",
-      watermark: "HANDEBOL",
-      detailPills: ["Area 6m", "Ataque", "Defesa"],
-    },
+  const MODALITY_DETAIL_PILLS: Record<string, string[]> = {
+    futsal: ["Quadra", "Bola no pe", "Jogo rapido"],
+    basquete: ["Garrafao", "3 pontos", "Transicao"],
+    volei: ["Rede", "Saque", "Bloqueio"],
+    handebol: ["Area 6m", "Ataque", "Defesa"],
   };
-  const activeTheme = MODALITY_THEME[tournament.modality] ?? MODALITY_THEME.futsal;
-  const modalityPattern = (() => {
-    if (tournament.modality === "futsal") {
-      return (
-        <>
-          <div className="absolute top-[150px] left-[7%] hidden md:block w-[360px] h-[220px] rounded-[34px] border border-white/24" />
-          <div className="absolute top-[150px] left-[calc(7%+155px)] hidden md:block w-[50px] h-[50px] rounded-full border border-white/30" />
-          <div className="absolute top-[420px] left-[12%] hidden xl:block w-24 h-24 rounded-full border-2 border-dashed border-white/30" />
-        </>
-      );
-    }
-    if (tournament.modality === "basquete") {
-      return (
-        <>
-          <div className="absolute top-[150px] right-[8%] hidden md:block w-[320px] h-[320px] rounded-full border border-white/24" />
-          <div className="absolute top-[238px] right-[13%] hidden md:block w-[186px] h-[186px] rounded-full border border-white/26" />
-          <div className="absolute top-[302px] right-[17%] hidden md:block w-[95px] h-[95px] rounded-full border-2 border-dashed border-white/32" />
-          <div className="absolute top-[334px] right-[11.5%] hidden md:block w-[120px] h-[26px] rounded-md border border-white/32" />
-        </>
-      );
-    }
-    if (tournament.modality === "volei") {
-      return (
-        <>
-          <div className="absolute top-[205px] left-0 right-0 hidden md:block h-px border-t border-dashed border-white/28" />
-          <div className="absolute top-[262px] left-0 right-0 hidden md:block h-px border-t border-dashed border-white/28" />
-          <div className="absolute top-[232px] left-0 right-0 hidden md:block h-[24px] bg-[repeating-linear-gradient(90deg,_transparent_0px,_transparent_14px,_rgba(255,255,255,0.26)_14px,_rgba(255,255,255,0.26)_15px)]" />
-          <div className="absolute top-[350px] right-[14%] hidden xl:block w-20 h-20 rounded-full border-2 border-white/30" />
-        </>
-      );
-    }
-    return (
-      <>
-        <div className="absolute top-[150px] right-[8%] hidden md:block w-[350px] h-[230px] rounded-t-[230px] border border-b-0 border-white/24" />
-        <div className="absolute top-[176px] right-[11%] hidden md:block w-[300px] h-[190px] rounded-t-[190px] border border-b-0 border-white/24" />
-        <div className="absolute top-[350px] right-[20%] hidden xl:block w-20 h-20 rounded-full border-2 border-dashed border-white/32" />
-      </>
-    );
-  })();
+  const detailPills = MODALITY_DETAIL_PILLS[tournament.modality] ?? MODALITY_DETAIL_PILLS.futsal;
 
   const tabs: { id: Tab; label: string; icon: typeof Trophy }[] = [
     { id: "groups", label: "Grupos", icon: Users },
@@ -1072,25 +996,7 @@ export default function TournamentDetail() {
   ];
 
   return (
-    <div
-      className="min-h-screen relative isolate overflow-hidden"
-      style={{ backgroundImage: activeTheme.pageBg, backgroundColor: "#0d2d62" }}
-    >
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,16,45,0.34)_0%,rgba(4,18,48,0.22)_44%,rgba(4,16,45,0.28)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(221,26,56,0.24)_0%,transparent_44%),radial-gradient(circle_at_80%_18%,rgba(46,107,214,0.24)_0%,transparent_48%)]" />
-        <div className="absolute -left-24 top-0 h-full w-64 bg-[#D5153B]/14 skew-x-[-25deg]" />
-        <div className="absolute -right-24 top-0 h-full w-72 bg-[#1E5CC9]/16 skew-x-[-25deg]" />
-        <div className={`absolute -top-20 -left-16 w-72 h-72 rounded-full blur-3xl ${activeTheme.glowA}`} />
-        <div className={`absolute top-44 -right-20 w-80 h-80 rounded-full blur-3xl ${activeTheme.glowB}`} />
-        {modalityPattern}
-        <div className="absolute top-36 right-8 hidden md:block text-[92px] font-black tracking-[0.35em] text-white/14 leading-none">
-          {activeTheme.watermark}
-        </div>
-        <div className="absolute bottom-24 left-8 hidden lg:block text-[66px] font-black tracking-[0.24em] text-white/12 leading-none rotate-[-8deg]">
-          {activeTheme.watermark}
-        </div>
-      </div>
+    <div className="min-h-screen bg-white">
       {isEditingTournament && (
         <EditTournamentModal
           tournament={tournament as any}
@@ -1189,10 +1095,7 @@ export default function TournamentDetail() {
       </header>
 
       {/* Tournament Header */}
-      <div
-        className="border-b border-border/40 py-10"
-        style={{ backgroundImage: activeTheme.headerBg }}
-      >
+      <div className="border-b border-border/40 py-10 bg-white">
         <div className="container">
           <div className="flex flex-col md:flex-row md:items-center gap-8">
             <div className="w-28 h-28 rounded-3xl bg-white border-2 border-red/10 shadow-xl flex items-center justify-center overflow-hidden shrink-0">
@@ -1226,7 +1129,7 @@ export default function TournamentDetail() {
                   </span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {activeTheme.detailPills.map((pill) => (
+                  {detailPills.map((pill) => (
                     <span
                       key={pill}
                       className="px-3 py-1 rounded-full border border-white/70 bg-white/65 text-[10px] font-black uppercase tracking-wider text-slate-500"
