@@ -1024,7 +1024,7 @@ export default function TournamentDetail() {
     },
   };
   const activeTheme = MODALITY_THEME[tournament.modality] ?? MODALITY_THEME.futsal;
-  const modalityPattern = useMemo(() => {
+  const modalityPattern = (() => {
     if (tournament.modality === "futsal") {
       return (
         <>
@@ -1057,7 +1057,7 @@ export default function TournamentDetail() {
         <div className="absolute top-[190px] right-[10%] hidden xl:block w-[280px] h-[180px] rounded-t-[180px] border border-b-0 border-white/20" />
       </>
     );
-  }, [tournament.modality]);
+  })();
 
   const tabs: { id: Tab; label: string; icon: typeof Trophy }[] = [
     { id: "groups", label: "Grupos", icon: Users },
