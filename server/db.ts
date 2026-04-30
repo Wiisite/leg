@@ -34,8 +34,12 @@ export async function getDb() {
       // Rodar migrações programaticamente
       if (!_migrated) {
         try {
-          console.log("[Database] Checking schema and migrations...");
-          await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+          try {
+            console.log("[Database] Checking schema and migrations...");
+            await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+          } catch (e) {
+            console.error("[Database] Migration error (continuing with manual fixes):", e);
+          }
           
           // Tenta adicionar colunas individualmente caso as migrações automáticas não cubram tudo
           // Usamos try/catch individual para cada coluna para não interromper se uma já existir
