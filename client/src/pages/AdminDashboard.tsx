@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
 import {
   Trophy,
@@ -10,39 +9,21 @@ import {
   Shield,
   Users,
   Swords,
-  CheckCircle2,
-  Clock,
-  ChevronRight,
+  MessageSquare,
   LogOut,
   Plus,
   Trash2,
-  AlertCircle,
-  Image,
+  Image as ImageIcon,
   Save,
-  LayoutDashboard,
-  MessageSquare,
   Settings,
   User,
-  Bell,
   Menu,
   X,
-  Mail,
-  ExternalLink,
-  MapPin,
-  Youtube,
-  Radio,
-  FileText,
+  Upload,
+  MinusCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
-  group_stage: { label: "Fase de Grupos", color: "bg-blue-50 text-blue-700" },
-  semifinals: { label: "Semifinais", color: "bg-purple-50 text-purple-700" },
-  final: { label: "Final", color: "bg-amber-50 text-amber-700" },
-  finished: { label: "Encerrado", color: "bg-green-50 text-green-700" },
-};
 
 export default function AdminDashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
@@ -121,7 +102,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex overflow-hidden">
-      {/* Sidebar */}
       <aside 
         className={`${
           sidebarOpen ? "w-64" : "w-20"
@@ -171,7 +151,6 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-4">
@@ -214,13 +193,6 @@ export default function AdminDashboard() {
 // ─── Sections ──────────────────────────────────────────────────────────────────
 
 function TournamentsSection({ tournaments, navigate }: { tournaments: any[], navigate: any }) {
-  const activeTournaments = tournaments.filter(t => t.status !== "pending" && t.status !== "finished").length;
-  const utils = trpc.useUtils();
-  const deleteMutation = trpc.tournament.delete.useMutation({
-    onSuccess: () => { utils.tournament.list.invalidate(); toast.success("Torneio excluído."); },
-    onError: (e) => toast.error(e.message),
-  });
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -285,16 +257,52 @@ function ModalitiesManagerSection() {
       <div className="grid md:grid-cols-2 gap-6">
         {modalities.map(m => (
           <div key={m} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-            <label className="text-[10px] font-black uppercase tracking-widest text-red ml-1">{labels[m]}</label>
-            <input type="file" accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0]; 
-              if (file) {
-                const dataUrl = await toDataUrl(file);
-                setBannerFiles(prev => ({ ...prev, [m]: dataUrl as string }));
-              }
-            }} className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-50" />
-            <div className="h-32 rounded-2xl bg-slate-50 border border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
-              {(bannerFiles[m] || modalityBannerImages[m]) ? <img src={bannerFiles[m] || modalityBannerImages[m]} className="h-full w-full object-cover" /> : <Image className="w-6 h-6 text-slate-200" />}
+            <div className="flex justify-between items-center px-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-red">{labels[m]}</label>
+              {(bannerFiles[m] || modalityBannerImages[m]) && (
+                <button 
+                  onClick={() => {
+                    setBannerFiles(prev => { const n = {...prev}; delete n[m]; return n; });
+                    setModalityBannerImages(prev => { const n = {...prev}; delete n[m]; return n; });
+                  }}
+                  className="text-[10px] font-bold text-slate-400 hover:text-red flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" /> Remover
+                </button>
+              )}
+            </div>
+            
+            <div className="relative group">
+              <input 
+                type="file" 
+                id={`file-${m}`}
+                accept="image/*" 
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]; 
+                  if (file) {
+                    const dataUrl = await toDataUrl(file);
+                    setBannerFiles(prev => ({ ...prev, [m]: dataUrl }));
+                  }
+                }} 
+                className="hidden" 
+              />
+              <label 
+                htmlFor={`file-${m}`}
+                className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-all border-dashed"
+              >
+                <Upload className="w-4 h-4" /> Escolher Banner
+              </label>
+            </div>
+
+            <div className="h-40 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
+              {(bannerFiles[m] || modalityBannerImages[m]) ? (
+                <img src={bannerFiles[m] || modalityBannerImages[m]} className="h-full w-full object-cover" />
+              ) : (
+                <div className="text-center">
+                  <ImageIcon className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Sem Imagem</span>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -305,8 +313,8 @@ function ModalitiesManagerSection() {
 
 function MessagesSection() {
   const utils = trpc.useUtils();
-  const { data: messages, isLoading } = trpc.contact.list.useQuery();
-  const statusMutation = trpc.contact.updateStatus.useMutation({
+  const { data: messages } = trpc.contact.list.useQuery();
+  const statusMutation = trpc.contact.updateStatus.useStatus.useMutation({
     onSuccess: () => { utils.contact.list.invalidate(); toast.success("Status atualizado"); },
     onError: (e) => toast.error(e.message)
   });
@@ -361,8 +369,12 @@ function SiteSettingsSection() {
   });
 
   const handleSave = () => {
+    // Filtrar parceiros sem nome para evitar erro do servidor
+    const validPartners = formData.partners?.filter((p: any) => p.name && p.name.trim().length > 0) || [];
+    
     updateMutation.mutate({
       ...formData,
+      partners: validPartners,
       mainLogoFileDataUrl: files.mainLogo,
       footerLogoFileDataUrl: files.footerLogo,
       homeHighlightImageFileDataUrl: files.homeHighlight,
@@ -380,161 +392,206 @@ function SiteSettingsSection() {
 
   const modalities = ["futsal", "basquete", "volei", "handebol"] as const;
 
+  const ImageUploadField = ({ label, id, fileKey, currentUrl, fileData }: any) => (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center px-1">
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</label>
+        {(fileData || currentUrl) && (
+          <button 
+            onClick={() => {
+              setFiles((prev: any) => ({ ...prev, [fileKey]: undefined }));
+              setFormData((prev: any) => ({ ...prev, [`${fileKey}Url`]: "" }));
+            }}
+            className="text-[10px] font-bold text-slate-400 hover:text-red flex items-center gap-1"
+          >
+            <Trash2 className="w-3 h-3" /> Remover
+          </button>
+        )}
+      </div>
+      <input 
+        type="file" 
+        id={id}
+        accept="image/*" 
+        onChange={async (e) => {
+          const file = e.target.files?.[0]; 
+          if (file) {
+            const dataUrl = await toDataUrl(file);
+            setFiles((prev: any) => ({ ...prev, [fileKey]: dataUrl }));
+          }
+        }} 
+        className="hidden" 
+      />
+      <label 
+        htmlFor={id}
+        className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-all border-dashed"
+      >
+        <Upload className="w-3.5 h-3.5" /> Escolher Arquivo
+      </label>
+      <div className="h-24 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
+        {(fileData || currentUrl) ? (
+          <img src={fileData || currentUrl} className="h-full w-full object-contain p-2" />
+        ) : (
+          <ImageIcon className="w-5 h-5 text-slate-200" />
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-10 pb-20">
       <div className="flex justify-between items-end gap-6">
         <div><h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-2">Aparência do Site</h2><p className="text-slate-500 font-medium">Logos, Banners, Parceiros e Transmissões.</p></div>
-        <Button className="h-14 bg-red text-white font-black uppercase tracking-widest rounded-2xl shadow-brand px-10" onClick={handleSave}>Salvar Alterações</Button>
+        <Button className="h-14 bg-red text-white font-black uppercase tracking-widest rounded-2xl shadow-brand px-10" onClick={handleSave} disabled={updateMutation.isPending}>
+          {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+        </Button>
       </div>
 
-      {/* Logos */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Main Logo */}
-        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Logo Principal</label>
-          <input type="file" accept="image/*" onChange={async (e) => {
-            const file = e.target.files?.[0]; 
-            if (file) {
-              const dataUrl = await toDataUrl(file);
-              setFiles(prev => ({ ...prev, mainLogo: dataUrl }));
-            }
-          }} className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-50" />
-          <div className="h-28 rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
-            {(files.mainLogo || formData.mainLogoUrl) ? <img src={files.mainLogo || formData.mainLogoUrl} className="max-h-24 object-contain" /> : <Image className="w-6 h-6 text-slate-200" />}
-          </div>
+        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
+          <ImageUploadField label="Logo Principal" id="logo-main" fileKey="mainLogo" currentUrl={formData.mainLogoUrl} fileData={files.mainLogo} />
         </div>
-        {/* Footer Logo */}
-        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Logo Rodapé</label>
-          <input type="file" accept="image/*" onChange={async (e) => {
-            const file = e.target.files?.[0]; 
-            if (file) {
-              const dataUrl = await toDataUrl(file);
-              setFiles(prev => ({ ...prev, footerLogo: dataUrl }));
-            }
-          }} className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-50" />
-          <div className="h-28 rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
-            {(files.footerLogo || formData.footerLogoUrl) ? <img src={files.footerLogo || formData.formData.footerLogoUrl} className="max-h-24 object-contain" /> : <Image className="w-6 h-6 text-slate-200" />}
-          </div>
+        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
+          <ImageUploadField label="Logo Rodapé" id="logo-footer" fileKey="footerLogo" currentUrl={formData.footerLogoUrl} fileData={files.footerLogo} />
         </div>
       </div>
 
-      {/* Hero Sections (Home, Clínicas, Quem Somos) */}
       <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-8">
         <h3 className="text-lg font-black uppercase tracking-widest text-slate-900 border-l-4 border-red pl-4">Imagens de Topo (Hero)</h3>
         <div className="grid md:grid-cols-3 gap-6">
-          {/* Home */}
-          <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Home Highlight</label>
-            <input type="file" accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0]; 
-              if (file) {
-                const dataUrl = await toDataUrl(file);
-                setFiles(prev => ({ ...prev, homeHighlight: dataUrl }));
-              }
-            }} className="w-full text-xs text-slate-500 file:mr-2 file:px-2 file:py-1 file:rounded-lg file:border-0 file:bg-slate-50" />
-            <div className="h-32 rounded-2xl bg-slate-50 border border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
-              {(files.homeHighlight || formData.homeHighlightImageUrl) ? <img src={files.homeHighlight || formData.homeHighlightImageUrl} className="h-full w-full object-cover" /> : <Image className="w-6 h-6 text-slate-200" />}
-            </div>
-          </div>
-          {/* Clínicas */}
-          <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Página Clínicas</label>
-            <input type="file" accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0]; 
-              if (file) {
-                const dataUrl = await toDataUrl(file);
-                setFiles(prev => ({ ...prev, clinicsHero: dataUrl }));
-              }
-            }} className="w-full text-xs text-slate-500 file:mr-2 file:px-2 file:py-1 file:rounded-lg file:border-0 file:bg-slate-50" />
-            <div className="h-32 rounded-2xl bg-slate-50 border border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
-              {(files.clinicsHero || formData.clinicsHeroImageUrl) ? <img src={files.clinicsHero || formData.clinicsHeroImageUrl} className="h-full w-full object-cover" /> : <Image className="w-6 h-6 text-slate-200" />}
-            </div>
-          </div>
-          {/* Quem Somos */}
-          <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Página Quem Somos</label>
-            <input type="file" accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0]; 
-              if (file) {
-                const dataUrl = await toDataUrl(file);
-                setFiles(prev => ({ ...prev, aboutHero: dataUrl }));
-              }
-            }} className="w-full text-xs text-slate-500 file:mr-2 file:px-2 file:py-1 file:rounded-lg file:border-0 file:bg-slate-50" />
-            <div className="h-32 rounded-2xl bg-slate-50 border border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
-              {(files.aboutHero || formData.aboutHeroImageUrl) ? <img src={files.aboutHero || formData.aboutHeroImageUrl} className="h-full w-full object-cover" /> : <Image className="w-6 h-6 text-slate-200" />}
-            </div>
-          </div>
+          <ImageUploadField label="Home Highlight" id="hero-home" fileKey="homeHighlight" currentUrl={formData.homeHighlightImageUrl} fileData={files.homeHighlight} />
+          <ImageUploadField label="Página Clínicas" id="hero-clinics" fileKey="clinicsHero" currentUrl={formData.clinicsHeroImageUrl} fileData={files.clinicsHero} />
+          <ImageUploadField label="Página Quem Somos" id="hero-about" fileKey="aboutHero" currentUrl={formData.aboutHeroImageUrl} fileData={files.aboutHero} />
         </div>
       </div>
 
-      {/* Slider Home */}
       <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-8">
         <h3 className="text-xl font-black uppercase tracking-widest text-slate-900 border-l-4 border-red pl-4">Slider Home (Por Modalidade)</h3>
         <div className="grid md:grid-cols-2 gap-8">
           {modalities.map(m => (
             <div key={`h-${m}`} className="p-6 rounded-[32px] bg-slate-50/50 space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-widest text-red">{m}</label>
-              <input value={formData.homeHeroTitles?.[m] || ""} onChange={e => setFormData({ ...formData, homeHeroTitles: { ...formData.homeHeroTitles, [m]: e.target.value } })} className="w-full h-12 bg-white border border-slate-100 rounded-xl px-4 text-sm" placeholder="Título..." />
-              <input type="file" accept="image/*" onChange={async (e) => {
-                const file = e.target.files?.[0]; 
-                if (file) {
-                  const dataUrl = await toDataUrl(file);
-                  setFiles(prev => ({ ...prev, homeHero: { ...prev.homeHero, [m]: dataUrl } }));
-                }
-              }} className="w-full text-xs text-slate-500" />
-              <div className="h-24 rounded-xl border border-dashed border-slate-200 overflow-hidden">
-                {(files.homeHero?.[m] || formData.homeHeroImages?.[m]) ? <img src={files.homeHero?.[m] || formData.homeHeroImages?.[m]} className="h-full w-full object-cover" /> : <Image className="w-5 h-5 text-slate-200 mx-auto mt-9" />}
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-black uppercase tracking-widest text-red">{m}</label>
+                {(files.homeHero?.[m] || formData.homeHeroImages?.[m]) && (
+                  <button 
+                    onClick={() => {
+                      setFiles((prev: any) => { const n = {...prev, homeHero: {...prev.homeHero}}; delete n.homeHero[m]; return n; });
+                      setFormData((prev: any) => { const n = {...prev, homeHeroImages: {...prev.homeHeroImages}}; n.homeHeroImages[m] = ""; return n; });
+                    }}
+                    className="text-[10px] font-bold text-slate-400 hover:text-red flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" /> Remover
+                  </button>
+                )}
+              </div>
+              <input value={formData.homeHeroTitles?.[m] || ""} onChange={e => setFormData({ ...formData, homeHeroTitles: { ...formData.homeHeroTitles, [m]: e.target.value } })} className="w-full h-12 bg-white border border-slate-100 rounded-xl px-4 text-sm" placeholder="Título do Slide..." />
+              
+              <div className="relative">
+                <input 
+                  type="file" 
+                  id={`hero-slide-${m}`}
+                  accept="image/*" 
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]; 
+                    if (file) {
+                      const dataUrl = await toDataUrl(file);
+                      setFiles((prev: any) => ({ ...prev, homeHero: { ...prev.homeHero, [m]: dataUrl } }));
+                    }
+                  }} 
+                  className="hidden" 
+                />
+                <label 
+                  htmlFor={`hero-slide-${m}`}
+                  className="w-full h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition-all border-dashed"
+                >
+                  <Upload className="w-3.5 h-3.5" /> Escolher Imagem do Slide
+                </label>
+              </div>
+
+              <div className="h-24 rounded-xl border border-slate-200 overflow-hidden bg-white flex items-center justify-center">
+                {(files.homeHero?.[m] || formData.homeHeroImages?.[m]) ? (
+                  <img src={files.homeHero?.[m] || formData.homeHeroImages?.[m]} className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon className="w-5 h-5 text-slate-100" />
+                )}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Parceiros / Ao Vivo / Endereços */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Parceiros */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-          <div className="flex justify-between items-center"><h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Parceiros</h3><Button size="sm" variant="ghost" className="text-red font-bold" onClick={() => setFormData({ ...formData, partners: [...(formData.partners || []), { name: "", logoUrl: "" }] })}><Plus className="w-4 h-4 mr-1" /> Add</Button></div>
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Parceiros</h3>
+            <Button size="sm" variant="ghost" className="text-red font-bold hover:bg-red/5" onClick={() => setFormData({ ...formData, partners: [...(formData.partners || []), { name: "", logoUrl: "" }] })}>
+              <Plus className="w-4 h-4 mr-1" /> Adicionar
+            </Button>
+          </div>
           <div className="space-y-4">
             {formData.partners?.map((p: any, i: number) => (
-              <div key={i} className="p-4 rounded-2xl bg-slate-50 flex flex-col gap-2 relative">
-                <button className="absolute top-2 right-2 text-slate-300 hover:text-red" onClick={() => setFormData({ ...formData, partners: formData.partners.filter((_:any,idx:number)=>idx!==i) })}><Trash2 className="w-4 h-4" /></button>
-                <input value={p.name} onChange={e => { const np = [...formData.partners]; np[i].name = e.target.value; setFormData({ ...formData, partners: np }); }} className="h-10 bg-white border border-slate-100 rounded-lg px-3 text-sm" placeholder="Nome do Parceiro" />
-                <input type="file" onChange={async (e) => { 
-                  const file = e.target.files?.[0]; 
-                  if (file) { 
-                    const dataUrl = await toDataUrl(file);
-                    const np = [...formData.partners]; 
-                    np[i].logoFileDataUrl = dataUrl; 
-                    setFormData({ ...formData, partners: np }); 
-                  } 
-                }} className="text-[10px]" />
-                { (p.logoFileDataUrl || p.logoUrl) && <img src={p.logoFileDataUrl || p.logoUrl} className="h-10 object-contain self-start" /> }
+              <div key={i} className="p-5 rounded-[24px] bg-slate-50/50 border border-slate-100 flex flex-col gap-4 relative">
+                <button className="absolute top-4 right-4 text-slate-300 hover:text-red transition-colors" onClick={() => setFormData({ ...formData, partners: formData.partners.filter((_:any,idx:number)=>idx!==i) })}><MinusCircle className="w-5 h-5" /></button>
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nome do Parceiro</label>
+                  <input value={p.name} onChange={e => { const np = [...formData.partners]; np[i].name = e.target.value; setFormData({ ...formData, partners: np }); }} className="w-full h-11 bg-white border border-slate-100 rounded-xl px-4 text-sm" placeholder="Ex: Nike, Coca-Cola..." />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Logo do Parceiro</label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative shrink-0">
+                      <input 
+                        type="file" 
+                        id={`partner-logo-${i}`}
+                        onChange={async (e) => { 
+                          const file = e.target.files?.[0]; 
+                          if (file) { 
+                            const dataUrl = await toDataUrl(file);
+                            const np = [...formData.partners]; 
+                            np[i].logoFileDataUrl = dataUrl; 
+                            setFormData({ ...formData, partners: np }); 
+                          } 
+                        }} 
+                        className="hidden" 
+                      />
+                      <label htmlFor={`partner-logo-${i}`} className="w-20 h-20 bg-white border border-slate-200 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all overflow-hidden">
+                        {(p.logoFileDataUrl || p.logoUrl) ? <img src={p.logoFileDataUrl || p.logoUrl} className="w-full h-full object-contain p-2" /> : <Upload className="w-6 h-6 text-slate-300" />}
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-slate-400 leading-tight">Recomendado: PNG transparente ou fundo branco.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
+            {(!formData.partners || formData.partners.length === 0) && (
+              <div className="text-center py-10 border border-dashed border-slate-200 rounded-3xl">
+                <p className="text-sm text-slate-400 font-medium">Nenhum parceiro adicionado.</p>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="space-y-6">
-          {/* Ao Vivo */}
           <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-            <div className="flex justify-between items-center"><h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Ao Vivo (YouTube)</h3><Button size="sm" variant="ghost" className="text-red font-bold" onClick={() => setFormData({ ...formData, liveStreams: [...(formData.liveStreams || []), { title: "", youtubeUrl: "" }] })}><Plus className="w-4 h-4 mr-1" /> Add</Button></div>
+            <div className="flex justify-between items-center"><h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Ao Vivo (YouTube)</h3><Button size="sm" variant="ghost" className="text-red font-bold hover:bg-red/5" onClick={() => setFormData({ ...formData, liveStreams: [...(formData.liveStreams || []), { title: "", youtubeUrl: "" }] })}><Plus className="w-4 h-4 mr-1" /> Adicionar</Button></div>
             <div className="space-y-4">
               {formData.liveStreams?.map((ls: any, i: number) => (
-                <div key={i} className="p-4 rounded-2xl bg-slate-50 flex flex-col gap-2">
-                  <input value={ls.title} onChange={e => { const nl = [...formData.liveStreams]; nl[i].title = e.target.value; setFormData({ ...formData, liveStreams: nl }); }} className="h-10 bg-white border border-slate-100 rounded-lg px-3 text-sm" placeholder="Título da Transmissão" />
-                  <input value={ls.youtubeUrl} onChange={e => { const nl = [...formData.liveStreams]; nl[i].youtubeUrl = e.target.value; setFormData({ ...formData, liveStreams: nl }); }} className="h-10 bg-white border border-slate-100 rounded-lg px-3 text-sm" placeholder="Link do YouTube" />
+                <div key={i} className="p-4 rounded-2xl bg-slate-50 flex flex-col gap-2 relative">
+                  <button className="absolute top-2 right-2 text-slate-300 hover:text-red" onClick={() => setFormData({ ...formData, liveStreams: formData.liveStreams.filter((_:any,idx:number)=>idx!==i) })}><MinusCircle className="w-4 h-4" /></button>
+                  <input value={ls.title} onChange={e => { const nl = [...formData.liveStreams]; nl[i].title = e.target.value; setFormData({ ...formData, liveStreams: nl }); }} className="h-11 bg-white border border-slate-100 rounded-xl px-4 text-sm" placeholder="Título da Transmissão" />
+                  <input value={ls.youtubeUrl} onChange={e => { const nl = [...formData.liveStreams]; nl[i].youtubeUrl = e.target.value; setFormData({ ...formData, liveStreams: nl }); }} className="h-11 bg-white border border-slate-100 rounded-xl px-4 text-sm" placeholder="Link do YouTube" />
                 </div>
               ))}
             </div>
           </div>
-          {/* Endereços */}
           <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-            <div className="flex justify-between items-center"><h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Endereços</h3><Button size="sm" variant="ghost" className="text-red font-bold" onClick={() => setFormData({ ...formData, championshipAddresses: [...(formData.championshipAddresses || []), ""] })}><Plus className="w-4 h-4 mr-1" /> Add</Button></div>
+            <div className="flex justify-between items-center"><h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Endereços</h3><Button size="sm" variant="ghost" className="text-red font-bold hover:bg-red/5" onClick={() => setFormData({ ...formData, championshipAddresses: [...(formData.championshipAddresses || []), ""] })}><Plus className="w-4 h-4 mr-1" /> Adicionar</Button></div>
             <div className="space-y-3">
               {formData.championshipAddresses?.map((addr: string, i: number) => (
-                <div key={i} className="flex gap-2"><input value={addr} onChange={e => { const na = [...formData.championshipAddresses]; na[i] = e.target.value; setFormData({ ...formData, championshipAddresses: na }); }} className="flex-1 h-10 bg-white border border-slate-100 rounded-lg px-3 text-sm" placeholder="Endereço..." /><Button size="sm" variant="ghost" onClick={() => setFormData({ ...formData, championshipAddresses: formData.championshipAddresses.filter((_:any,idx:number)=>idx!==i) })}><Trash2 className="w-4 h-4 text-slate-300" /></Button></div>
+                <div key={i} className="flex gap-2"><input value={addr} onChange={e => { const na = [...formData.championshipAddresses]; na[i] = e.target.value; setFormData({ ...formData, championshipAddresses: na }); }} className="flex-1 h-11 bg-white border border-slate-100 rounded-xl px-4 text-sm" placeholder="Endereço Completo..." /><Button size="sm" variant="ghost" onClick={() => setFormData({ ...formData, championshipAddresses: formData.championshipAddresses.filter((_:any,idx:number)=>idx!==i) })}><Trash2 className="w-4 h-4 text-slate-300 hover:text-red" /></Button></div>
               ))}
             </div>
           </div>
