@@ -124,8 +124,8 @@ export default function ModalityPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const logoScale = 1 - 0.36 * logoShrinkProgress;
-  const logoTop = 88 - 12 * logoShrinkProgress;
+  const logoScale = 1 - 0.48 * logoShrinkProgress;
+  const logoTop = 88 - 38 * logoShrinkProgress;
 
   if (!config) {
     return (
@@ -143,13 +143,12 @@ export default function ModalityPage() {
 
   return (
     <div className="min-h-screen bg-[#F0F2F6] text-slate-900">
-      <header className="sticky top-0 z-50 shadow-xl">
-        <div className="bg-[#05206F] text-white">
-          <div className="container h-12 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.12em]">
-            <button className="inline-flex items-center gap-2 hover:text-red-200 transition-colors">
-              <Contact className="w-3.5 h-3.5" />
-              Fale Conosco
-            </button>
+      <div className="bg-[#05206F] text-white">
+        <div className="container h-12 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.12em]">
+          <button className="inline-flex items-center gap-2 hover:text-red-200 transition-colors">
+            <Contact className="w-3.5 h-3.5" />
+            Fale Conosco
+          </button>
 
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
@@ -177,10 +176,11 @@ export default function ModalityPage() {
                 </button>
               </div>
             )}
-          </div>
         </div>
+      </div>
 
-        <div className="relative bg-[#D50000] text-white overflow-visible">
+      <header className="sticky top-0 z-50">
+        <div className="relative bg-[#D50000] text-white overflow-visible shadow-xl">
           <div className="pointer-events-none absolute inset-0 opacity-25">
             <div className="absolute -left-16 top-0 h-full w-48 bg-[#B80000] skew-x-[-30deg]" />
             <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />

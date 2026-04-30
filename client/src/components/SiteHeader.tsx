@@ -23,8 +23,8 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
   const { data: settings } = trpc.site.getSettings.useQuery();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [logoTop, setLogoTop] = useState(isHome ? 50 : 0);
-  const [logoScale, setLogoScale] = useState(isHome ? 1 : 0.45);
+  const [logoTop, setLogoTop] = useState(isHome ? 88 : 50);
+  const [logoScale, setLogoScale] = useState(isHome ? 1 : 0.5);
 
   const mainLogoUrl = settings?.mainLogoUrl || "/logo.png";
 
@@ -37,9 +37,9 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
 
     const handleScroll = () => {
       const scrollY = window.scrollY;
-      const progress = Math.min(scrollY / 100, 1);
-      setLogoTop(50 - progress * 50);
-      setLogoScale(1 - progress * 0.55);
+      const progress = Math.min(scrollY / 140, 1);
+      setLogoTop(88 - progress * 38);
+      setLogoScale(1 - progress * 0.5);
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -53,35 +53,34 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
   };
 
   return (
-    <header className="relative z-[100]">
-      {/* Top Bar (Auth/Admin) */}
-      <div className="bg-[#05206F] text-white py-2 text-[11px] font-bold uppercase tracking-widest border-b border-white/5">
-        <div className="container flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <button 
-              onClick={() => handleNav("/contato")}
-              className="inline-flex items-center gap-2 hover:text-red-200 transition-colors"
-            >
-              <Contact className="w-3.5 h-3.5" />
-              Fale Conosco
-            </button>
-            <span className="opacity-70 hidden sm:inline border-l border-white/20 pl-6">Bem-vindo à LEG 2026</span>
-          </div>
+    <>
+      <div className="bg-[#05206F] text-white">
+      <div className="container h-12 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.12em]">
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={() => handleNav("/contato")}
+            className="inline-flex items-center gap-2 hover:text-red-200 transition-colors"
+          >
+            <Contact className="w-3.5 h-3.5" />
+            Fale Conosco
+          </button>
+          <span className="opacity-70 hidden sm:inline border-l border-white/20 pl-6">Bem-vindo à LEG 2026</span>
+        </div>
           
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => navigate("/admin")}
-                  className="px-3 py-1 bg-white text-[#05206F] hover:bg-red-50 rounded text-[10px] font-black"
+                  className="h-8 px-3.5 bg-white text-[#05206F] hover:bg-red-50 text-[11px] font-black rounded-md"
                 >
                   Painel Admin
                 </button>
                 <button 
                   onClick={() => logout()}
-                  className="flex items-center gap-1 hover:text-red-200 transition-colors"
+                  className="flex items-center gap-1.5 hover:text-red-200 transition-colors"
                 >
-                  <LogOut className="w-3 h-3" />
+                  <LogOut className="w-3.5 h-3.5" />
                   Sair
                 </button>
               </div>
@@ -99,8 +98,9 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
         </div>
       </div>
 
+    <header className="sticky top-0 z-50">
       {/* Main Nav Bar */}
-      <div className="relative bg-[#D50000] text-white overflow-visible">
+      <div className="relative bg-[#D50000] text-white overflow-visible shadow-xl">
         <div className="pointer-events-none absolute inset-0 opacity-25">
           <div className="absolute -left-16 top-0 h-full w-48 bg-[#B80000] skew-x-[-30deg]" />
           <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
@@ -199,5 +199,6 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
         )}
       </div>
     </header>
+    </>
   );
 }
