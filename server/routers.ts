@@ -1249,13 +1249,15 @@ const siteRouter = router({
       z.object({
         mainLogoUrl: z.string().trim().max(10_000_000).optional(),
         footerLogoUrl: z.string().trim().max(10_000_000).optional(),
-        homeHighlightImageUrl: z.string().trim().max(10_000_000).optional(),
+        mainLogoUrl: z.string().trim().max(50_000_000).optional(),
+        footerLogoUrl: z.string().trim().max(50_000_000).optional(),
+        homeHighlightImageUrl: z.string().trim().max(50_000_000).optional(),
         homeHeroImages: z
           .object({
-            futsal: z.string().trim().max(10_000_000).optional(),
-            basquete: z.string().trim().max(10_000_000).optional(),
-            volei: z.string().trim().max(10_000_000).optional(),
-            handebol: z.string().trim().max(10_000_000).optional(),
+            futsal: z.string().trim().max(50_000_000).optional(),
+            basquete: z.string().trim().max(50_000_000).optional(),
+            volei: z.string().trim().max(50_000_000).optional(),
+            handebol: z.string().trim().max(50_000_000).optional(),
           })
           .optional(),
         homeHeroTitles: z
@@ -1279,26 +1281,26 @@ const siteRouter = router({
         homeHighlightImageFileDataUrl: z.string().max(10_000_000).optional(),
         homeHeroImageFiles: z
           .object({
-            futsal: z.string().max(10_000_000).optional(),
-            basquete: z.string().max(10_000_000).optional(),
-            volei: z.string().max(10_000_000).optional(),
-            handebol: z.string().max(10_000_000).optional(),
+            futsal: z.string().max(50_000_000).optional(),
+            basquete: z.string().max(50_000_000).optional(),
+            volei: z.string().max(50_000_000).optional(),
+            handebol: z.string().max(50_000_000).optional(),
           })
           .optional(),
         modalityBannerImageFiles: z
           .object({
-            futsal: z.string().max(10_000_000).optional(),
-            basquete: z.string().max(10_000_000).optional(),
-            volei: z.string().max(10_000_000).optional(),
-            handebol: z.string().max(10_000_000).optional(),
+            futsal: z.string().max(50_000_000).optional(),
+            basquete: z.string().max(50_000_000).optional(),
+            volei: z.string().max(50_000_000).optional(),
+            handebol: z.string().max(50_000_000).optional(),
           })
           .optional(),
         partners: z
           .array(
             z.object({
               name: z.string().trim().min(1).max(120),
-              logoUrl: z.string().trim().max(10_000_000).optional(),
-              logoFileDataUrl: z.string().max(10_000_000).optional(),
+              logoUrl: z.string().trim().max(50_000_000).optional(),
+              logoFileDataUrl: z.string().max(50_000_000).optional(),
             })
           )
           .optional(),
@@ -1311,10 +1313,10 @@ const siteRouter = router({
           )
           .optional(),
         championshipAddresses: z.array(z.string().trim().min(1).max(250)).optional(),
-        clinicsHeroImageUrl: z.string().trim().max(10_000_000).optional(),
-        clinicsHeroImageFileDataUrl: z.string().max(10_000_000).optional(),
-        aboutHeroImageUrl: z.string().trim().max(10_000_000).optional(),
-        aboutHeroImageFileDataUrl: z.string().max(10_000_000).optional(),
+        clinicsHeroImageUrl: z.string().trim().max(50_000_000).optional(),
+        clinicsHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
+        aboutHeroImageUrl: z.string().trim().max(50_000_000).optional(),
+        aboutHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
