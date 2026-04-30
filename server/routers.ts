@@ -1311,6 +1311,10 @@ const siteRouter = router({
           )
           .optional(),
         championshipAddresses: z.array(z.string().trim().min(1).max(250)).optional(),
+        clinicsHeroImageUrl: z.string().trim().max(10_000_000).optional(),
+        clinicsHeroImageFileDataUrl: z.string().max(10_000_000).optional(),
+        aboutHeroImageUrl: z.string().trim().max(10_000_000).optional(),
+        aboutHeroImageFileDataUrl: z.string().max(10_000_000).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1370,6 +1374,16 @@ const siteRouter = router({
       const resolvedHomeHighlightImageUrl =
         input.homeHighlightImageFileDataUrl && input.homeHighlightImageFileDataUrl.length > 0
           ? await uploadImage("home-highlight", input.homeHighlightImageFileDataUrl)
+          : undefined;
+
+      const resolvedClinicsHeroImageUrl =
+        input.clinicsHeroImageFileDataUrl && input.clinicsHeroImageFileDataUrl.length > 0
+          ? await uploadImage("clinics-hero", input.clinicsHeroImageFileDataUrl)
+          : undefined;
+
+      const resolvedAboutHeroImageUrl =
+        input.aboutHeroImageFileDataUrl && input.aboutHeroImageFileDataUrl.length > 0
+          ? await uploadImage("about-hero", input.aboutHeroImageFileDataUrl)
           : undefined;
 
       const modalities = ["futsal", "basquete", "volei", "handebol"] as const;
@@ -1456,6 +1470,16 @@ const siteRouter = router({
           ? { homeHighlightImageUrl: resolvedHomeHighlightImageUrl }
           : input.homeHighlightImageUrl !== undefined
             ? { homeHighlightImageUrl: input.homeHighlightImageUrl.length > 0 ? input.homeHighlightImageUrl : null }
+          : {}),
+        ...(resolvedClinicsHeroImageUrl !== undefined
+          ? { clinicsHeroImageUrl: resolvedClinicsHeroImageUrl }
+          : input.clinicsHeroImageUrl !== undefined
+            ? { clinicsHeroImageUrl: input.clinicsHeroImageUrl.length > 0 ? input.clinicsHeroImageUrl : null }
+          : {}),
+        ...(resolvedAboutHeroImageUrl !== undefined
+          ? { aboutHeroImageUrl: resolvedAboutHeroImageUrl }
+          : input.aboutHeroImageUrl !== undefined
+            ? { aboutHeroImageUrl: input.aboutHeroImageUrl.length > 0 ? input.aboutHeroImageUrl : null }
           : {}),
         ...(resolvedHomeHeroImages !== undefined
           ? {
