@@ -685,8 +685,7 @@ export default function Home() {
         <div className="rounded-3xl border border-slate-200 bg-white shadow-xl p-6 md:p-8">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#D50000]">Parcerias LEG</p>
-              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-[#05206F]">Quem faz o campeonato acontecer</h2>
+              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-[#05206F]">Apoiador da LEG</h2>
             </div>
             <div className="hidden md:flex items-center gap-2">
               <button
