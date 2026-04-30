@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 
 export default function Contato() {
   const [, navigate] = useLocation();
-12:   const { data: siteSettings } = trpc.site.getSettings.useQuery();
+  const { data: siteSettings } = trpc.site.getSettings.useQuery();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
