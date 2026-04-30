@@ -56,6 +56,28 @@ export async function getDb() {
           await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
           await fixColumn("users", "password", "TEXT NULL");
 
+          // Migrações para site_settings
+          await fixColumn("site_settings", "clinicsHeroImageUrl", "TEXT NULL");
+          await fixColumn("site_settings", "aboutHeroImageUrl", "TEXT NULL");
+          await fixColumn("site_settings", "aboutMissionImageUrl", "TEXT NULL");
+          await fixColumn("site_settings", "contactHeroImageUrl", "TEXT NULL");
+          await fixColumn("site_settings", "clinicsJson", "LONGTEXT NULL");
+          await fixColumn("site_settings", "homeHeroImagesJson", "LONGTEXT NULL");
+          await fixColumn("site_settings", "homeHeroTitlesJson", "LONGTEXT NULL");
+          await fixColumn("site_settings", "modalityBannerImagesJson", "LONGTEXT NULL");
+          await fixColumn("site_settings", "partnersJson", "LONGTEXT NULL");
+          await fixColumn("site_settings", "liveStreamsJson", "LONGTEXT NULL");
+          await fixColumn("site_settings", "championshipAddressesJson", "LONGTEXT NULL");
+
+          try {
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN mainLogoUrl LONGTEXT NULL"));
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN footerLogoUrl LONGTEXT NULL"));
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHighlightImageUrl LONGTEXT NULL"));
+            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN partnersJson LONGTEXT NULL"));
+          } catch (e) {
+            // Ignora erros de modificação
+          }
+
           try {
             await _db!.execute(
               sql.raw(
@@ -77,33 +99,6 @@ export async function getDb() {
           }
 
           try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN mainLogoUrl LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN footerLogoUrl LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN homeHighlightImageUrl LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso a coluna já exista
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHighlightImageUrl LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN homeHeroImagesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso a coluna já exista
           }
 
           try {
