@@ -1319,6 +1319,17 @@ const siteRouter = router({
         clinicsHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
         aboutHeroImageUrl: z.string().trim().max(50_000_000).optional(),
         aboutHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
+        aboutMissionImageUrl: z.string().trim().max(50_000_000).optional(),
+        aboutMissionImageFileDataUrl: z.string().max(50_000_000).optional(),
+        contactHeroImageUrl: z.string().trim().max(50_000_000).optional(),
+        contactHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
+        clinics: z.array(z.object({
+          title: z.string().trim().min(1).max(200),
+          description: z.string().trim().max(1000).optional(),
+          imageUrl: z.string().max(50_000_000).optional(),
+          imageFileDataUrl: z.string().max(50_000_000).optional(),
+          details: z.array(z.string()).optional(),
+        })).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1389,6 +1400,29 @@ const siteRouter = router({
         input.aboutHeroImageFileDataUrl && input.aboutHeroImageFileDataUrl.length > 0
           ? await uploadImage("about-hero", input.aboutHeroImageFileDataUrl)
           : undefined;
+
+      const resolvedAboutMissionImageUrl =
+        input.aboutMissionImageFileDataUrl && input.aboutMissionImageFileDataUrl.length > 0
+          ? await uploadImage("about-mission", input.aboutMissionImageFileDataUrl)
+          : undefined;
+
+      const resolvedContactHeroImageUrl =
+        input.contactHeroImageFileDataUrl && input.contactHeroImageFileDataUrl.length > 0
+          ? await uploadImage("contact-hero", input.contactHeroImageFileDataUrl)
+          : undefined;
+
+      const resolvedClinics = input.clinics
+        ? await Promise.all(
+            input.clinics.map(async (c, i) => ({
+              ...c,
+              imageFileDataUrl: undefined,
+              imageUrl:
+                c.imageFileDataUrl && c.imageFileDataUrl.length > 0
+                  ? await uploadImage(`clinic-${i}`, c.imageFileDataUrl)
+                  : c.imageUrl,
+            }))
+          )
+        : undefined;
 
       const modalities = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
 
@@ -1484,6 +1518,19 @@ const siteRouter = router({
           ? { aboutHeroImageUrl: resolvedAboutHeroImageUrl }
           : input.aboutHeroImageUrl !== undefined
             ? { aboutHeroImageUrl: input.aboutHeroImageUrl.length > 0 ? input.aboutHeroImageUrl : null }
+          : {}),
+        ...(resolvedAboutMissionImageUrl !== undefined
+          ? { aboutMissionImageUrl: resolvedAboutMissionImageUrl }
+          : input.aboutMissionImageUrl !== undefined
+            ? { aboutMissionImageUrl: input.aboutMissionImageUrl.length > 0 ? input.aboutMissionImageUrl : null }
+          : {}),
+        ...(resolvedContactHeroImageUrl !== undefined
+          ? { contactHeroImageUrl: resolvedContactHeroImageUrl }
+          : input.contactHeroImageUrl !== undefined
+            ? { contactHeroImageUrl: input.contactHeroImageUrl.length > 0 ? input.contactHeroImageUrl : null }
+          : {}),
+        ...(resolvedClinics !== undefined
+          ? { clinicsJson: JSON.stringify(resolvedClinics) }
           : {}),
         ...(resolvedHomeHeroImages !== undefined
           ? {

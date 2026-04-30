@@ -354,9 +354,12 @@ function SiteSettingsSection() {
         homeHighlightImageUrl: settings.homeHighlightImageUrl || "",
         clinicsHeroImageUrl: settings.clinicsHeroImageUrl || "",
         aboutHeroImageUrl: settings.aboutHeroImageUrl || "",
+        aboutMissionImageUrl: settings.aboutMissionImageUrl || "",
+        contactHeroImageUrl: settings.contactHeroImageUrl || "",
         homeHeroTitles: settings.homeHeroTitles || {},
         homeHeroImages: settings.homeHeroImages || {},
         partners: settings.partners || [],
+        clinics: settings.clinics || [],
         liveStreams: settings.liveStreams || [],
         championshipAddresses: settings.championshipAddresses || [],
       });
@@ -380,6 +383,8 @@ function SiteSettingsSection() {
       homeHighlightImageFileDataUrl: files.homeHighlight,
       clinicsHeroImageFileDataUrl: files.clinicsHero,
       aboutHeroImageFileDataUrl: files.aboutHero,
+      aboutMissionImageFileDataUrl: files.aboutMission,
+      contactHeroImageFileDataUrl: files.contactHero,
       homeHeroImageFiles: files.homeHero,
     });
   };
@@ -460,7 +465,9 @@ function SiteSettingsSection() {
         <div className="grid md:grid-cols-3 gap-6">
           <ImageUploadField label="Home Highlight" id="hero-home" fileKey="homeHighlight" currentUrl={formData.homeHighlightImageUrl} fileData={files.homeHighlight} />
           <ImageUploadField label="Página Clínicas" id="hero-clinics" fileKey="clinicsHero" currentUrl={formData.clinicsHeroImageUrl} fileData={files.clinicsHero} />
-          <ImageUploadField label="Página Quem Somos" id="hero-about" fileKey="aboutHero" currentUrl={formData.aboutHeroImageUrl} fileData={files.aboutHero} />
+          <ImageUploadField label="Página Quem Somos (Topo)" id="hero-about" fileKey="aboutHero" currentUrl={formData.aboutHeroImageUrl} fileData={files.aboutHero} />
+          <ImageUploadField label="Missões (Fundo)" id="about-mission" fileKey="aboutMission" currentUrl={formData.aboutMissionImageUrl} fileData={files.aboutMission} />
+          <ImageUploadField label="Página Contato" id="hero-contact" fileKey="contactHero" currentUrl={formData.contactHeroImageUrl} fileData={files.contactHero} />
         </div>
       </div>
 
@@ -569,6 +576,65 @@ function SiteSettingsSection() {
             {(!formData.partners || formData.partners.length === 0) && (
               <div className="text-center py-10 border border-dashed border-slate-200 rounded-3xl">
                 <p className="text-sm text-slate-400 font-medium">Nenhum parceiro adicionado.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Clínicas</h3>
+            <Button size="sm" variant="ghost" className="text-red font-bold hover:bg-red/5" onClick={() => setFormData({ ...formData, clinics: [...(formData.clinics || []), { title: "", description: "", imageUrl: "", details: [] }] })}>
+              <Plus className="w-4 h-4 mr-1" /> Adicionar Clínica
+            </Button>
+          </div>
+          <div className="space-y-6">
+            {formData.clinics?.map((c: any, i: number) => (
+              <div key={i} className="p-6 rounded-[32px] bg-slate-50 border border-slate-100 flex flex-col gap-4 relative">
+                <button className="absolute top-4 right-4 text-slate-300 hover:text-red transition-colors" onClick={() => setFormData({ ...formData, clinics: formData.clinics.filter((_:any,idx:number)=>idx!==i) })}><Trash2 className="w-5 h-5" /></button>
+                
+                <input value={c.title} onChange={e => { const nc = [...formData.clinics]; nc[i].title = e.target.value; setFormData({ ...formData, clinics: nc }); }} className="h-12 bg-white border border-slate-100 rounded-xl px-4 text-sm font-bold" placeholder="Título da Clínica" />
+                <textarea value={c.description} onChange={e => { const nc = [...formData.clinics]; nc[i].description = e.target.value; setFormData({ ...formData, clinics: nc }); }} className="bg-white border border-slate-100 rounded-xl p-4 text-sm resize-none" rows={3} placeholder="Descrição curta..." />
+                
+                <div className="flex items-center gap-4">
+                  <div className="relative shrink-0">
+                    <input 
+                      type="file" 
+                      id={`clinic-img-${i}`}
+                      onChange={async (e) => { 
+                        const file = e.target.files?.[0]; 
+                        if (file) { 
+                          const dataUrl = await toDataUrl(file);
+                          const nc = [...formData.clinics]; 
+                          nc[i].imageFileDataUrl = dataUrl; 
+                          setFormData({ ...formData, clinics: nc }); 
+                        } 
+                      }} 
+                      className="hidden" 
+                    />
+                    <label htmlFor={`clinic-img-${i}`} className="w-24 h-24 bg-white border border-slate-200 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all overflow-hidden shadow-sm">
+                      {(c.imageFileDataUrl || c.imageUrl) ? <img src={c.imageFileDataUrl || c.imageUrl} className="w-full h-full object-cover" /> : <Upload className="w-6 h-6 text-slate-300" />}
+                    </label>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Detalhes (separados por vírgula)</label>
+                    <input 
+                      value={c.details?.join(", ") || ""} 
+                      onChange={e => { 
+                        const nc = [...formData.clinics]; 
+                        nc[i].details = e.target.value.split(",").map(s => s.trim()); 
+                        setFormData({ ...formData, clinics: nc }); 
+                      }} 
+                      className="w-full h-10 bg-white border border-slate-100 rounded-lg px-3 text-xs" 
+                      placeholder="Ex: Regras, Tática, Fundamentos" 
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(!formData.clinics || formData.clinics.length === 0) && (
+              <div className="text-center py-10 border border-dashed border-slate-200 rounded-3xl">
+                <p className="text-sm text-slate-400 font-medium">Nenhuma clínica cadastrada.</p>
               </div>
             )}
           </div>

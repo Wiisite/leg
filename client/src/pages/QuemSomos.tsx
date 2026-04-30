@@ -5,9 +5,11 @@ import { motion } from "framer-motion";
 import { Trophy, Users, Heart, Target, ChevronRight, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
+import { trpc } from "@/lib/trpc";
 
 export default function QuemSomos() {
   const [, navigate] = useLocation();
+  const { data: siteSettings } = trpc.site.getSettings.useQuery();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -58,21 +60,30 @@ export default function QuemSomos() {
       <SiteHeader />
 
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-primary/5 -z-10" />
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-red/10 rounded-full blur-3xl" />
+      <section className="relative py-20 md:py-32 overflow-hidden min-h-[400px] flex items-center">
+        {siteSettings?.aboutHeroImageUrl ? (
+          <div className="absolute inset-0 z-[-1]">
+            <img src={siteSettings.aboutHeroImageUrl} className="w-full h-full object-cover" alt="Hero background" />
+            <div className="absolute inset-0 bg-[#07174B]/80" />
+          </div>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-primary/5 -z-10" />
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-red/10 rounded-full blur-3xl" />
+          </>
+        )}
         
-        <div className="container">
+        <div className="container relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="max-w-3xl"
           >
-            <h1 className="text-4xl md:text-6xl font-black text-primary leading-tight mb-6">
+            <h1 className={`text-4xl md:text-6xl font-black leading-tight mb-6 ${siteSettings?.aboutHeroImageUrl ? 'text-white' : 'text-primary'}`}>
               Compromisso com o <br />
               <span className="text-red">Esporte Educacional</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+            <p className={`text-lg md:text-xl leading-relaxed ${siteSettings?.aboutHeroImageUrl ? 'text-blue-100/90' : 'text-muted-foreground'}`}>
               A Liga Escolar Guarulhense (LEG) nasceu com o objetivo de se tornar referência esportiva 
               para crianças e adolescentes matriculados nas escolas do município de Guarulhos.
             </p>
@@ -81,8 +92,14 @@ export default function QuemSomos() {
       </section>
 
       {/* Mission Section */}
-      <section className="py-20 bg-primary text-white">
-        <div className="container grid md:grid-cols-2 gap-12 items-center">
+      <section className="relative py-20 bg-primary text-white overflow-hidden">
+        {siteSettings?.aboutMissionImageUrl && (
+          <div className="absolute inset-0 z-0">
+            <img src={siteSettings.aboutMissionImageUrl} className="w-full h-full object-cover opacity-30" alt="Mission background" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/95 to-primary/80" />
+          </div>
+        )}
+        <div className="container relative z-10 grid md:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -102,18 +119,18 @@ export default function QuemSomos() {
           </motion.div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-4 pt-8">
-              <div className="aspect-square bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center p-6 text-center">
+              <div className="aspect-square bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-center p-6 text-center shadow-2xl">
                 <span className="text-sm font-bold">Respeito ao Atleta</span>
               </div>
-              <div className="aspect-square bg-red rounded-2xl flex items-center justify-center p-6 text-center">
+              <div className="aspect-square bg-red/90 backdrop-blur-md rounded-2xl flex items-center justify-center p-6 text-center shadow-2xl">
                 <span className="text-sm font-black uppercase">Organização Profissional</span>
               </div>
             </div>
             <div className="space-y-4">
-              <div className="aspect-square bg-white/10 rounded-2xl flex items-center justify-center p-6 text-center">
+              <div className="aspect-square bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center p-6 text-center shadow-2xl">
                 <span className="text-sm font-bold">Sociabilização</span>
               </div>
-              <div className="aspect-square bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center p-6 text-center">
+              <div className="aspect-square bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-center p-6 text-center shadow-2xl">
                 <span className="text-sm font-bold">Ética no Esporte</span>
               </div>
             </div>

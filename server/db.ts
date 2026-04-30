@@ -69,7 +69,7 @@ export async function getDb() {
           try {
             await _db!.execute(
               sql.raw(
-                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, homeHeroImagesJson LONGTEXT NULL, homeHeroTitlesJson LONGTEXT NULL, modalityBannerImagesJson LONGTEXT NULL, partnersJson TEXT NULL, liveStreamsJson LONGTEXT NULL, championshipAddressesJson LONGTEXT NULL, clinicsHeroImageUrl TEXT NULL, aboutHeroImageUrl TEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
+                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, homeHeroImagesJson LONGTEXT NULL, homeHeroTitlesJson LONGTEXT NULL, modalityBannerImagesJson LONGTEXT NULL, partnersJson TEXT NULL, liveStreamsJson LONGTEXT NULL, championshipAddressesJson LONGTEXT NULL, clinicsHeroImageUrl TEXT NULL, aboutHeroImageUrl TEXT NULL, aboutMissionImageUrl TEXT NULL, contactHeroImageUrl TEXT NULL, clinicsJson LONGTEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
               )
             );
           } catch (e) {

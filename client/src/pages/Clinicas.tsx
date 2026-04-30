@@ -5,42 +5,30 @@ import { motion } from "framer-motion";
 import { GraduationCap, Trophy, ChevronRight, ArrowLeft, Star, Users, Calendar } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
+import { trpc } from "@/lib/trpc";
 
 export default function Clinicas() {
   const [, navigate] = useLocation();
+  const { data: siteSettings } = trpc.site.getSettings.useQuery();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  const clinics = [
-    {
-      title: "Arbitragem de Vôlei de Praia",
-      description: "Capacitação técnica para árbitros e interessados nas regras oficiais da modalidade na areia.",
-      image: "https://images.unsplash.com/photo-1612872086822-48b6a421670f?auto=format&fit=crop&w=800&q=80",
-      details: ["Regras Oficiais", "Posicionamento", "Sinalização"],
-    },
-    {
-      title: "Xadrez Educacional",
-      description: "Clínicas focadas no desenvolvimento do raciocínio lógico e estratégias aplicadas ao ambiente escolar.",
-      image: "https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80",
-      details: ["Aberturas", "Finais de Jogo", "Tática"],
-    },
-    {
-      title: "Futsal de Alto Rendimento",
-      description: "Treinamentos específicos com treinadores experientes para aprimorar a técnica individual e coletiva.",
-      image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
-      details: ["Fundamentos", "Sistemas de Jogo", "Goleiros"],
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
 
       {/* Hero Section */}
-      <section className="relative py-20 bg-slate-900 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url(https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=1600&q=80)] opacity-20 bg-cover bg-center" />
+      <section className="relative py-20 bg-slate-900 text-white overflow-hidden min-h-[450px] flex items-center">
+        {siteSettings?.clinicsHeroImageUrl ? (
+          <div className="absolute inset-0 z-0">
+            <img src={siteSettings.clinicsHeroImageUrl} className="w-full h-full object-cover" alt="Clinics Hero" />
+            <div className="absolute inset-0 bg-slate-900/70" />
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-[url(https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=1600&q=80)] opacity-20 bg-cover bg-center" />
+        )}
         <div className="container relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -92,44 +80,64 @@ export default function Clinicas() {
             <div className="w-20 h-1.5 bg-red mx-auto rounded-full" />
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {clinics.map((clinic, idx) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {(siteSettings?.clinics && siteSettings.clinics.length > 0 ? siteSettings.clinics : [
+              {
+                title: "Arbitragem de Vôlei de Praia",
+                description: "Capacitação técnica para árbitros e interessados nas regras oficiais da modalidade na areia.",
+                imageUrl: "https://images.unsplash.com/photo-1612872086822-48b6a421670f?auto=format&fit=crop&w=800&q=80",
+                details: ["Regras Oficiais", "Posicionamento", "Sinalização"],
+              },
+              {
+                title: "Xadrez Educacional",
+                description: "Clínicas focadas no desenvolvimento do raciocínio lógico e estratégias aplicadas ao ambiente escolar.",
+                imageUrl: "https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80",
+                details: ["Aberturas", "Finais de Jogo", "Tática"],
+              },
+              {
+                title: "Futsal de Alto Rendimento",
+                description: "Treinamentos específicos com treinadores experientes para aprimorar a técnica individual e coletiva.",
+                imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
+                details: ["Fundamentos", "Sistemas de Jogo", "Goleiros"],
+              }
+            ]).map((clinic, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="group bg-white rounded-3xl border border-slate-200 shadow-lg overflow-hidden flex flex-col"
+                className="group bg-white rounded-3xl border border-slate-200 shadow-lg overflow-hidden flex flex-col hover:shadow-2xl transition-all"
               >
-                <div className="h-48 overflow-hidden relative">
+                <div className="h-56 overflow-hidden relative">
                   <img 
-                    src={clinic.image} 
+                    src={clinic.imageUrl} 
                     alt={clinic.title} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <span className="text-white font-black uppercase text-xs tracking-widest">Inscrições Abertas</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute bottom-5 left-5">
+                    <span className="bg-red text-white font-black uppercase text-[10px] tracking-widest px-3 py-1.5 rounded-full">Inscrições Abertas</span>
                   </div>
                 </div>
-                <div className="p-6 flex-1 flex flex-col">
-                  <h3 className="text-xl font-bold text-primary mb-3">{clinic.title}</h3>
+                <div className="p-8 flex-1 flex flex-col">
+                  <h3 className="text-2xl font-black text-primary mb-4 leading-tight">{clinic.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-6 flex-1">
                     {clinic.description}
                   </p>
-                  <div className="space-y-2 mb-8">
-                    {clinic.details.map((d, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                        <div className="w-1 h-1 bg-red rounded-full" />
-                        {d}
-                      </div>
-                    ))}
-                  </div>
+                  {clinic.details && clinic.details.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-8">
+                      {clinic.details.map((d, i) => (
+                        <span key={i} className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase">
+                          {d}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <Button 
-                    className="w-full bg-primary text-white font-bold text-xs py-5"
+                    className="w-full h-14 bg-red text-white font-black uppercase tracking-widest text-xs shadow-brand hover:opacity-90"
                     onClick={() => navigate("/contato")}
                   >
-                    Mais Informações
+                    Garantir Vaga
                   </Button>
                 </div>
               </motion.div>
