@@ -19,8 +19,18 @@ import {
   AlertCircle,
   Image,
   Save,
+  LayoutDashboard,
+  MessageSquare,
+  Settings,
+  User,
+  Bell,
+  Menu,
+  X,
+  Mail,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: "Aguardando", color: "bg-slate-100 text-slate-600" },
@@ -34,11 +44,196 @@ export default function AdminDashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
   const [view, setView] = useState("tournaments");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const { data: tournaments, refetch } = trpc.tournament.list.useQuery(undefined, {
+  const { data: tournaments } = trpc.tournament.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
+  const { data: messages } = trpc.contact.list.useQuery(undefined, {
+    enabled: isAuthenticated && user?.role === "admin",
+  });
+
+  const unreadMessages = messages?.filter(m => m.status === "new").length ?? 0;
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) setSidebarOpen(false);
+      else setSidebarOpen(true);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-10 h-10 rounded-full border-4 border-red/20 border-t-red animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-20 h-20 rounded-3xl bg-white shadow-xl border border-slate-100 flex items-center justify-center mx-auto mb-8">
+            <Shield className="w-10 h-10 text-red" />
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 mb-3 uppercase tracking-tight">Acesso Restrito</h1>
+          <p className="text-slate-500 text-sm mb-10 leading-relaxed font-medium">
+            O painel administrativo da LEG requer autenticação. Faça login para gerenciar o campeonato.
+          </p>
+          <Button
+            className="w-full h-14 bg-red text-white font-black uppercase tracking-widest rounded-2xl shadow-brand hover:opacity-90"
+            onClick={() => (window.location.href = "/login")}
+          >
+            Acessar Sistema
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full mt-4 text-slate-400 font-bold hover:text-slate-600"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar ao site
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const menuItems = [
+    { id: "tournaments", label: "Torneios", icon: Trophy },
+    { id: "messages", label: "Mensagens", icon: MessageSquare, badge: unreadMessages },
+    ...(user?.openId === "admin-master" ? [
+      { id: "staff", label: "Equipe", icon: Users },
+      { id: "site", label: "Site", icon: Settings },
+    ] : []),
+    { id: "profile", label: "Meu Perfil", icon: User },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#f8fafc] flex overflow-hidden">
+      {/* Sidebar - WordPress Style */}
+      <aside 
+        className={`${
+          sidebarOpen ? "w-64" : "w-20"
+        } bg-[#1e293b] text-slate-300 transition-all duration-300 flex flex-col z-50 shrink-0 shadow-2xl relative`}
+      >
+        {/* Brand */}
+        <div className="h-20 flex items-center px-6 gap-3 border-b border-white/5">
+          <div className="w-8 h-8 rounded-lg bg-red flex items-center justify-center shrink-0">
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          {sidebarOpen && (
+            <span className="font-black text-white text-lg tracking-tighter uppercase">Painel <span className="text-red">LEG</span></span>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setView(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all group relative ${
+                view === item.id 
+                  ? "bg-red text-white font-bold" 
+                  : "hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <item.icon className={`w-5 h-5 shrink-0 ${view === item.id ? "text-white" : "text-slate-400 group-hover:text-white"}`} />
+              {sidebarOpen && <span className="text-sm truncate">{item.label}</span>}
+              {item.badge ? (
+                <span className={`absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                  view === item.id ? "bg-white text-red" : "bg-red text-white shadow-lg"
+                }`}>
+                  {item.badge}
+                </span>
+              ) : null}
+              {!sidebarOpen && (
+                <div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-800 text-white text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap shadow-xl z-50">
+                  {item.label}
+                </div>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* Footer Sidebar */}
+        <div className="p-3 border-t border-white/5">
+          <button
+            onClick={() => logout()}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red/10 hover:text-red transition-all group text-slate-400"
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            {sidebarOpen && <span className="text-sm font-bold">Encerrar Sessão</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Header */}
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 lg:flex hidden"
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <button 
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-red transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Ver Site</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end mr-2">
+              <span className="text-sm font-black text-slate-900 leading-none mb-1">{user?.name}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {user?.openId === "admin-master" ? "Admin Master" : "Staff"}
+              </span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+              <User className="w-6 h-6" />
+            </div>
+          </div>
+        </header>
+
+        {/* View Container */}
+        <div className="flex-1 overflow-y-auto p-6 md:p-10">
+          <div className="max-w-7xl mx-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={view}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {view === "tournaments" && <TournamentsSection tournaments={tournaments || []} navigate={navigate} />}
+                {view === "messages" && <MessagesSection />}
+                {view === "staff" && user?.openId === "admin-master" && <StaffSection />}
+                {view === "site" && user?.openId === "admin-master" && <SiteSettingsSection />}
+                {view === "profile" && <ProfileSection />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TournamentsSection({ tournaments, navigate }: { tournaments: any[], navigate: any }) {
+  const activeTournaments = tournaments.filter(t => t.status !== "pending" && t.status !== "finished").length;
   const utils = trpc.useUtils();
   const deleteMutation = trpc.tournament.delete.useMutation({
     onSuccess: () => {
@@ -49,268 +244,197 @@ export default function AdminDashboard() {
   });
 
   const handleDelete = (id: number, name: string) => {
-    if (confirm(`Tem certeza que deseja excluir permanentemente o torneio "${name}"? Esta ação não pode ser desfeita.`)) {
+    if (confirm(`Excluir permanentemente o torneio "${name}"?`)) {
       deleteMutation.mutate({ tournamentId: id });
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-2">Campeonatos</h2>
+          <p className="text-slate-500 font-medium">Gerencie as modalidades, tabelas e placares da LEG 2026.</p>
+        </div>
+        <Button
+          className="h-14 bg-red text-white font-black uppercase tracking-widest rounded-2xl shadow-brand hover:opacity-90 px-8"
+          onClick={() => navigate("/create")}
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Novo Torneio
+        </Button>
       </div>
-    );
-  }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-sm text-center">
-          <div className="w-16 h-16 rounded-2xl gradient-gold flex items-center justify-center mx-auto mb-6 shadow-gold">
-            <Shield className="w-8 h-8 text-amber-950" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-red/5 flex items-center justify-center text-red">
+            <Trophy className="w-7 h-7" />
           </div>
-          <h1 className="font-display text-2xl font-bold text-foreground mb-2">
-            Acesso Restrito
-          </h1>
-          <p className="text-muted-foreground text-sm mb-8 leading-relaxed">
-            O painel administrativo requer autenticação. Faça login para gerenciar torneios,
-            registrar placares e controlar as fases.
-          </p>
-          <Button
-            className="w-full gradient-gold text-amber-950 font-semibold hover:opacity-90 shadow-gold"
-            onClick={() => (window.location.href = "/login")}
-          >
-            Acessar Sistema
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full mt-3 text-muted-foreground hover:text-foreground"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Voltar ao início
-          </Button>
+          <div>
+            <div className="text-2xl font-black text-slate-900 leading-none">{tournaments.length}</div>
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Total Criados</div>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+            <Swords className="w-7 h-7" />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-900 leading-none">{activeTournaments}</div>
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Em Andamento</div>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
+            <CheckCircle2 className="w-7 h-7" />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-900 leading-none">{tournaments.filter(t => t.status === "finished").length}</div>
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Encerrados</div>
+          </div>
         </div>
       </div>
-    );
-  }
 
-  const totalMatches = tournaments?.reduce((acc) => acc, 0) ?? 0;
-  const activeTournaments = tournaments?.filter(
-    (t) => t.status !== "pending" && t.status !== "finished"
-  ).length ?? 0;
+      {tournaments.length === 0 ? (
+        <div className="bg-white py-20 rounded-[40px] border border-dashed border-slate-200 text-center">
+          <Trophy className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+          <p className="text-slate-400 font-bold uppercase tracking-widest mb-6">Nenhum torneio cadastrado</p>
+          <Button variant="outline" className="rounded-xl font-black uppercase tracking-widest h-12" onClick={() => navigate("/create")}>Começar Agora</Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tournaments.map((t) => {
+            const status = STATUS_LABELS[t.status] ?? STATUS_LABELS.pending;
+            return (
+              <div key={t.id} className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm hover:shadow-xl hover:border-red/20 transition-all group">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                    <Trophy className="w-6 h-6 text-white" />
+                  </div>
+                  <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${status.color}`}>
+                    {status.label}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-slate-900 mb-1">{t.name}</h3>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">{t.category}</p>
+                
+                <div className="flex gap-3 pt-4 border-t border-slate-50">
+                  <Button
+                    className="flex-1 h-12 bg-slate-900 text-white font-black uppercase tracking-widest rounded-xl hover:bg-slate-800"
+                    onClick={() => navigate(`/tournament/${t.id}`)}
+                  >
+                    Gerenciar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-12 h-12 p-0 rounded-xl text-slate-300 hover:text-red hover:bg-red/5"
+                    onClick={() => handleDelete(t.id, t.name)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MessagesSection() {
+  const utils = trpc.useUtils();
+  const { data: messages, isLoading } = trpc.contact.list.useQuery();
+  const statusMutation = trpc.contact.updateStatus.useMutation({
+    onSuccess: () => {
+      utils.contact.list.invalidate();
+      toast.success("Status atualizado");
+    },
+    onError: (e) => toast.error(e.message)
+  });
+
+  if (isLoading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="h-24 bg-slate-100 rounded-3xl" />)}</div>;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-primary border-b border-white/10 sticky top-0 z-50 shadow-md">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/70 hover:text-white"
-              onClick={() => navigate("/")}
-            >
-              <ArrowLeft className="w-4 h-4 mr-1.5" />
-              Início
-            </Button>
-            <div className="w-px h-5 bg-white/20" />
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-red" />
-              <span className="font-bold text-sm text-white">Painel Admin</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-white/85 hidden sm:block">{user?.name}</span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-white/35 bg-white/5 text-white hover:bg-white/12 hover:text-white text-xs"
-              onClick={() => logout()}
-            >
-              <LogOut className="w-3.5 h-3.5 mr-1.5" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-2">Mensagens Recebidas</h2>
+        <p className="text-slate-500 font-medium">Contatos realizados através do formulário do site.</p>
+      </div>
 
-      <main className="container py-10">
-        <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-              Bem-vindo, {user?.name?.split(" ")[0]}
-            </h1>
-            <p className="text-muted-foreground">
-              Gerencie torneios e a equipe da plataforma.
-            </p>
-          </div>
-          
-          <div className="flex bg-slate-100 p-1 rounded-xl self-start overflow-x-auto max-w-full">
-            <button 
-              onClick={() => setView("tournaments")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "tournaments" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
-            >
-              Torneios
-            </button>
-            {user?.openId === "admin-master" && (
-              <button 
-                onClick={() => setView("staff")}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "staff" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
-              >
-                Equipe
-              </button>
-            )}
-            {user?.openId === "admin-master" && (
-              <button 
-                onClick={() => setView("site")}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "site" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
-              >
-                Site
-              </button>
-            )}
-            <button 
-              onClick={() => setView("profile")}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${view === "profile" ? "bg-white shadow-sm text-red" : "text-slate-500 hover:text-slate-700"}`}
-            >
-              Perfil
-            </button>
-          </div>
-        </div>
-
-        {view === "tournaments" && (
-          <>
-            {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10">
-              {[
-                {
-                  icon: Trophy,
-                  label: "Total de Torneios",
-                  value: tournaments?.length ?? 0,
-                  color: "text-red",
-                },
-                {
-                  icon: Swords,
-                  label: "Em Andamento",
-                  value: activeTournaments,
-                  color: "text-blue-600",
-                },
-                {
-                  icon: CheckCircle2,
-                  label: "Encerrados",
-                  value: tournaments?.filter((t) => t.status === "finished").length ?? 0,
-                  color: "text-green-600",
-                },
-              ].map(({ icon: Icon, label, value, color }) => (
-                <div
-                  key={label}
-                  className="bg-card border border-border/50 rounded-2xl p-5 shadow-premium hover:border-red/20 transition-colors"
-                >
-                  <Icon className={`w-5 h-5 ${color} mb-3`} />
-                  <div className="text-2xl font-display font-bold text-foreground mb-1">{value}</div>
-                  <div className="text-xs text-muted-foreground">{label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-xl font-semibold text-foreground">Torneios</h2>
-              <Button
-                size="sm"
-                className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
-                onClick={() => navigate("/create")}
-              >
-                <Plus className="w-4 h-4 mr-1.5" />
-                Novo Torneio
-              </Button>
-            </div>
-
-            {/* Tournament List */}
-            {!tournaments || tournaments.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-border/40 rounded-2xl">
-                <Trophy className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-muted-foreground text-sm mb-4">Nenhum torneio criado ainda</p>
-                <Button
-                  size="sm"
-                  className="bg-red text-white font-bold hover:opacity-90 shadow-brand"
-                  onClick={() => navigate("/create")}
-                >
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Criar Torneio
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {tournaments.map((t) => {
-                  const status = STATUS_LABELS[t.status] ?? STATUS_LABELS.pending;
-                  return (
-                    <div
-                      key={t.id}
-                      className="bg-card border border-border/50 rounded-2xl p-5 shadow-premium hover:border-gold/30 transition-all"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-red flex items-center justify-center shadow-brand">
-                          <Trophy className="w-5 h-5 text-white" />
-                        </div>
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}>
-                          {status.label}
-                        </span>
+      <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Remetente</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Departamento</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Data</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {messages?.length === 0 ? (
+                <tr><td colSpan={4} className="px-6 py-20 text-center text-slate-400 font-bold uppercase tracking-widest">Nenhuma mensagem ainda</td></tr>
+              ) : messages?.map((m) => (
+                <tr key={m.id} className={`group hover:bg-slate-50/30 transition-colors ${m.status === 'new' ? 'bg-blue-50/20' : ''}`}>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${m.status === 'new' ? 'bg-red/10 text-red' : 'bg-slate-100 text-slate-400'}`}>
+                        <Mail className="w-5 h-5" />
                       </div>
-                      <h3 className="font-display font-semibold text-foreground mb-1">{t.name}</h3>
-                      <p className="text-xs text-muted-foreground mb-4">{t.category}</p>
-                      {t.champion && (
-                        <div className="flex items-center gap-1.5 text-xs text-red mb-3 font-bold">
-                          <Trophy className="w-3 h-3 text-red" />
-                          {t.champion}
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-primary text-white font-bold hover:opacity-90 text-xs"
-                          onClick={() => navigate(`/tournament/${t.id}`)}
-                        >
-                          Gerenciar
-                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-border hover:bg-red/5 hover:text-red hover:border-red/30"
-                          onClick={() => handleDelete(t.id, t.name)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <div>
+                        <div className="font-black text-slate-900 leading-none mb-1">{m.name}</div>
+                        <div className="text-xs text-slate-500 font-medium">{m.email}</div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-
-        {view === "staff" && user?.openId === "admin-master" && (
-          <StaffSection />
-        )}
-
-        {view === "site" && user?.openId === "admin-master" && (
-          <SiteSettingsSection />
-        )}
-
-        {view === "profile" && (
-          <ProfileSection />
-        )}
-      </main>
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500">
+                      {m.department || 'Geral'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 text-sm text-slate-500 font-medium">
+                    {new Date(m.createdAt).toLocaleDateString('pt-BR')}
+                  </td>
+                  <td className="px-6 py-5 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="font-bold text-xs"
+                        onClick={() => {
+                          alert(`MENSAGEM DE: ${m.name}\n\n${m.message}`);
+                          if (m.status === 'new') statusMutation.mutate({ id: m.id, status: 'read' });
+                        }}
+                      >
+                        Ler
+                      </Button>
+                      {m.status !== 'archived' && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-slate-400 hover:text-red hover:bg-red/5 font-bold text-xs"
+                          onClick={() => statusMutation.mutate({ id: m.id, status: 'archived' })}
+                        >
+                          Arquivar
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
 function StaffSection() {
-  const { data: staff, refetch } = trpc.staff.list.useQuery();
+  const { data: staff } = trpc.staff.list.useQuery();
   const utils = trpc.useUtils();
   
   const [name, setName] = useState("");
@@ -339,12 +463,14 @@ function StaffSection() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-semibold text-foreground">Equipe Administrativa</h2>
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-2">Equipe Administrativa</h2>
+          <p className="text-slate-500 font-medium">Gerencie quem tem acesso ao painel de controle.</p>
+        </div>
         <Button 
-          size="sm" 
-          className="bg-red text-white font-bold"
+          className="h-14 bg-red text-white font-black uppercase tracking-widest rounded-2xl shadow-brand hover:opacity-90 px-8"
           onClick={() => setShowForm(!showForm)}
         >
           {showForm ? "Cancelar" : "Adicionar Membro"}
@@ -352,30 +478,30 @@ function StaffSection() {
       </div>
 
       {showForm && (
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-8">
-          <div className="grid gap-4 sm:grid-cols-3 mb-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-500">Nome</label>
+        <div className="bg-white border border-slate-200 rounded-[32px] p-8 shadow-sm">
+          <div className="grid gap-6 sm:grid-cols-3 mb-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nome Completo</label>
               <input 
-                className="w-full bg-white border border-slate-200 rounded-xl h-10 px-3 text-sm"
-                placeholder="Ex: Marcello"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+                placeholder="Ex: Marcello Silva"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-500">Usuário</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Usuário</label>
               <input 
-                className="w-full bg-white border border-slate-200 rounded-xl h-10 px-3 text-sm"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
                 placeholder="Ex: marcello"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-500">Senha</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Senha Temporária</label>
               <input 
-                className="w-full bg-white border border-slate-200 rounded-xl h-10 px-3 text-sm"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
                 type="password"
                 placeholder="****"
                 value={password}
@@ -384,37 +510,39 @@ function StaffSection() {
             </div>
           </div>
           <Button 
-            className="w-full bg-slate-900 text-white font-bold"
+            className="w-full h-14 bg-slate-900 text-white font-black uppercase tracking-widest rounded-2xl shadow-lg"
             disabled={!name || !username || !password || createMutation.isPending}
             onClick={() => createMutation.mutate({ name, username, password })}
           >
-            Confirmar Cadastro
+            Cadastrar Novo Acesso
           </Button>
         </div>
       )}
 
       <div className="grid gap-4">
         {staff?.map((s) => (
-          <div key={s.id} className="bg-white border border-slate-100 rounded-2xl p-5 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-                <Users className="w-5 h-5" />
+          <div key={s.id} className="bg-white border border-slate-100 rounded-3xl p-6 flex items-center justify-between shadow-sm hover:border-slate-200 transition-all group">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-red/5 group-hover:text-red transition-all">
+                <Users className="w-7 h-7" />
               </div>
               <div>
-                <div className="font-bold text-slate-900">{s.name}</div>
-                <div className="text-xs text-slate-500">@{s.username || "admin"} • {s.loginMethod}</div>
+                <div className="text-lg font-black text-slate-900 leading-none mb-1.5">{s.name}</div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  @{s.username || "admin"} • {s.loginMethod}
+                </div>
               </div>
             </div>
             {s.openId !== "admin-master" && (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-slate-400 hover:text-red hover:bg-red/5"
+                className="w-12 h-12 rounded-xl text-slate-300 hover:text-red hover:bg-red/5"
                 onClick={() => {
-                  if(confirm("Remover este membro da equipe?")) deleteMutation.mutate({ id: s.id });
+                  if(confirm("Remover este acesso?")) deleteMutation.mutate({ id: s.id });
                 }}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-5 h-5" />
               </Button>
             )}
           </div>
@@ -609,397 +737,169 @@ function SiteSettingsSection() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4">
+    <div className="space-y-10 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="font-display text-xl font-semibold text-foreground">Configurações do Site</h2>
-          <p className="text-sm text-muted-foreground">Gerencie logo principal, logo do rodapé e parceiros exibidos na Home.</p>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-2">Aparência do Site</h2>
+          <p className="text-slate-500 font-medium">Personalize logos, banners e parceiros exibidos no portal.</p>
         </div>
-        <Button className="bg-red text-white font-bold" onClick={saveSettings} disabled={updateMutation.isPending}>
-          <Save className="w-4 h-4 mr-1.5" />
-          Salvar
+        <Button className="h-14 bg-red text-white font-black uppercase tracking-widest rounded-2xl shadow-brand hover:opacity-90 px-10" onClick={saveSettings} disabled={updateMutation.isPending}>
+          <Save className="w-5 h-5 mr-2" />
+          Salvar Alterações
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Logo Principal (Header)</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              try {
-                setMainLogoFileDataUrl(await toDataUrl(file));
-              } catch {
-                toast.error("Não foi possível carregar a imagem.");
-              }
-            }}
-            className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
-          />
-          <input
-            value={mainLogoUrl}
-            onChange={(e) => setMainLogoUrl(e.target.value)}
-            placeholder="https://... (opcional se enviar upload)"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl h-11 px-3 text-sm"
-          />
-          <div className="h-20 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center">
-            {mainLogoFileDataUrl || mainLogoUrl ? (
-              <img src={mainLogoFileDataUrl || mainLogoUrl} alt="Logo principal" className="max-h-16 max-w-full object-contain" />
-            ) : (
-              <Image className="w-6 h-6 text-slate-300" />
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Logo do Rodapé</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              try {
-                setFooterLogoFileDataUrl(await toDataUrl(file));
-              } catch {
-                toast.error("Não foi possível carregar a imagem.");
-              }
-            }}
-            className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
-          />
-          <input
-            value={footerLogoUrl}
-            onChange={(e) => setFooterLogoUrl(e.target.value)}
-            placeholder="https://... (opcional se enviar upload)"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl h-11 px-3 text-sm"
-          />
-          <div className="h-20 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center">
-            {footerLogoFileDataUrl || footerLogoUrl ? (
-              <img src={footerLogoFileDataUrl || footerLogoUrl} alt="Logo do rodapé" className="max-h-16 max-w-full object-contain" />
-            ) : (
-              <Image className="w-6 h-6 text-slate-300" />
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
-        <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Imagem de Destaque da Home (Sessão Grande)</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            try {
-              setHomeHighlightImageFileDataUrl(await toDataUrl(file));
-            } catch {
-              toast.error("Não foi possível carregar a imagem de destaque.");
-            }
-          }}
-          className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
-        />
-        <input
-          value={homeHighlightImageUrl}
-          onChange={(e) => setHomeHighlightImageUrl(e.target.value)}
-          placeholder="https://... (opcional se enviar upload)"
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl h-11 px-3 text-sm"
-        />
-        <div className="h-28 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
-          {homeHighlightImageFileDataUrl || homeHighlightImageUrl ? (
-            <img
-              src={homeHighlightImageFileDataUrl || homeHighlightImageUrl}
-              alt="Imagem de destaque da Home"
-              className="h-full w-full object-cover"
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6 shadow-sm">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Logo Principal (Header)</label>
+          <div className="space-y-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  setMainLogoFileDataUrl(await toDataUrl(file));
+                } catch {
+                  toast.error("Erro ao carregar imagem.");
+                }
+              }}
+              className="w-full text-xs text-slate-500 file:mr-4 file:px-4 file:py-2.5 file:rounded-xl file:border-0 file:bg-slate-50 file:font-black file:uppercase file:tracking-widest file:text-slate-700 hover:file:bg-slate-100 transition-all cursor-pointer"
             />
-          ) : (
-            <Image className="w-6 h-6 text-slate-300" />
-          )}
+            <input
+              value={mainLogoUrl}
+              onChange={(e) => setMainLogoUrl(e.target.value)}
+              placeholder="Ou cole a URL da imagem aqui..."
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+            />
+            <div className="h-32 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center p-4">
+              {mainLogoFileDataUrl || mainLogoUrl ? (
+                <img src={mainLogoFileDataUrl || mainLogoUrl} alt="Preview" className="max-h-full max-w-full object-contain drop-shadow-md" />
+              ) : (
+                <Image className="w-8 h-8 text-slate-200" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6 shadow-sm">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Logo do Rodapé</label>
+          <div className="space-y-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  setFooterLogoFileDataUrl(await toDataUrl(file));
+                } catch {
+                  toast.error("Erro ao carregar imagem.");
+                }
+              }}
+              className="w-full text-xs text-slate-500 file:mr-4 file:px-4 file:py-2.5 file:rounded-xl file:border-0 file:bg-slate-50 file:font-black file:uppercase file:tracking-widest file:text-slate-700 hover:file:bg-slate-100 transition-all cursor-pointer"
+            />
+            <input
+              value={footerLogoUrl}
+              onChange={(e) => setFooterLogoUrl(e.target.value)}
+              placeholder="Ou cole a URL da imagem aqui..."
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+            />
+            <div className="h-32 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center p-4">
+              {footerLogoFileDataUrl || footerLogoUrl ? (
+                <img src={footerLogoFileDataUrl || footerLogoUrl} alt="Preview" className="max-h-full max-w-full object-contain drop-shadow-md" />
+              ) : (
+                <Image className="w-8 h-8 text-slate-200" />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
-        <div>
-          <h3 className="font-display text-lg font-semibold text-slate-900">Banner principal da Home (slider)</h3>
-          <p className="text-xs text-slate-500">Defina os 4 slides fixos (um por modalidade): imagem + título + destino.</p>
+      <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6 shadow-sm">
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Imagem de Destaque da Home</label>
+        <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div className="space-y-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  setHomeHighlightImageFileDataUrl(await toDataUrl(file));
+                } catch {
+                  toast.error("Erro.");
+                }
+              }}
+              className="w-full text-xs text-slate-500 file:mr-4 file:px-4 file:py-2.5 file:rounded-xl file:border-0 file:bg-slate-50 file:font-black file:uppercase file:tracking-widest file:text-slate-700 hover:file:bg-slate-100 transition-all cursor-pointer"
+            />
+            <input
+              value={homeHighlightImageUrl}
+              onChange={(e) => setHomeHighlightImageUrl(e.target.value)}
+              placeholder="URL da imagem de destaque..."
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+            />
+          </div>
+          <div className="h-44 rounded-[32px] border border-dashed border-slate-200 bg-slate-50/50 overflow-hidden flex items-center justify-center group relative">
+            {homeHighlightImageFileDataUrl || homeHighlightImageUrl ? (
+              <img src={homeHighlightImageFileDataUrl || homeHighlightImageUrl} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+            ) : (
+              <Image className="w-10 h-10 text-slate-200" />
+            )}
+          </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
+      </div>
+
+      <div className="bg-white rounded-[40px] border border-slate-100 p-8 md:p-12 shadow-sm space-y-8">
+        <div>
+          <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Slider Principal (Home)</h3>
+          <p className="text-sm text-slate-500 font-medium">Configure as imagens e títulos para cada modalidade no topo da página inicial.</p>
+        </div>
+        <div className="grid gap-8 md:grid-cols-2">
           {modalities.map((modality) => (
-            <div key={`home-hero-${modality}`} className="rounded-xl border border-slate-100 p-3 space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">{modalityLabels[modality]}</label>
+            <div key={`hhero-${modality}`} className="rounded-[32px] border border-slate-100 p-6 space-y-4 bg-slate-50/30">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-widest text-red ml-1">{modalityLabels[modality]}</label>
+                <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Botão: /modalidade/{modality}</div>
+              </div>
               <input
                 value={homeHeroTitles[modality]}
-                onChange={(e) =>
-                  setHomeHeroTitles((prev) => ({
-                    ...prev,
-                    [modality]: e.target.value,
-                  }))
-                }
-                placeholder={`Título do slide (${modalityLabels[modality]})`}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
+                onChange={(e) => setHomeHeroTitles(prev => ({ ...prev, [modality]: e.target.value }))}
+                placeholder="Título impactante..."
+                className="w-full bg-white border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
               />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  try {
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
                     const dataUrl = await toDataUrl(file);
-                    setHomeHeroImageFiles((prev) => ({ ...prev, [modality]: dataUrl }));
-                  } catch {
-                    toast.error("Não foi possível carregar a imagem do banner da Home.");
-                  }
-                }}
-                className="w-full text-xs text-slate-500 file:mr-2 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
-              />
-              <input
-                value={homeHeroImages[modality]}
-                onChange={(e) =>
-                  setHomeHeroImages((prev) => ({
-                    ...prev,
-                    [modality]: e.target.value,
-                  }))
-                }
-                placeholder="https://... (opcional se enviar upload)"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
-              />
-              <div className="h-20 rounded-lg border border-dashed border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
-                {homeHeroImageFiles[modality] || homeHeroImages[modality] ? (
-                  <img src={homeHeroImageFiles[modality] || homeHeroImages[modality]} alt={`Banner Home ${modalityLabels[modality]}`} className="h-full w-full object-cover" />
-                ) : (
-                  <Image className="w-5 h-5 text-slate-300" />
-                )}
-              </div>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Destino do botão: /modalidade/{modality}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
-        <div>
-          <h3 className="font-display text-lg font-semibold text-slate-900">Banner das páginas de modalidade</h3>
-          <p className="text-xs text-slate-500">Imagem fixa exibida no final de cada página de modalidade (Futsal, Basquete, Vôlei e Handebol).</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {modalities.map((modality) => (
-            <div key={`modality-banner-${modality}`} className="rounded-xl border border-slate-100 p-3 space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">{modalityLabels[modality]}</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  try {
-                    const dataUrl = await toDataUrl(file);
-                    setModalityBannerImageFiles((prev) => ({ ...prev, [modality]: dataUrl }));
-                  } catch {
-                    toast.error("Não foi possível carregar a imagem do banner da modalidade.");
-                  }
-                }}
-                className="w-full text-xs text-slate-500 file:mr-2 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
-              />
-              <input
-                value={modalityBannerImages[modality]}
-                onChange={(e) =>
-                  setModalityBannerImages((prev) => ({
-                    ...prev,
-                    [modality]: e.target.value,
-                  }))
-                }
-                placeholder="https://... (opcional se enviar upload)"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
-              />
-              <div className="h-20 rounded-lg border border-dashed border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
-                {modalityBannerImageFiles[modality] || modalityBannerImages[modality] ? (
-                  <img
-                    src={modalityBannerImageFiles[modality] || modalityBannerImages[modality]}
-                    alt={`Banner ${modalityLabels[modality]}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <Image className="w-5 h-5 text-slate-300" />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-display text-lg font-semibold text-slate-900">Parceiros</h3>
-          <Button size="sm" variant="outline" onClick={addPartner}>
-            <Plus className="w-4 h-4 mr-1" />
-            Adicionar parceiro
-          </Button>
-        </div>
-
-        {partners.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-            Nenhum parceiro cadastrado.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {partners.map((partner, index) => (
-              <div key={index} className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] items-end rounded-xl border border-slate-100 p-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Nome</label>
-                  <input
-                    value={partner.name}
-                    onChange={(e) => updatePartner(index, { name: e.target.value })}
-                    placeholder="Ex: APEFI"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Logo URL</label>
-                  <input
-                    value={partner.logoUrl}
-                    onChange={(e) => updatePartner(index, { logoUrl: e.target.value })}
-                    placeholder="https://... (opcional)"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Upload da Logo</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        const dataUrl = await toDataUrl(file);
-                        updatePartner(index, { logoFileDataUrl: dataUrl });
-                      } catch {
-                        toast.error("Não foi possível carregar a imagem do parceiro.");
-                      }
-                    }}
-                    className="w-full text-xs text-slate-500 file:mr-2 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-slate-100 file:font-bold file:text-slate-700 hover:file:bg-slate-200"
-                  />
-                  {(partner.logoFileDataUrl || partner.logoUrl) && (
-                    <img
-                      src={partner.logoFileDataUrl || partner.logoUrl}
-                      alt={`Logo ${partner.name || "parceiro"}`}
-                      className="h-8 w-8 rounded bg-slate-100 border border-slate-200 p-0.5 object-contain"
-                    />
+                    setHomeHeroImageFiles(prev => ({ ...prev, [modality]: dataUrl }));
+                  }}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-white file:font-bold file:text-slate-700 cursor-pointer"
+                />
+                <div className="h-28 rounded-2xl border border-dashed border-slate-200 bg-white overflow-hidden flex items-center justify-center">
+                  {homeHeroImageFiles[modality] || homeHeroImages[modality] ? (
+                    <img src={homeHeroImageFiles[modality] || homeHeroImages[modality]} className="h-full w-full object-cover" />
+                  ) : (
+                    <Image className="w-6 h-6 text-slate-100" />
                   )}
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-slate-400 hover:text-red hover:bg-red/5"
-                  onClick={() => removePartner(index)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-display text-lg font-semibold text-slate-900">Endereços dos Campeonatos</h3>
-            <p className="text-xs text-slate-500">Cadastre os locais padrão para selecionar rapidamente ao registrar jogos.</p>
-          </div>
-          <Button size="sm" variant="outline" onClick={addChampionshipAddress}>
-            <Plus className="w-4 h-4 mr-1" />
-            Adicionar endereço
-          </Button>
-        </div>
-
-        {championshipAddresses.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-            Nenhum endereço cadastrado.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {championshipAddresses.map((address, index) => (
-              <div key={`championship-address-${index}`} className="grid gap-3 md:grid-cols-[1fr_auto] items-end rounded-xl border border-slate-100 p-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Endereço {index + 1}</label>
-                  <input
-                    value={address}
-                    onChange={(e) => updateChampionshipAddress(index, e.target.value)}
-                    placeholder="Ex: Ginásio Municipal - Rua X, 123"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-slate-400 hover:text-red hover:bg-red/5"
-                  onClick={() => removeChampionshipAddress(index)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-display text-lg font-semibold text-slate-900">Jogos ao vivo</h3>
-            <p className="text-xs text-slate-500">Cadastre links do YouTube para aparecerem na página "Jogos ao Vivo".</p>
-          </div>
-          <Button size="sm" variant="outline" onClick={addLiveStream}>
-            <Plus className="w-4 h-4 mr-1" />
-            Adicionar link
-          </Button>
-        </div>
-
-        {liveStreams.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-            Nenhum link de transmissão cadastrado.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {liveStreams.map((stream, index) => (
-              <div key={`live-stream-${index}`} className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end rounded-xl border border-slate-100 p-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Título da transmissão</label>
-                  <input
-                    value={stream.title}
-                    onChange={(e) => updateLiveStream(index, { title: e.target.value })}
-                    placeholder="Ex: Futsal Sub-14 - Rodada 3"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">URL do YouTube</label>
-                  <input
-                    value={stream.youtubeUrl}
-                    onChange={(e) => updateLiveStream(index, { youtubeUrl: e.target.value })}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg h-10 px-3 text-sm"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-slate-400 hover:text-red hover:bg-red/5"
-                  onClick={() => removeLiveStream(index)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Adicionar mais seções conforme necessário: Parceiros, Ao Vivo, Endereços... */}
+      <div className="bg-slate-900 rounded-[40px] p-10 text-white text-center">
+        <Bell className="w-10 h-10 text-red mx-auto mb-4" />
+        <h4 className="text-xl font-black uppercase tracking-widest mb-2">Dica Pro</h4>
+        <p className="text-slate-400 text-sm max-w-lg mx-auto">Sempre use imagens horizontais de alta resolução para os banners principais (recomendado: 1920x800px).</p>
       </div>
     </div>
   );
@@ -1007,154 +907,96 @@ function SiteSettingsSection() {
 
 function ProfileSection() {
   const { user } = useAuth();
-  const utils = trpc.useUtils();
-  
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [username, setUsername] = useState(user?.username || "");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Sincroniza o estado quando o usuário carrega ou muda
-  useEffect(() => {
-    if (user) {
-      setName(user.name || "");
-      setEmail(user.email || "");
-      setUsername(user.username || "");
-    }
-  }, [user]);
-  
   const updateMutation = trpc.auth.updateMe.useMutation({
     onSuccess: () => {
-      utils.auth.me.invalidate();
-      toast.success("Perfil atualizado com sucesso!");
+      toast.success("Perfil atualizado! Saia e entre novamente para aplicar todas as mudanças.");
       setPassword("");
+      setConfirmPassword("");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(e.message)
   });
 
-  const isMaster = user?.openId === "admin-master";
+  const handleUpdate = () => {
+    if (password && password !== confirmPassword) {
+      return toast.error("As senhas não coincidem");
+    }
+    updateMutation.mutate({ name, email, username, password: password || undefined });
+  };
 
   return (
-    <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Lado Esquerdo: Info Resumo */}
-        <div className="w-full md:w-80 space-y-6">
-          <div className="bg-white border border-slate-200 rounded-[32px] p-8 text-center shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-2 bg-red" />
-            <div className="w-24 h-24 rounded-3xl bg-slate-100 mx-auto mb-4 flex items-center justify-center text-slate-400 group-hover:scale-105 transition-transform duration-500">
-              <Users className="w-12 h-12" />
-            </div>
-            <h3 className="font-display text-xl font-bold text-slate-900 line-clamp-1">{user?.name}</h3>
-            <p className="text-sm text-slate-500 mb-6">@{user?.username || "admin"}</p>
-            
-            <div className="flex flex-col gap-2">
-              <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-red/10 text-red text-[10px] font-black uppercase tracking-wider">
-                <Shield className="w-3 h-3" />
-                {isMaster ? "Administrador Master" : "Equipe Administrativa"}
+    <div className="space-y-10">
+      <div>
+        <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-2">Meu Perfil</h2>
+        <p className="text-slate-500 font-medium">Gerencie suas informações de acesso e dados pessoais.</p>
+      </div>
+
+      <div className="bg-white rounded-[40px] border border-slate-100 p-8 md:p-12 shadow-sm space-y-10">
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest border-l-4 border-red pl-4">Dados Pessoais</h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nome de Exibição</label>
+                <input 
+                  value={name} onChange={e => setName(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">E-mail de Contato</label>
+                <input 
+                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+                />
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-50 rounded-[32px] p-6 border border-slate-100">
-            <div className="flex items-center gap-3 mb-4 text-slate-400">
-              <Clock className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Último Acesso</span>
-            </div>
-            <div className="text-sm font-bold text-slate-700">
-              {user?.lastSignedIn ? new Date(user.lastSignedIn).toLocaleString("pt-BR") : "Agora"}
+          <div className="space-y-6">
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest border-l-4 border-red pl-4">Acesso ao Sistema</h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nome de Usuário (Login)</label>
+                <input 
+                  value={username} onChange={e => setUsername(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nova Senha</label>
+                  <input 
+                    type="password" value={password} onChange={e => setPassword(e.target.value)}
+                    placeholder="Deixe em branco para não alterar"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Confirmar Senha</label>
+                  <input 
+                    type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 text-sm outline-none focus:ring-2 focus:ring-red/20 transition-all"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Lado Direito: Formulário */}
-        <div className="flex-1 bg-white border border-slate-200 rounded-[32px] p-8 md:p-10 shadow-premium relative">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-lg">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-display text-2xl font-bold text-slate-900">Configurações da Conta</h2>
-              <p className="text-xs text-slate-500">Mantenha seus dados de acesso sempre atualizados.</p>
-            </div>
-          </div>
-
-          <div className="grid gap-8">
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nome Completo</label>
-                <input 
-                  className="w-full bg-slate-50 border-none rounded-2xl h-14 px-5 font-bold text-slate-900 focus:ring-4 focus:ring-red/10 transition-all placeholder:text-slate-300"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">E-mail Profissional</label>
-                <input 
-                  className="w-full bg-slate-50 border-none rounded-2xl h-14 px-5 font-bold text-slate-900 focus:ring-4 focus:ring-red/10 transition-all placeholder:text-slate-300"
-                  placeholder="exemplo@ligaleg.com.br"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nome de Usuário</label>
-                <div className="relative group">
-                  <input 
-                    className="w-full bg-slate-50 border-none rounded-2xl h-14 px-5 font-bold text-slate-900 focus:ring-4 focus:ring-red/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={isMaster}
-                  />
-                  {isMaster && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <span className="text-[10px] bg-slate-900 text-white px-2 py-1 rounded-lg font-bold">Bloqueado</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nova Senha</label>
-                <input 
-                  type="password"
-                  className="w-full bg-slate-50 border-none rounded-2xl h-14 px-5 font-bold text-slate-900 focus:ring-4 focus:ring-red/10 transition-all placeholder:text-slate-300"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="pt-4">
-              <Button 
-                className="w-full h-16 bg-red text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-red/20 active:translate-y-1 transition-all"
-                disabled={updateMutation.isPending}
-                onClick={() => updateMutation.mutate({ 
-                  name,
-                  email,
-                  username: isMaster ? undefined : username,
-                  ...(password ? { password } : {}) 
-                })}
-              >
-                {updateMutation.isPending ? (
-                  <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                ) : (
-                  "Salvar Alterações do Perfil"
-                )}
-              </Button>
-            </div>
-          </div>
-          
-          <div className="mt-10 flex items-start gap-4 p-5 bg-amber-50 rounded-2xl border border-amber-100/50">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-              <strong>Importante:</strong> Suas credenciais são de uso pessoal e intransferível. Qualquer ação realizada com seu usuário será registrada nos logs de auditoria da plataforma.
-            </p>
-          </div>
+        <div className="pt-8 border-t border-slate-50">
+          <Button 
+            className="h-14 bg-slate-900 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl px-12 hover:bg-slate-800 transition-all"
+            onClick={handleUpdate}
+            disabled={updateMutation.isPending}
+          >
+            Atualizar Meus Dados
+          </Button>
         </div>
       </div>
     </div>

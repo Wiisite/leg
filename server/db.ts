@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, matches, siteSettings, teams, tournaments, users } from "../drizzle/schema";
+import { contactMessages, InsertContactMessage, InsertUser, matches, siteSettings, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 import { migrate } from "drizzle-orm/mysql2/migrator";
@@ -55,6 +55,16 @@ export async function getDb() {
           await fixColumn("tournaments", "homeAndAway", "INT NOT NULL DEFAULT 0");
           await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
           await fixColumn("users", "password", "TEXT NULL");
+
+          try {
+            await _db!.execute(
+              sql.raw(
+                "CREATE TABLE IF NOT EXISTS contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name TEXT NOT NULL, email VARCHAR(320) NOT NULL, department VARCHAR(100) NULL, message TEXT NOT NULL, status ENUM('new', 'read', 'archived') NOT NULL DEFAULT 'new', createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+              )
+            );
+          } catch (e) {
+            // Ignora erro para manter startup resiliente
+          }
 
           try {
             await _db!.execute(
@@ -601,4 +611,30 @@ export async function upsertSiteSettings(data: {
   }
 
   return getSiteSettings();
+}
+
+// ─── Contact Messages ─────────────────────────────────────────────────────────
+
+export async function createContactMessage(data: InsertContactMessage) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.insert(contactMessages).values(data);
+}
+
+export async function getAllContactMessages() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(contactMessages).orderBy(sql`${contactMessages.createdAt} DESC`);
+}
+
+export async function updateMessageStatus(id: number, status: "new" | "read" | "archived") {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(contactMessages).set({ status }).where(eq(contactMessages.id, id));
+}
+
+export async function deleteMessage(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(contactMessages).where(eq(contactMessages.id, id));
 }

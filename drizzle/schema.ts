@@ -107,3 +107,18 @@ export const siteSettings = mysqlTable("site_settings", {
 
 export type SiteSettings = typeof siteSettings.$inferSelect;
 export type InsertSiteSettings = typeof siteSettings.$inferInsert;
+ 
+ // ─── Contact Messages ─────────────────────────────────────────────────────────
+ 
+ export const contactMessages = mysqlTable("contact_messages", {
+   id: int("id").autoincrement().primaryKey(),
+   name: text("name").notNull(),
+   email: varchar("email", { length: 320 }).notNull(),
+   department: varchar("department", { length: 100 }),
+   message: text("message").notNull(),
+   status: mysqlEnum("status", ["new", "read", "archived"]).default("new").notNull(),
+   createdAt: timestamp("createdAt").defaultNow().notNull(),
+ });
+ 
+ export type ContactMessage = typeof contactMessages.$inferSelect;
+ export type InsertContactMessage = typeof contactMessages.$inferInsert;

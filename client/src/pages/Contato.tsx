@@ -6,24 +6,32 @@ import { Mail, Phone, MapPin, Send, MessageSquare, Instagram, Youtube, ArrowLeft
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 export default function Contato() {
   const [, navigate] = useLocation();
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    department: "Competições / Geral",
+    message: "",
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  const sendMutation = trpc.contact.send.useMutation({
+    onSuccess: () => {
+      toast.success("Mensagem enviada com sucesso! Em breve entraremos em contato.");
+      setFormData({ name: "", email: "", department: "Competições / Geral", message: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    // Simular envio
-    setTimeout(() => {
-      setLoading(false);
-      toast.success("Mensagem enviada com sucesso! Em breve entraremos em contato.");
-      (e.target as HTMLFormElement).reset();
-    }, 1500);
+    sendMutation.mutate(formData);
   };
 
   return (
@@ -137,6 +145,8 @@ export default function Contato() {
                     required
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 px-5 text-sm focus:bg-white focus:ring-2 focus:ring-red/20 focus:border-red transition-all outline-none"
                     placeholder="Seu nome"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -146,13 +156,19 @@ export default function Contato() {
                     type="email"
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 px-5 text-sm focus:bg-white focus:ring-2 focus:ring-red/20 focus:border-red transition-all outline-none"
                     placeholder="seu@email.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Departamento</label>
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 px-5 text-sm focus:bg-white focus:ring-2 focus:ring-red/20 focus:border-red transition-all outline-none appearance-none">
+                <select 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 px-5 text-sm focus:bg-white focus:ring-2 focus:ring-red/20 focus:border-red transition-all outline-none appearance-none"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                >
                   <option>Competições / Geral</option>
                   <option>Financeiro</option>
                   <option>Parcerias e Marketing</option>
@@ -166,15 +182,17 @@ export default function Contato() {
                   rows={5}
                   className="w-full bg-slate-50 border border-slate-200 rounded-3xl p-5 text-sm focus:bg-white focus:ring-2 focus:ring-red/20 focus:border-red transition-all outline-none resize-none"
                   placeholder="Como podemos ajudar?"
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 />
               </div>
 
               <Button 
                 type="submit"
-                disabled={loading}
+                disabled={sendMutation.isPending}
                 className="w-full h-16 bg-red text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-brand hover:opacity-90 transition-opacity"
               >
-                {loading ? (
+                {sendMutation.isPending ? (
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>

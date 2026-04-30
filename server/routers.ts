@@ -24,6 +24,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { storagePut } from "./storage";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { createContactMessage, getAllContactMessages, updateMessageStatus } from "./db";
+import nodemailer from "nodemailer";
 
 // ─── Standings helper ──────────────────────────────────────────────────────────
 
@@ -1103,6 +1105,76 @@ const matchRouter = router({
     }),
 });
 
+// ─── Contact Router ────────────────────────────────────────────────────────────
+
+const contactRouter = router({
+  send: publicProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        department: z.string().optional(),
+        message: z.string().min(1),
+      })
+    )
+    .mutation(async ({ input }) => {
+      await createContactMessage({
+        ...input,
+        status: "new",
+      });
+
+      // Enviar E-mail (Opcional, depende de configuração SMTP)
+      if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        try {
+          const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: Number(process.env.SMTP_PORT || 587),
+            secure: process.env.SMTP_SECURE === "true",
+            auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS,
+            },
+          });
+
+          await transporter.sendMail({
+            from: `"Site LEG" <${process.env.SMTP_USER}>`,
+            to: process.env.CONTACT_EMAIL || process.env.SMTP_USER,
+            subject: `Nova Mensagem: ${input.department || "Contato Geral"}`,
+            text: `Nome: ${input.name}\nE-mail: ${input.email}\nDepartamento: ${input.department || "N/A"}\n\nMensagem:\n${input.message}`,
+            html: `
+              <h2>Nova Mensagem de Contato</h2>
+              <p><strong>Nome:</strong> ${input.name}</p>
+              <p><strong>E-mail:</strong> ${input.email}</p>
+              <p><strong>Departamento:</strong> ${input.department || "N/A"}</p>
+              <p><strong>Mensagem:</strong></p>
+              <p style="white-space: pre-wrap;">${input.message}</p>
+            `,
+          });
+        } catch (error) {
+          console.error("[Email] Falha ao enviar notificação:", error);
+        }
+      }
+
+      return { success: true };
+    }),
+
+  list: protectedProcedure.query(async () => {
+    return getAllContactMessages();
+  }),
+
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        status: z.enum(["new", "read", "archived"]),
+      })
+    )
+    .mutation(async ({ input }) => {
+      await updateMessageStatus(input.id, input.status);
+      return { success: true };
+    }),
+});
+
 // ─── Seed Router ───────────────────────────────────────────────────────────────
 
 const seedRouter = router({
@@ -1594,6 +1666,7 @@ export const appRouter = router({
   match: matchRouter,
   site: siteRouter,
   seed: seedRouter,
+  contact: contactRouter,
 });
 
 export type AppRouter = typeof appRouter;
