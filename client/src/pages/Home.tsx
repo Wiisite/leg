@@ -19,6 +19,7 @@ import {
   Volleyball,
   X,
 } from "lucide-react";
+import { SiteHeader } from "@/components/SiteHeader";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 function CourtIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
@@ -288,112 +289,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#F0F2F6] text-slate-900">
-      <header className="sticky top-0 z-50 shadow-xl">
-        <div className="bg-[#05206F] text-white">
-          <div className="container h-12 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.12em]">
-            <button className="inline-flex items-center gap-2 hover:text-red-200 transition-colors">
-              <Contact className="w-3.5 h-3.5" />
-              Fale Conosco
-            </button>
-
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => navigate("/admin")}
-                  className="h-8 px-3.5 bg-white text-[#05206F] hover:bg-red-50 text-[11px] font-black rounded-md"
-                >
-                  Painel Admin
-                </Button>
-                <button
-                  onClick={() => logout()}
-                  className="inline-flex items-center gap-1.5 hover:text-red-200 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Sair
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <button onClick={() => navigate("/login")} className="hover:text-red-200 transition-colors">
-                  Login
-                </button>
-                <button onClick={() => (window.location.href = getLoginUrl())} className="hover:text-red-200 transition-colors">
-                  Cadastro
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="relative bg-[#D50000] text-white overflow-visible">
-          <div className="pointer-events-none absolute inset-0 opacity-25">
-            <div className="absolute -left-16 top-0 h-full w-48 bg-[#B80000] skew-x-[-30deg]" />
-            <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
-          </div>
-
-          <div className="container relative h-24 flex items-center justify-between">
-            <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
-              <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="hover:text-red-100 transition-colors">Home</button>
-              <button onClick={() => scrollToSection("noticias")} className="hover:text-red-100 transition-colors">Notícia</button>
-              <button onClick={() => scrollToSection("modalidades")} className="hover:text-red-100 transition-colors">Modalidade</button>
-            </nav>
-
-            <div
-              className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-150"
-              style={{ top: `${logoTop}%` }}
-            >
-              <div
-                className="w-36 h-36 md:w-44 md:h-44 drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)] origin-center transition-transform duration-150"
-                style={{ transform: `scale(${logoScale})` }}
-              >
-                <img src={mainLogoUrl} alt="Logo LEG" className="w-full h-full object-contain" />
-              </div>
-            </div>
-
-            <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
-              <button onClick={() => navigate("/clinicas")} className="hover:text-red-100 transition-colors">Clínicas</button>
-              <button onClick={() => navigate("/quem-somos")} className="hover:text-red-100 transition-colors">Quem Somos</button>
-              <button onClick={() => navigate("/regulamentos")} className="hover:text-red-100 transition-colors">Regulamento</button>
-              <button onClick={() => navigate("/contato")} className="hover:text-red-100 transition-colors">Contato</button>
-              <button
-                onClick={() => navigate("/ao-vivo")}
-                className="live-blink inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] text-white shadow-[0_0_16px_rgba(255,69,58,0.45)] hover:scale-[1.03] transition-all"
-              >
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-200" />
-                Ao Vivo
-              </button>
-            </nav>
-
-            <button
-              className="lg:hidden h-10 w-10 rounded-lg border border-white/40 flex items-center justify-center"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-
-          {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
-              <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
-                <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="text-left">Home</button>
-                <button onClick={() => navigate("/clinicas")} className="text-left">Clínicas</button>
-                <button onClick={() => navigate("/quem-somos")} className="text-left">Quem Somos</button>
-                <button onClick={() => scrollToSection("modalidades")} className="text-left">Modalidades</button>
-                <button onClick={() => navigate("/regulamentos")} className="text-left">Regulamento</button>
-                <button onClick={() => document.getElementById("torneios")?.scrollIntoView({ behavior: "smooth" })} className="text-left">Torneios</button>
-                <button onClick={() => navigate("/contato")} className="text-left">Contato</button>
-                <button
-                  onClick={() => navigate("/ao-vivo")}
-                  className="live-blink inline-flex items-center gap-2 text-left px-3 py-1.5 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] w-fit"
-                >
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-200" />
-                  Ao Vivo
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
+      <SiteHeader isHome />
 
       <section className="relative bg-[#D50000] text-white pt-20 pb-16 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">

@@ -3,11 +3,19 @@ import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { LogOut, Menu, Shield, X } from "lucide-react";
+import { LogOut, Menu, Shield, X, Contact, ChevronDown } from "lucide-react";
 
 interface SiteHeaderProps {
   isHome?: boolean;
 }
+
+const modalitiesInOrder = ["futsal", "basquete", "volei", "handebol"];
+const modalityLabels: Record<string, string> = {
+  futsal: "Futsal",
+  basquete: "Basquete",
+  volei: "Vôlei",
+  handebol: "Handebol",
+};
 
 export function SiteHeader({ isHome = false }: SiteHeaderProps) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -38,46 +46,40 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isHome]);
 
-  const scrollToSection = (id: string) => {
-    if (!isHome) {
-      navigate("/#" + id);
-      return;
-    }
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
-    setMobileMenuOpen(false);
-  };
-
   const handleNav = (path: string) => {
     navigate(path);
     setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
     <header className="relative z-[100]">
       {/* Top Bar (Auth/Admin) */}
-      <div className="bg-[#A60000] text-white py-2 text-[11px] font-bold uppercase tracking-widest border-b border-white/5">
+      <div className="bg-[#05206F] text-white py-2 text-[11px] font-bold uppercase tracking-widest border-b border-white/5">
         <div className="container flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <span className="opacity-70 hidden sm:inline">Bem-vindo à LEG 2026</span>
-            {isAuthenticated && (
-              <button 
-                onClick={() => navigate("/admin")}
-                className="flex items-center gap-1.5 text-amber-300 hover:text-white transition-colors"
-              >
-                <Shield className="w-3 h-3" />
-                Painel Admin
-              </button>
-            )}
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => handleNav("/contato")}
+              className="inline-flex items-center gap-2 hover:text-red-200 transition-colors"
+            >
+              <Contact className="w-3.5 h-3.5" />
+              Fale Conosco
+            </button>
+            <span className="opacity-70 hidden sm:inline border-l border-white/20 pl-6">Bem-vindo à LEG 2026</span>
           </div>
           
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <span className="opacity-90">{user?.name}</span>
+                <button 
+                  onClick={() => navigate("/admin")}
+                  className="px-3 py-1 bg-white text-[#05206F] hover:bg-red-50 rounded text-[10px] font-black"
+                >
+                  Painel Admin
+                </button>
                 <button 
                   onClick={() => logout()}
-                  className="flex items-center gap-1 hover:text-amber-200 transition-colors"
+                  className="flex items-center gap-1 hover:text-red-200 transition-colors"
                 >
                   <LogOut className="w-3 h-3" />
                   Sair
@@ -85,10 +87,10 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <button onClick={() => navigate("/login")} className="hover:text-amber-200 transition-colors">
+                <button onClick={() => navigate("/login")} className="hover:text-red-200 transition-colors">
                   Login
                 </button>
-                <button onClick={() => (window.location.href = getLoginUrl())} className="hover:text-amber-200 transition-colors">
+                <button onClick={() => (window.location.href = getLoginUrl())} className="hover:text-red-200 transition-colors">
                   Cadastro
                 </button>
               </div>
@@ -125,8 +127,27 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
           </div>
 
           <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
+            <div className="relative group">
+              <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
+                Modalidades
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="absolute top-full left-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                <div className="min-w-[200px] rounded-xl border border-white/30 bg-[#C80000] shadow-xl p-2">
+                  {modalitiesInOrder.map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => handleNav(`/modalidade/${m}`)}
+                      className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15 transition-colors"
+                    >
+                      {modalityLabels[m]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
             <button onClick={() => handleNav("/regulamentos")} className="hover:text-red-100 transition-colors">Regulamentos</button>
-            <button onClick={() => handleNav("/contato")} className="hover:text-red-100 transition-colors">Contato</button>
+            <button onClick={() => handleNav("/contato")} className="hover:text-red-100 transition-colors text-red-100">Contato</button>
             <button
               onClick={() => handleNav("/ao-vivo")}
               className="live-blink inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] text-white shadow-[0_0_16px_rgba(255,69,58,0.45)] hover:scale-[1.03] transition-all"
@@ -150,6 +171,20 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
               <button onClick={() => handleNav("/")} className="text-left">Home</button>
               <button onClick={() => handleNav("/clinicas")} className="text-left">Clínicas</button>
               <button onClick={() => handleNav("/quem-somos")} className="text-left">Quem Somos</button>
+              <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-100 mb-2">Modalidades</p>
+                <div className="flex flex-col gap-1.5">
+                  {modalitiesInOrder.map((m) => (
+                    <button
+                      key={`mob-${m}`}
+                      onClick={() => handleNav(`/modalidade/${m}`)}
+                      className="text-left px-2 py-1.5 rounded text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15"
+                    >
+                      {modalityLabels[m]}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button onClick={() => handleNav("/regulamentos")} className="text-left">Regulamentos</button>
               <button onClick={() => handleNav("/contato")} className="text-left">Contato</button>
               <button
