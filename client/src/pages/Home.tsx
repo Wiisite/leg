@@ -169,23 +169,36 @@ export default function Home() {
   };
 
   const heroSlides = useMemo<HeroSlide[]>(() => {
-    return modalitiesInOrder.map((modalityKey) => {
-      const modalityLabel = MODALITY_CONFIG[modalityKey]?.label ?? "Modalidade";
-      const configuredTitle = homeHeroTitles[modalityKey as keyof typeof homeHeroTitles];
+    const allSlideKeys = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"];
+    
+    return allSlideKeys.map((key) => {
+      const isModality = ["futsal", "basquete", "volei", "handebol"].includes(key);
+      const modalityLabel = isModality ? (MODALITY_CONFIG[key]?.label ?? "Modalidade") : "Especial";
+      
+      const configuredTitle = homeHeroTitles[key as keyof typeof homeHeroTitles];
       const title = typeof configuredTitle === "string" && configuredTitle.trim().length > 0
         ? configuredTitle.trim()
-        : modalityLabel;
+        : (isModality ? modalityLabel : "");
+
+      const imageUrl = getHomeHeroImage(key);
+      
+      // Se não for modalidade padrão e não tiver título/imagem, retornamos null para filtrar depois
+      if (!isModality && (!title || !homeHeroImages[key as keyof typeof homeHeroImages])) {
+        return null;
+      }
 
       return {
-        id: `hero-${modalityKey}`,
-        badge: `Modalidade • ${modalityLabel}`,
+        id: `hero-${key}`,
+        badge: isModality ? `Modalidade • ${modalityLabel}` : "Destaque • LEG",
         title: title.toUpperCase(),
-        description: `Acompanhe campeonatos, partidas e classificações de ${modalityLabel.toLowerCase()} na plataforma da LEG.`,
-        cta: "Acessar modalidade",
-        imageUrl: getHomeHeroImage(modalityKey),
-        onClick: () => navigate(`/modalidade/${modalityKey}`),
+        description: isModality 
+          ? `Acompanhe campeonatos, partidas e classificações de ${modalityLabel.toLowerCase()} na plataforma da LEG.`
+          : "Fique por dentro das novidades e eventos especiais da Liga Escolar Guarulhense.",
+        cta: isModality ? "Acessar modalidade" : "Saiba mais",
+        imageUrl: imageUrl,
+        onClick: () => isModality ? navigate(`/modalidade/${key}`) : navigate("/contato"),
       };
-    });
+    }).filter(Boolean) as HeroSlide[];
   }, [homeHeroTitles, navigate, homeHeroImages]);
 
   const championshipNews = useMemo(() => {

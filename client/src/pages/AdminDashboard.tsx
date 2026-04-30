@@ -219,7 +219,7 @@ function TournamentsSection({ tournaments, navigate }: { tournaments: any[], nav
 }
 
 function ModalitiesManagerSection() {
-  const modalities = ["futsal", "basquete", "volei", "handebol"] as const;
+  const modalities = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
   const labels: Record<string, string> = { futsal: "Futsal", basquete: "Basquete", volei: "Vôlei", handebol: "Handebol" };
   const utils = trpc.useUtils();
   const { data: settings } = trpc.site.getSettings.useQuery();
@@ -390,7 +390,7 @@ function SiteSettingsSection() {
     reader.readAsDataURL(file);
   });
 
-  const modalities = ["futsal", "basquete", "volei", "handebol"] as const;
+  const modalities = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
 
   const ImageUploadField = ({ label, id, fileKey, currentUrl, fileData }: any) => (
     <div className="space-y-3">

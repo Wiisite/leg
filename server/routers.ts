@@ -1247,8 +1247,6 @@ const siteRouter = router({
   updateSettings: protectedProcedure
     .input(
       z.object({
-        mainLogoUrl: z.string().trim().max(10_000_000).optional(),
-        footerLogoUrl: z.string().trim().max(10_000_000).optional(),
         mainLogoUrl: z.string().trim().max(50_000_000).optional(),
         footerLogoUrl: z.string().trim().max(50_000_000).optional(),
         homeHighlightImageUrl: z.string().trim().max(50_000_000).optional(),
@@ -1285,6 +1283,8 @@ const siteRouter = router({
             basquete: z.string().max(50_000_000).optional(),
             volei: z.string().max(50_000_000).optional(),
             handebol: z.string().max(50_000_000).optional(),
+            extra1: z.string().max(50_000_000).optional(),
+            extra2: z.string().max(50_000_000).optional(),
           })
           .optional(),
         modalityBannerImageFiles: z
@@ -1293,6 +1293,8 @@ const siteRouter = router({
             basquete: z.string().max(50_000_000).optional(),
             volei: z.string().max(50_000_000).optional(),
             handebol: z.string().max(50_000_000).optional(),
+            extra1: z.string().max(50_000_000).optional(),
+            extra2: z.string().max(50_000_000).optional(),
           })
           .optional(),
         partners: z
@@ -1388,7 +1390,7 @@ const siteRouter = router({
           ? await uploadImage("about-hero", input.aboutHeroImageFileDataUrl)
           : undefined;
 
-      const modalities = ["futsal", "basquete", "volei", "handebol"] as const;
+      const modalities = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
 
       const resolveModalityImageMap = async (
         urlMap: Partial<Record<(typeof modalities)[number], string>> | undefined,
