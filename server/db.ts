@@ -74,103 +74,19 @@ export async function getDb() {
           await fixColumn("site_settings", "championshipAddressesJson", "LONGTEXT NULL");
 
           try {
+            await _db!.execute(sql.raw("CREATE TABLE IF NOT EXISTS contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name TEXT NOT NULL, email VARCHAR(320) NOT NULL, department VARCHAR(100) NULL, message TEXT NOT NULL, status ENUM('new', 'read', 'archived') NOT NULL DEFAULT 'new', createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)"));
+          } catch (e) {}
+
+          try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN mainLogoUrl LONGTEXT NULL"));
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN footerLogoUrl LONGTEXT NULL"));
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHighlightImageUrl LONGTEXT NULL"));
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN partnersJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erros de modificação
-          }
-
-          try {
-            await _db!.execute(
-              sql.raw(
-                "CREATE TABLE IF NOT EXISTS contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name TEXT NOT NULL, email VARCHAR(320) NOT NULL, department VARCHAR(100) NULL, message TEXT NOT NULL, status ENUM('new', 'read', 'archived') NOT NULL DEFAULT 'new', createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)"
-              )
-            );
-          } catch (e) {
-            // Ignora erro para manter startup resiliente
-          }
-
-          try {
-            await _db!.execute(
-              sql.raw(
-                "CREATE TABLE IF NOT EXISTS site_settings (id INT AUTO_INCREMENT PRIMARY KEY, mainLogoUrl TEXT NULL, footerLogoUrl TEXT NULL, homeHighlightImageUrl LONGTEXT NULL, homeHeroImagesJson LONGTEXT NULL, homeHeroTitlesJson LONGTEXT NULL, modalityBannerImagesJson LONGTEXT NULL, partnersJson TEXT NULL, liveStreamsJson LONGTEXT NULL, championshipAddressesJson LONGTEXT NULL, clinicsHeroImageUrl TEXT NULL, aboutHeroImageUrl TEXT NULL, aboutMissionImageUrl TEXT NULL, contactHeroImageUrl TEXT NULL, clinicsJson LONGTEXT NULL, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)"
-              )
-            );
-          } catch (e) {
-            // Ignora erro para manter startup resiliente
-          }
-
-          try {
-          }
-
-          try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHeroImagesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN homeHeroTitlesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso a coluna já exista
-          }
-
-          try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHeroTitlesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN modalityBannerImagesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso a coluna já exista
-          }
-
-          try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN modalityBannerImagesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN partnersJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN liveStreamsJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso a coluna já exista
-          }
-
-          try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN liveStreamsJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings ADD COLUMN championshipAddressesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso a coluna já exista
-          }
-
-          try {
             await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN championshipAddressesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso já esteja no tipo correto
-          }
-
-          try {
-            await _db!.execute(
-              sql.raw(
-                "ALTER TABLE matches MODIFY COLUMN phase ENUM('group','quarterfinal','semifinal','third_place','final') NOT NULL"
-              )
-            );
           } catch (e) {
             // Ignora erro caso o tipo já esteja atualizado
           }
