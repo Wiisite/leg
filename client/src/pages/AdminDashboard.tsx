@@ -287,7 +287,11 @@ function ModalitiesManagerSection() {
           <div key={m} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
             <label className="text-[10px] font-black uppercase tracking-widest text-red ml-1">{labels[m]}</label>
             <input type="file" accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0]; if (file) setBannerFiles(prev => ({ ...prev, [m]: await toDataUrl(file) as string }));
+              const file = e.target.files?.[0]; 
+              if (file) {
+                const dataUrl = await toDataUrl(file);
+                setBannerFiles(prev => ({ ...prev, [m]: dataUrl as string }));
+              }
             }} className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-50" />
             <div className="h-32 rounded-2xl bg-slate-50 border border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
               {(bannerFiles[m] || modalityBannerImages[m]) ? <img src={bannerFiles[m] || modalityBannerImages[m]} className="h-full w-full object-cover" /> : <Image className="w-6 h-6 text-slate-200" />}
@@ -389,7 +393,11 @@ function SiteSettingsSection() {
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
           <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Logo Principal</label>
           <input type="file" accept="image/*" onChange={async (e) => {
-            const file = e.target.files?.[0]; if (file) setFiles({ ...files, mainLogo: await toDataUrl(file) });
+            const file = e.target.files?.[0]; 
+            if (file) {
+              const dataUrl = await toDataUrl(file);
+              setFiles(prev => ({ ...prev, mainLogo: dataUrl }));
+            }
           }} className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-50" />
           <div className="h-28 rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
             {(files.mainLogo || formData.mainLogoUrl) ? <img src={files.mainLogo || formData.mainLogoUrl} className="max-h-24 object-contain" /> : <Image className="w-6 h-6 text-slate-200" />}
@@ -399,7 +407,11 @@ function SiteSettingsSection() {
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
           <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Logo Rodapé</label>
           <input type="file" accept="image/*" onChange={async (e) => {
-            const file = e.target.files?.[0]; if (file) setFiles({ ...files, footerLogo: await toDataUrl(file) });
+            const file = e.target.files?.[0]; 
+            if (file) {
+              const dataUrl = await toDataUrl(file);
+              setFiles(prev => ({ ...prev, footerLogo: dataUrl }));
+            }
           }} className="w-full text-xs text-slate-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-50" />
           <div className="h-28 rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center">
             {(files.footerLogo || formData.footerLogoUrl) ? <img src={files.footerLogo || formData.formData.footerLogoUrl} className="max-h-24 object-contain" /> : <Image className="w-6 h-6 text-slate-200" />}
@@ -415,7 +427,11 @@ function SiteSettingsSection() {
           <div className="space-y-4">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Home Highlight</label>
             <input type="file" accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0]; if (file) setFiles({ ...files, homeHighlight: await toDataUrl(file) });
+              const file = e.target.files?.[0]; 
+              if (file) {
+                const dataUrl = await toDataUrl(file);
+                setFiles(prev => ({ ...prev, homeHighlight: dataUrl }));
+              }
             }} className="w-full text-xs text-slate-500 file:mr-2 file:px-2 file:py-1 file:rounded-lg file:border-0 file:bg-slate-50" />
             <div className="h-32 rounded-2xl bg-slate-50 border border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
               {(files.homeHighlight || formData.homeHighlightImageUrl) ? <img src={files.homeHighlight || formData.homeHighlightImageUrl} className="h-full w-full object-cover" /> : <Image className="w-6 h-6 text-slate-200" />}
@@ -425,7 +441,11 @@ function SiteSettingsSection() {
           <div className="space-y-4">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Página Clínicas</label>
             <input type="file" accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0]; if (file) setFiles({ ...files, clinicsHero: await toDataUrl(file) });
+              const file = e.target.files?.[0]; 
+              if (file) {
+                const dataUrl = await toDataUrl(file);
+                setFiles(prev => ({ ...prev, clinicsHero: dataUrl }));
+              }
             }} className="w-full text-xs text-slate-500 file:mr-2 file:px-2 file:py-1 file:rounded-lg file:border-0 file:bg-slate-50" />
             <div className="h-32 rounded-2xl bg-slate-50 border border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
               {(files.clinicsHero || formData.clinicsHeroImageUrl) ? <img src={files.clinicsHero || formData.clinicsHeroImageUrl} className="h-full w-full object-cover" /> : <Image className="w-6 h-6 text-slate-200" />}
@@ -435,7 +455,11 @@ function SiteSettingsSection() {
           <div className="space-y-4">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Página Quem Somos</label>
             <input type="file" accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0]; if (file) setFiles({ ...files, aboutHero: await toDataUrl(file) });
+              const file = e.target.files?.[0]; 
+              if (file) {
+                const dataUrl = await toDataUrl(file);
+                setFiles(prev => ({ ...prev, aboutHero: dataUrl }));
+              }
             }} className="w-full text-xs text-slate-500 file:mr-2 file:px-2 file:py-1 file:rounded-lg file:border-0 file:bg-slate-50" />
             <div className="h-32 rounded-2xl bg-slate-50 border border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
               {(files.aboutHero || formData.aboutHeroImageUrl) ? <img src={files.aboutHero || formData.aboutHeroImageUrl} className="h-full w-full object-cover" /> : <Image className="w-6 h-6 text-slate-200" />}
@@ -453,7 +477,11 @@ function SiteSettingsSection() {
               <label className="text-[10px] font-black uppercase tracking-widest text-red">{m}</label>
               <input value={formData.homeHeroTitles?.[m] || ""} onChange={e => setFormData({ ...formData, homeHeroTitles: { ...formData.homeHeroTitles, [m]: e.target.value } })} className="w-full h-12 bg-white border border-slate-100 rounded-xl px-4 text-sm" placeholder="Título..." />
               <input type="file" accept="image/*" onChange={async (e) => {
-                const file = e.target.files?.[0]; if (file) setFiles({ ...files, homeHero: { ...files.homeHero, [m]: await toDataUrl(file) } });
+                const file = e.target.files?.[0]; 
+                if (file) {
+                  const dataUrl = await toDataUrl(file);
+                  setFiles(prev => ({ ...prev, homeHero: { ...prev.homeHero, [m]: dataUrl } }));
+                }
               }} className="w-full text-xs text-slate-500" />
               <div className="h-24 rounded-xl border border-dashed border-slate-200 overflow-hidden">
                 {(files.homeHero?.[m] || formData.homeHeroImages?.[m]) ? <img src={files.homeHero?.[m] || formData.homeHeroImages?.[m]} className="h-full w-full object-cover" /> : <Image className="w-5 h-5 text-slate-200 mx-auto mt-9" />}
@@ -473,7 +501,15 @@ function SiteSettingsSection() {
               <div key={i} className="p-4 rounded-2xl bg-slate-50 flex flex-col gap-2 relative">
                 <button className="absolute top-2 right-2 text-slate-300 hover:text-red" onClick={() => setFormData({ ...formData, partners: formData.partners.filter((_:any,idx:number)=>idx!==i) })}><Trash2 className="w-4 h-4" /></button>
                 <input value={p.name} onChange={e => { const np = [...formData.partners]; np[i].name = e.target.value; setFormData({ ...formData, partners: np }); }} className="h-10 bg-white border border-slate-100 rounded-lg px-3 text-sm" placeholder="Nome do Parceiro" />
-                <input type="file" onChange={async (e) => { const file = e.target.files?.[0]; if (file) { const np = [...formData.partners]; np[i].logoFileDataUrl = await toDataUrl(file); setFormData({ ...formData, partners: np }); } }} className="text-[10px]" />
+                <input type="file" onChange={async (e) => { 
+                  const file = e.target.files?.[0]; 
+                  if (file) { 
+                    const dataUrl = await toDataUrl(file);
+                    const np = [...formData.partners]; 
+                    np[i].logoFileDataUrl = dataUrl; 
+                    setFormData({ ...formData, partners: np }); 
+                  } 
+                }} className="text-[10px]" />
                 { (p.logoFileDataUrl || p.logoUrl) && <img src={p.logoFileDataUrl || p.logoUrl} className="h-10 object-contain self-start" /> }
               </div>
             ))}
