@@ -1,6 +1,5 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { ChevronDown, ChevronRight, Contact, Dribbble, Dumbbell, LogOut, Menu, Target, Trophy, Volleyball, X } from "lucide-react";
@@ -30,12 +29,9 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function ModalityPage() {
-  const { isAuthenticated, logout } = useAuth();
   const params = useParams<{ modality: string }>();
   const [, navigate] = useLocation();
   const modality = String(params?.modality || "").toLowerCase();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [logoShrinkProgress, setLogoShrinkProgress] = useState(0);
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
   const { data: homeNews } = trpc.tournament.getHomeNews.useQuery();
@@ -113,20 +109,6 @@ export default function ModalityPage() {
     return filteredFromHome.length > 0 ? filteredFromHome : fallbackModalityNews;
   }, [homeNews, modality, fallbackModalityNews]);
 
-  useEffect(() => {
-    const onScroll = () => {
-      const maxScroll = 140;
-      const progress = Math.min(1, window.scrollY / maxScroll);
-      setLogoShrinkProgress(progress);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const logoScale = 1 - 0.36 * logoShrinkProgress;
-  const logoTop = 88 - 12 * logoShrinkProgress;
-
   if (!config) {
     return (
       <div className="min-h-screen bg-[#F0F2F6] flex items-center justify-center px-4">
@@ -143,142 +125,7 @@ export default function ModalityPage() {
 
   return (
     <div className="min-h-screen bg-[#F0F2F6] text-slate-900">
-      <header className="sticky top-0 z-50 shadow-xl">
-        <div className="bg-[#05206F] text-white">
-          <div className="container h-12 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.12em]">
-            <button className="inline-flex items-center gap-2 hover:text-red-200 transition-colors">
-              <Contact className="w-3.5 h-3.5" />
-              Fale Conosco
-            </button>
-
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => navigate("/admin")}
-                  className="h-8 px-3.5 bg-white text-[#05206F] hover:bg-red-50 text-[11px] font-black rounded-md"
-                >
-                  Painel Admin
-                </Button>
-                <button
-                  onClick={() => logout()}
-                  className="inline-flex items-center gap-1.5 hover:text-red-200 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Sair
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <button onClick={() => navigate("/login")} className="hover:text-red-200 transition-colors">
-                  Login
-                </button>
-                <button onClick={() => (window.location.href = getLoginUrl())} className="hover:text-red-200 transition-colors">
-                  Cadastro
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="relative bg-[#D50000] text-white overflow-visible">
-          <div className="pointer-events-none absolute inset-0 opacity-25">
-            <div className="absolute -left-16 top-0 h-full w-48 bg-[#B80000] skew-x-[-30deg]" />
-            <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
-          </div>
-
-          <div className="container relative h-24 flex items-center justify-between">
-            <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
-              <button onClick={() => navigate("/")} className="hover:text-red-100 transition-colors">Home</button>
-              <button onClick={() => (window.location.href = "/#torneios")} className="hover:text-red-100 transition-colors">Notícia</button>
-              <div className="relative group">
-                <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
-                  Modalidades
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                <div className="absolute top-full left-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-                  <div className="min-w-[200px] rounded-xl border border-white/30 bg-[#C80000] shadow-xl p-2">
-                    {modalitiesInOrder.map((modalityKey) => (
-                      <button
-                        key={`menu-mod-${modalityKey}`}
-                        onClick={() => navigate(`/modalidade/${modalityKey}`)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] transition-colors ${
-                          modalityKey === modality ? "bg-white text-[#C80000]" : "text-white hover:bg-white/15"
-                        }`}
-                      >
-                        {MODALITY_CONFIG[modalityKey]?.navLabel ?? modalityKey}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </nav>
-
-            <div
-              className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-150"
-              style={{ top: `${logoTop}%` }}
-            >
-              <div
-                className="w-36 h-36 md:w-44 md:h-44 drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)] origin-center transition-transform duration-150"
-                style={{ transform: `scale(${logoScale})` }}
-              >
-                <img src={mainLogoUrl} alt="Logo LEG" className="w-full h-full object-contain" />
-              </div>
-            </div>
-
-            <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
-              <button onClick={() => (window.location.href = "/#torneios")} className="hover:text-red-100 transition-colors">Clínicas</button>
-              <button onClick={() => (window.location.href = "/#sobre")} className="hover:text-red-100 transition-colors">Quem Somos</button>
-              <button onClick={() => navigate("/regulamentos")} className="hover:text-red-100 transition-colors">Regulamento</button>
-              <button onClick={() => (window.location.href = "/#rodape")} className="hover:text-red-100 transition-colors">Contato</button>
-            </nav>
-
-            <button
-              className="lg:hidden h-10 w-10 rounded-lg border border-white/40 flex items-center justify-center"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-
-          {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
-              <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
-                <button onClick={() => navigate("/")} className="text-left">Home</button>
-                <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-100 mb-2">Modalidades</p>
-                  <div className="flex flex-col gap-1.5">
-                    {modalitiesInOrder.map((modalityKey) => (
-                      <button
-                        key={`mobile-mod-${modalityKey}`}
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          navigate(`/modalidade/${modalityKey}`);
-                        }}
-                        className={`text-left px-2 py-1.5 rounded text-[12px] font-black uppercase tracking-[0.12em] ${
-                          modalityKey === modality ? "bg-white text-[#C80000]" : "text-white hover:bg-white/15"
-                        }`}
-                      >
-                        {MODALITY_CONFIG[modalityKey]?.navLabel ?? modalityKey}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <button onClick={() => (window.location.href = "/#torneios")} className="text-left">Torneios</button>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    navigate("/regulamentos");
-                  }}
-                  className="text-left"
-                >
-                  Regulamento
-                </button>
-                <button onClick={() => (window.location.href = "/#rodape")} className="text-left">Contato</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="relative min-h-[320px] md:min-h-[420px] overflow-hidden bg-white text-white">
         <div

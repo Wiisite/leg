@@ -1,5 +1,5 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useParams } from "wouter";
@@ -998,6 +998,7 @@ export default function TournamentDetail() {
 
   return (
     <div className="min-h-screen bg-white">
+      <SiteHeader />
       {isEditingTournament && (
         <EditTournamentModal
           tournament={tournament as any}

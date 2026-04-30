@@ -1,4 +1,5 @@
 import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Send, MessageSquare, Instagram, Youtube, ArrowLeft, Building2 } from "lucide-react";
@@ -27,22 +28,7 @@ export default function Contato() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header Fixo Simples */}
-      <header className="bg-primary text-white py-4 sticky top-0 z-50 shadow-md">
-        <div className="container flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            className="text-white hover:bg-white/10"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Início
-          </Button>
-          <div className="font-black text-xl tracking-tighter">
-            LEG <span className="text-red">2026</span>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Hero Section */}
       <section className="py-20 bg-primary text-white relative overflow-hidden">

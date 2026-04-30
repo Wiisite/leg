@@ -1,3 +1,4 @@
+import { SiteHeader } from "@/components/SiteHeader";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
@@ -40,33 +41,7 @@ export default function LiveMatchesPage() {
 
   return (
     <div className="min-h-screen bg-[#F0F2F6] text-slate-900">
-      <header className="sticky top-0 z-40 border-b border-white/30 bg-[#D50000] text-white shadow-xl">
-        <div className="container h-20 flex items-center justify-between gap-4">
-          <button onClick={() => navigate("/")} className="text-left">
-            <p className="text-[11px] uppercase tracking-[0.2em] font-black text-red-100">LEG</p>
-            <h1 className="text-xl md:text-2xl font-black leading-none">Jogos ao Vivo</h1>
-          </button>
-
-          <div className="flex items-center gap-2 md:gap-3">
-            <Button
-              onClick={() => navigate("/")}
-              className="h-9 px-4 bg-white/20 hover:bg-white/30 text-white border border-white/40"
-            >
-              Voltar para Home
-            </Button>
-            {isAuthenticated ? (
-              <Button onClick={() => logout()} className="h-9 px-4 bg-white text-[#D50000] hover:bg-red-50 font-black">
-                <LogOut className="w-4 h-4 mr-1.5" />
-                Sair
-              </Button>
-            ) : (
-              <Button onClick={() => (window.location.href = getLoginUrl())} className="h-9 px-4 bg-white text-[#D50000] hover:bg-red-50 font-black">
-                Painel Admin
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className="container py-10 md:py-14 space-y-6">
         <section className="rounded-3xl bg-gradient-to-r from-[#0B173D] via-[#1A2A66] to-[#0B173D] text-white p-6 md:p-8 shadow-[0_20px_35px_rgba(11,23,61,0.35)]">

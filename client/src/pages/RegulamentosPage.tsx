@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { SiteHeader } from "@/components/SiteHeader";
 import { ChevronRight, FileText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -25,19 +26,7 @@ export default function RegulamentosPage() {
 
   return (
     <div className="min-h-screen bg-[#F0F2F6] text-slate-900">
-      <header className="sticky top-0 z-30 bg-[#05206F] text-white shadow-lg">
-        <div className="container h-16 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-200">Documentação oficial</p>
-            <h1 className="text-xl font-black uppercase">Regulamentos</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => navigate("/")} className="bg-white text-[#05206F] hover:bg-red-50 font-black uppercase text-[11px]">
-              Home
-            </Button>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className="container py-8">
         <div className="grid gap-6 lg:grid-cols-[320px_1fr] items-start">
