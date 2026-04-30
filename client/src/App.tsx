@@ -12,6 +12,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CreateTournament from "./pages/CreateTournament";
 import Login from "./pages/Login";
 import RegulamentosPage from "./pages/RegulamentosPage";
+import QuemSomos from "./pages/QuemSomos";
+import Clinicas from "./pages/Clinicas";
+import Contato from "./pages/Contato";
 
 function Router() {
   return (
@@ -24,6 +27,9 @@ function Router() {
       <Route path="/tournament/:id" component={TournamentDetail} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/create" component={CreateTournament} />
+      <Route path="/quem-somos" component={QuemSomos} />
+      <Route path="/clinicas" component={Clinicas} />
+      <Route path="/contato" component={Contato} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

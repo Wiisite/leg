@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 type SiteFooterProps = {
   footerLogoUrl: string;
@@ -19,19 +20,25 @@ export function SiteFooter({
   onNewsClick,
   onModalityClick,
 }: SiteFooterProps) {
+  const [, navigate] = useLocation();
+
   const handleHomeClick = () => {
     if (onHomeClick) return onHomeClick();
-    window.location.href = "/";
+    navigate("/");
   };
 
   const handleAboutClick = () => {
     if (onAboutClick) return onAboutClick();
-    window.location.href = "/#sobre";
+    navigate("/quem-somos");
   };
 
   const handleNewsClick = () => {
     if (onNewsClick) return onNewsClick();
-    window.location.href = "/#torneios";
+    navigate("/clinicas");
+  };
+
+  const handleContactClick = () => {
+    navigate("/contato");
   };
 
   const handleModalityClick = (modality: string) => {
@@ -92,8 +99,8 @@ export function SiteFooter({
           <div>
             <h4 className="text-sm font-black uppercase tracking-[0.16em] mb-3">Contato</h4>
             <ul className="space-y-2 text-sm text-blue-100/85">
-              <li>Fale conosco</li>
-              <li>Contato comercial</li>
+              <li><button onClick={handleContactClick}>Fale conosco</button></li>
+              <li><button onClick={handleContactClick}>Contato comercial</button></li>
             </ul>
           </div>
         </div>
