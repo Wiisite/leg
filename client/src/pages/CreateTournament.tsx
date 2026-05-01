@@ -28,7 +28,6 @@ export default function CreateTournament() {
   const [, navigate] = useLocation();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
-  const [date, setDate] = useState("");
   const [modality, setModality] = useState<"futsal" | "basquete" | "volei" | "handebol">("futsal");
   const [pointsPerWin, setPointsPerWin] = useState(3);
   const [pointsPerDraw, setPointsPerDraw] = useState(1);
@@ -86,7 +85,6 @@ export default function CreateTournament() {
      createMutation.mutate({ 
        name, 
        category, 
-       date,
        modality, 
        rounds,
       homeAndAway,
@@ -191,8 +189,7 @@ export default function CreateTournament() {
                   placeholder="Ex: Sub-9 MASC"
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                 />
-              </div>
-              <div>
+                       <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Categoria
                 </label>
@@ -203,19 +200,7 @@ export default function CreateTournament() {
                   placeholder="Ex: Sub-9 Masculino"
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Data do Evento
-                </label>
-                <input
-                  type="text"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  placeholder="Ex: 15 de Outubro ou Out/2024"
-                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-                />
-              </div>
+              </div>       </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Modalidade

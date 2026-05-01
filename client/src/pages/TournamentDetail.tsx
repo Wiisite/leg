@@ -413,7 +413,7 @@ function MatchCard({
           </div>
           <div className="flex items-center gap-2 text-slate-500">
             <MapPin className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-wider truncate max-w-[120px]">{match.location || "A DEFINIR"}</span>
+            <span className="text-[10px] font-black uppercase tracking-wider">{match.location || "A DEFINIR"}</span>
           </div>
         </div>
         
@@ -464,6 +464,11 @@ function MatchCardCompact({
               {match.awayScore ?? "0"}
             </span>
           </div>
+          {match.date && (
+            <div className="mt-1">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{match.date}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 flex flex-col items-center gap-2">
@@ -689,7 +694,6 @@ function EditTournamentModal({
   const [category, setCategory] = useState(tournament.category);
   const [modality, setModality] = useState(tournament.modality as any);
   const [rounds, setRounds] = useState(tournament.rounds ?? 5);
-  const [date, setDate] = useState(tournament.date ?? "");
   const [teamList, setTeamList] = useState(teams);
 
   const handleUpdateTeam = (index: number, field: string, value: string) => {
@@ -756,16 +760,6 @@ function EditTournamentModal({
               <option value="volei">Vôlei</option>
               <option value="handebol">Handebol</option>
             </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Data do Evento</label>
-            <input
-              type="text"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              placeholder="Ex: Julho de 2024"
-              className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-sm focus:ring-2 focus:ring-red/20"
-            />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Número de Rodadas</label>
@@ -843,7 +837,7 @@ function EditTournamentModal({
           <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button 
             className="flex-1 bg-red text-white font-bold hover:opacity-90 shadow-brand"
-            onClick={() => onSave({ name, category, modality, rounds, date, teams: teamList })}
+            onClick={() => onSave({ name, category, modality, rounds, teams: teamList })}
           >
             Salvar Alterações
           </Button>

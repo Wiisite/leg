@@ -343,9 +343,7 @@ export default function ModalityPage() {
                       <h3 className="text-xl font-black text-slate-900 mb-1 leading-tight uppercase group-hover:text-[#D50000] transition-colors">
                         {t.name}
                       </h3>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-1">{t.category}</p>
-                      {t.date && <p className="text-[10px] font-black uppercase tracking-[0.14em] text-red mb-5">{t.date}</p>}
-                      {!t.date && <div className="mb-5" />}
+                      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-5">{t.category}</p>
 
                       <div className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.13em] text-[#D50000] group-hover:text-[#05206F]">
                         Ver campeonato
