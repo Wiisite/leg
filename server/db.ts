@@ -72,6 +72,7 @@ export async function getDb() {
           await fixColumn("site_settings", "partnersJson", "LONGTEXT NULL");
           await fixColumn("site_settings", "liveStreamsJson", "LONGTEXT NULL");
           await fixColumn("site_settings", "championshipAddressesJson", "LONGTEXT NULL");
+          await fixColumn("site_settings", "aboutClinicsJson", "LONGTEXT NULL");
 
           try {
             await _db!.execute(sql.raw("CREATE TABLE IF NOT EXISTS contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name TEXT NOT NULL, email VARCHAR(320) NOT NULL, department VARCHAR(100) NULL, message TEXT NOT NULL, status ENUM('new', 'read', 'archived') NOT NULL DEFAULT 'new', createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)"));
@@ -416,6 +417,12 @@ export async function getSiteSettings() {
       partners: [] as SitePartner[],
       liveStreams: [] as SiteLiveStream[],
       championshipAddresses: [] as SiteChampionshipAddress[],
+      clinicsHeroImageUrl: null,
+      aboutHeroImageUrl: null,
+      aboutMissionImageUrl: null,
+      contactHeroImageUrl: null,
+      clinics: [] as any[],
+      aboutClinics: [] as any[],
     };
   }
 
@@ -433,6 +440,12 @@ export async function getSiteSettings() {
       partners: [] as SitePartner[],
       liveStreams: [] as SiteLiveStream[],
       championshipAddresses: [] as SiteChampionshipAddress[],
+      clinicsHeroImageUrl: null,
+      aboutHeroImageUrl: null,
+      aboutMissionImageUrl: null,
+      contactHeroImageUrl: null,
+      clinics: [] as any[],
+      aboutClinics: [] as any[],
     };
   }
 
@@ -463,6 +476,12 @@ export async function getSiteSettings() {
     partners,
     liveStreams: parseLiveStreams((row as any).liveStreamsJson),
     championshipAddresses: parseChampionshipAddresses((row as any).championshipAddressesJson),
+    clinicsHeroImageUrl: row.clinicsHeroImageUrl,
+    aboutHeroImageUrl: row.aboutHeroImageUrl,
+    aboutMissionImageUrl: row.aboutMissionImageUrl,
+    contactHeroImageUrl: row.contactHeroImageUrl,
+    clinics: row.clinicsJson ? JSON.parse(row.clinicsJson) : [],
+    aboutClinics: row.aboutClinicsJson ? JSON.parse(row.aboutClinicsJson) : [],
   };
 }
 
@@ -476,6 +495,12 @@ export async function upsertSiteSettings(data: {
   partners?: SitePartner[];
   liveStreams?: SiteLiveStream[];
   championshipAddresses?: SiteChampionshipAddress[];
+  clinicsHeroImageUrl?: string | null;
+  aboutHeroImageUrl?: string | null;
+  aboutMissionImageUrl?: string | null;
+  contactHeroImageUrl?: string | null;
+  clinicsJson?: string | null;
+  aboutClinicsJson?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -493,6 +518,12 @@ export async function upsertSiteSettings(data: {
     partnersJson?: string | null;
     liveStreamsJson?: string | null;
     championshipAddressesJson?: string | null;
+    clinicsHeroImageUrl?: string | null;
+    aboutHeroImageUrl?: string | null;
+    aboutMissionImageUrl?: string | null;
+    contactHeroImageUrl?: string | null;
+    clinicsJson?: string | null;
+    aboutClinicsJson?: string | null;
   } = {};
 
   if (data.mainLogoUrl !== undefined) patch.mainLogoUrl = data.mainLogoUrl;
@@ -504,6 +535,12 @@ export async function upsertSiteSettings(data: {
   if (data.partners !== undefined) patch.partnersJson = JSON.stringify(data.partners);
   if (data.liveStreams !== undefined) patch.liveStreamsJson = JSON.stringify(data.liveStreams);
   if (data.championshipAddresses !== undefined) patch.championshipAddressesJson = JSON.stringify(data.championshipAddresses);
+  if (data.clinicsHeroImageUrl !== undefined) patch.clinicsHeroImageUrl = data.clinicsHeroImageUrl;
+  if (data.aboutHeroImageUrl !== undefined) patch.aboutHeroImageUrl = data.aboutHeroImageUrl;
+  if (data.aboutMissionImageUrl !== undefined) patch.aboutMissionImageUrl = data.aboutMissionImageUrl;
+  if (data.contactHeroImageUrl !== undefined) patch.contactHeroImageUrl = data.contactHeroImageUrl;
+  if (data.clinicsJson !== undefined) patch.clinicsJson = data.clinicsJson;
+  if (data.aboutClinicsJson !== undefined) patch.aboutClinicsJson = data.aboutClinicsJson;
 
   if (existing && Object.keys(patch).length === 0) {
     return getSiteSettings();
@@ -522,6 +559,12 @@ export async function upsertSiteSettings(data: {
       partnersJson: JSON.stringify(data.partners ?? []),
       liveStreamsJson: JSON.stringify(data.liveStreams ?? []),
       championshipAddressesJson: JSON.stringify(data.championshipAddresses ?? []),
+      clinicsHeroImageUrl: data.clinicsHeroImageUrl ?? null,
+      aboutHeroImageUrl: data.aboutHeroImageUrl ?? null,
+      aboutMissionImageUrl: data.aboutMissionImageUrl ?? null,
+      contactHeroImageUrl: data.contactHeroImageUrl ?? null,
+      clinicsJson: data.clinicsJson ?? null,
+      aboutClinicsJson: data.aboutClinicsJson ?? null,
     });
   }
 
