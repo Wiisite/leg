@@ -1324,7 +1324,7 @@ const siteRouter = router({
         contactHeroImageUrl: z.string().trim().max(50_000_000).optional(),
         contactHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
         clinics: z.array(z.object({
-          title: z.string().trim().min(1).max(200),
+          title: z.string().trim().max(200).optional(),
           description: z.string().trim().max(1000).optional(),
           imageUrl: z.string().max(50_000_000).optional(),
           imageFileDataUrl: z.string().max(50_000_000).optional(),
@@ -1377,7 +1377,6 @@ const siteRouter = router({
           if (message.includes("Storage proxy credentials missing")) {
             return dataUrl;
           }
-          console.error("[SiteRouter] Erro ao salvar configurações:", error);
           throw error;
         }
       };
@@ -1511,89 +1510,98 @@ const siteRouter = router({
           )
         : undefined;
 
-      return upsertSiteSettings({
-        ...(resolvedMainLogoUrl !== undefined
-          ? { mainLogoUrl: resolvedMainLogoUrl }
-          : input.mainLogoUrl !== undefined
-            ? { mainLogoUrl: input.mainLogoUrl.length > 0 ? input.mainLogoUrl : null }
-          : {}),
-        ...(resolvedFooterLogoUrl !== undefined
-          ? { footerLogoUrl: resolvedFooterLogoUrl }
-          : input.footerLogoUrl !== undefined
-            ? { footerLogoUrl: input.footerLogoUrl.length > 0 ? input.footerLogoUrl : null }
-          : {}),
-        ...(resolvedHomeHighlightImageUrl !== undefined
-          ? { homeHighlightImageUrl: resolvedHomeHighlightImageUrl }
-          : input.homeHighlightImageUrl !== undefined
-            ? { homeHighlightImageUrl: input.homeHighlightImageUrl.length > 0 ? input.homeHighlightImageUrl : null }
-          : {}),
-        ...(resolvedClinicsHeroImageUrl !== undefined
-          ? { clinicsHeroImageUrl: resolvedClinicsHeroImageUrl }
-          : input.clinicsHeroImageUrl !== undefined
-            ? { clinicsHeroImageUrl: input.clinicsHeroImageUrl.length > 0 ? input.clinicsHeroImageUrl : null }
-          : {}),
-        ...(resolvedAboutHeroImageUrl !== undefined
-          ? { aboutHeroImageUrl: resolvedAboutHeroImageUrl }
-          : input.aboutHeroImageUrl !== undefined
-            ? { aboutHeroImageUrl: input.aboutHeroImageUrl.length > 0 ? input.aboutHeroImageUrl : null }
-          : {}),
-        ...(resolvedAboutMissionImageUrl !== undefined
-          ? { aboutMissionImageUrl: resolvedAboutMissionImageUrl }
-          : input.aboutMissionImageUrl !== undefined
-            ? { aboutMissionImageUrl: input.aboutMissionImageUrl.length > 0 ? input.aboutMissionImageUrl : null }
-          : {}),
-        ...(resolvedContactHeroImageUrl !== undefined
-          ? { contactHeroImageUrl: resolvedContactHeroImageUrl }
-          : input.contactHeroImageUrl !== undefined
-            ? { contactHeroImageUrl: input.contactHeroImageUrl.length > 0 ? input.contactHeroImageUrl : null }
-          : {}),
-        ...(resolvedClinics !== undefined
-          ? { clinicsJson: JSON.stringify(resolvedClinics) }
-          : {}),
-        ...(resolvedAboutClinics !== undefined
-          ? { aboutClinicsJson: JSON.stringify(resolvedAboutClinics) }
-          : {}),
-        ...(resolvedHomeHeroImages !== undefined
-          ? {
-              homeHeroImages: resolvedHomeHeroImages,
-            }
-          : {}),
-        ...(input.homeHeroTitles !== undefined
-          ? {
-              homeHeroTitles: {
-                futsal: input.homeHeroTitles.futsal?.trim() || undefined,
-                basquete: input.homeHeroTitles.basquete?.trim() || undefined,
-                volei: input.homeHeroTitles.volei?.trim() || undefined,
-                handebol: input.homeHeroTitles.handebol?.trim() || undefined,
-              },
-            }
-          : {}),
-        ...(resolvedModalityBannerImages !== undefined
-          ? {
-              modalityBannerImages: resolvedModalityBannerImages,
-            }
-          : {}),
-        ...(resolvedPartners !== undefined
-          ? {
-              partners: resolvedPartners,
-            }
-          : {}),
-        ...(input.liveStreams !== undefined
-          ? {
-              liveStreams: input.liveStreams.map((stream) => ({
-                title: stream.title.trim(),
-                youtubeUrl: stream.youtubeUrl.trim(),
-              })),
-            }
-          : {}),
-        ...(input.championshipAddresses !== undefined
-          ? {
-              championshipAddresses: input.championshipAddresses
-                .map((address) => address.trim())
-                .filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index),
-            }
-          : {}),
-      });
+      try {
+        return await upsertSiteSettings({
+          ...(resolvedMainLogoUrl !== undefined
+            ? { mainLogoUrl: resolvedMainLogoUrl }
+            : input.mainLogoUrl !== undefined
+              ? { mainLogoUrl: input.mainLogoUrl.length > 0 ? input.mainLogoUrl : null }
+            : {}),
+          ...(resolvedFooterLogoUrl !== undefined
+            ? { footerLogoUrl: resolvedFooterLogoUrl }
+            : input.footerLogoUrl !== undefined
+              ? { footerLogoUrl: input.footerLogoUrl.length > 0 ? input.footerLogoUrl : null }
+            : {}),
+          ...(resolvedHomeHighlightImageUrl !== undefined
+            ? { homeHighlightImageUrl: resolvedHomeHighlightImageUrl }
+            : input.homeHighlightImageUrl !== undefined
+              ? { homeHighlightImageUrl: input.homeHighlightImageUrl.length > 0 ? input.homeHighlightImageUrl : null }
+            : {}),
+          ...(resolvedClinicsHeroImageUrl !== undefined
+            ? { clinicsHeroImageUrl: resolvedClinicsHeroImageUrl }
+            : input.clinicsHeroImageUrl !== undefined
+              ? { clinicsHeroImageUrl: input.clinicsHeroImageUrl.length > 0 ? input.clinicsHeroImageUrl : null }
+            : {}),
+          ...(resolvedAboutHeroImageUrl !== undefined
+            ? { aboutHeroImageUrl: resolvedAboutHeroImageUrl }
+            : input.aboutHeroImageUrl !== undefined
+              ? { aboutHeroImageUrl: input.aboutHeroImageUrl.length > 0 ? input.aboutHeroImageUrl : null }
+            : {}),
+          ...(resolvedAboutMissionImageUrl !== undefined
+            ? { aboutMissionImageUrl: resolvedAboutMissionImageUrl }
+            : input.aboutMissionImageUrl !== undefined
+              ? { aboutMissionImageUrl: input.aboutMissionImageUrl.length > 0 ? input.aboutMissionImageUrl : null }
+            : {}),
+          ...(resolvedContactHeroImageUrl !== undefined
+            ? { contactHeroImageUrl: resolvedContactHeroImageUrl }
+            : input.contactHeroImageUrl !== undefined
+              ? { contactHeroImageUrl: input.contactHeroImageUrl.length > 0 ? input.contactHeroImageUrl : null }
+            : {}),
+          ...(resolvedClinics !== undefined
+            ? { clinicsJson: JSON.stringify(resolvedClinics) }
+            : {}),
+          ...(resolvedAboutClinics !== undefined
+            ? { aboutClinicsJson: JSON.stringify(resolvedAboutClinics) }
+            : {}),
+          ...(resolvedHomeHeroImages !== undefined
+            ? {
+                homeHeroImages: resolvedHomeHeroImages,
+              }
+            : {}),
+          ...(input.homeHeroTitles !== undefined
+            ? {
+                homeHeroTitles: {
+                  futsal: input.homeHeroTitles.futsal?.trim() || undefined,
+                  basquete: input.homeHeroTitles.basquete?.trim() || undefined,
+                  volei: input.homeHeroTitles.volei?.trim() || undefined,
+                  handebol: input.homeHeroTitles.handebol?.trim() || undefined,
+                },
+              }
+            : {}),
+          ...(resolvedModalityBannerImages !== undefined
+            ? {
+                modalityBannerImages: resolvedModalityBannerImages,
+              }
+            : {}),
+          ...(resolvedPartners !== undefined
+            ? {
+                partners: resolvedPartners,
+              }
+            : {}),
+          ...(input.liveStreams !== undefined
+            ? {
+                liveStreams: input.liveStreams.map((stream) => ({
+                  title: stream.title.trim(),
+                  youtubeUrl: stream.youtubeUrl.trim(),
+                })),
+              }
+            : {}),
+          ...(input.championshipAddresses !== undefined
+            ? {
+                championshipAddresses: input.championshipAddresses
+                  .map((address) => address.trim())
+                  .filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index),
+              }
+            : {}),
+        });
+      } catch (error) {
+        console.error("[SiteRouter] Erro CRÍTICO ao salvar configurações:", error);
+        if (error instanceof Error) {
+          console.error("Mensagem:", error.message);
+          console.error("Stack:", error.stack);
+        }
+        throw error;
+      }
     }),
 });
 
