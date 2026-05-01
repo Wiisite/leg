@@ -31,74 +31,22 @@ export async function getDb() {
     try {
       _db = drizzle(process.env.DATABASE_URL);
       
-      // Rodar migrações programaticamente
       if (!_migrated) {
+        console.log("[Database] Running migrations...");
         try {
-          try {
-            console.log("[Database] Checking schema and migrations...");
-            await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
-          } catch (e) {
-            console.error("[Database] Migration error (continuing with manual fixes):", e);
-          }
-          
-          // Tenta adicionar colunas individualmente caso as migrações automáticas não cubram tudo
-          // Usamos try/catch individual para cada coluna para não interromper se uma já existir
-          const fixColumn = async (table: string, col: string, type: string) => {
-            try {
-              await _db!.execute(sql.raw(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`));
-              console.log(`[Database] Added column ${col} to ${table}`);
-            } catch (e) {
-              // Ignora erro se a coluna já existir
-            }
-          };
-
-          await fixColumn("teams", "logo", "TEXT NULL");
-          await fixColumn("teams", "groupName", "VARCHAR(2) NULL");
-          await fixColumn("matches", "bracket", "ENUM('ouro','prata') NULL");
-          await fixColumn("matches", "voleiSetsJson", "LONGTEXT NULL");
-          await fixColumn("tournaments", "homeAndAway", "INT NOT NULL DEFAULT 0");
-          await fixColumn("users", "username", "VARCHAR(64) UNIQUE NULL");
-          await fixColumn("users", "password", "TEXT NULL");
-
-          // Migrações para site_settings
-          await fixColumn("site_settings", "clinicsHeroImageUrl", "TEXT NULL");
-          await fixColumn("site_settings", "aboutHeroImageUrl", "TEXT NULL");
-          await fixColumn("site_settings", "aboutMissionImageUrl", "TEXT NULL");
-          await fixColumn("site_settings", "contactHeroImageUrl", "TEXT NULL");
-          await fixColumn("site_settings", "clinicsJson", "LONGTEXT NULL");
-          await fixColumn("site_settings", "homeHeroImagesJson", "LONGTEXT NULL");
-          await fixColumn("site_settings", "homeHeroTitlesJson", "LONGTEXT NULL");
-          await fixColumn("site_settings", "modalityBannerImagesJson", "LONGTEXT NULL");
-          await fixColumn("site_settings", "partnersJson", "LONGTEXT NULL");
-          await fixColumn("site_settings", "liveStreamsJson", "LONGTEXT NULL");
-          await fixColumn("site_settings", "championshipAddressesJson", "LONGTEXT NULL");
-          await fixColumn("site_settings", "aboutClinicsJson", "LONGTEXT NULL");
-
-          try {
-            await _db!.execute(sql.raw("CREATE TABLE IF NOT EXISTS contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name TEXT NOT NULL, email VARCHAR(320) NOT NULL, department VARCHAR(100) NULL, message TEXT NOT NULL, status ENUM('new', 'read', 'archived') NOT NULL DEFAULT 'new', createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)"));
-          } catch (e) {}
-
-          try {
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN mainLogoUrl LONGTEXT NULL"));
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN footerLogoUrl LONGTEXT NULL"));
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHighlightImageUrl LONGTEXT NULL"));
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN partnersJson LONGTEXT NULL"));
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHeroImagesJson LONGTEXT NULL"));
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN homeHeroTitlesJson LONGTEXT NULL"));
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN modalityBannerImagesJson LONGTEXT NULL"));
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN liveStreamsJson LONGTEXT NULL"));
-            await _db!.execute(sql.raw("ALTER TABLE site_settings MODIFY COLUMN championshipAddressesJson LONGTEXT NULL"));
-          } catch (e) {
-            // Ignora erro caso o tipo já esteja atualizado
-          }
-          
-          _migrated = true;
-          console.log("[Database] Schema check completed.");
-        } catch (migError) {
-          console.error("[Database] Migration error (non-fatal):", migError);
-          _migrated = true; 
+          await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+          console.log("[Database] Migrations completed successfully.");
+        } catch (e) {
+          console.error("[Database] Migration error:", e);
+          // Não interrompe o servidor, mas registra o erro
         }
+        _migrated = true;
       }
+    } catch (error) {
+      console.warn("[Database] Failed to connect:", error);
+      _db = null;
+    }
+  }
     } catch (error) {
       console.warn("[Database] Failed to connect or migrate:", error);
       _db = null;
