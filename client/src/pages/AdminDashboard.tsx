@@ -209,7 +209,10 @@ function TournamentsSection({ tournaments, navigate }: { tournaments: any[], nav
           <div key={t.id} className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm hover:shadow-xl transition-all">
             <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg shadow-primary/20"><Trophy className="w-6 h-6 text-white" /></div>
             <h3 className="text-xl font-black text-slate-900 mb-1">{t.name}</h3>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{t.category}</p>
+            <div className="flex flex-col gap-1 mb-6">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.category}</p>
+              {t.date && <p className="text-[10px] font-bold text-red uppercase tracking-widest">{t.date}</p>}
+            </div>
             <div className="flex gap-3"><Button className="flex-1 h-12 bg-slate-900 text-white font-black uppercase tracking-widest rounded-xl hover:bg-slate-800" onClick={() => navigate(`/tournament/${t.id}`)}>Gerenciar</Button></div>
           </div>
         ))}

@@ -43,6 +43,7 @@ export const tournaments = mysqlTable("tournaments", {
   pointsPerLoss: int("pointsPerLoss").default(0).notNull(),
   homeAndAway: int("homeAndAway").default(0).notNull(),
   rounds: int("rounds").default(5).notNull(),
+  date: varchar("date", { length: 50 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -80,6 +81,7 @@ export const matches = mysqlTable("matches", {
   awayScore: int("awayScore"),
   voleiSetsJson: longtext("voleiSetsJson"),
   time: varchar("time", { length: 20 }),
+  date: varchar("date", { length: 50 }),
   location: varchar("location", { length: 255 }),
   status: mysqlEnum("status", ["scheduled", "finished"]).default("scheduled").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

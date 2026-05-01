@@ -467,6 +467,7 @@ const tournamentRouter = router({
           })
         ),
         rounds: z.number().default(5),
+        date: z.string().optional(),
         homeAndAway: z.boolean().optional(),
       })
     )
@@ -480,6 +481,7 @@ const tournamentRouter = router({
         category: input.category,
         modality: input.modality,
         rounds: input.rounds,
+        date: input.date,
       };
 
       if (input.homeAndAway !== undefined) {
@@ -955,6 +957,7 @@ const matchRouter = router({
           .max(3)
           .optional(),
         time: z.string().max(20).optional(),
+        date: z.string().optional(),
         location: z.string().max(255).optional(),
       })
     )
@@ -1029,6 +1032,7 @@ const matchRouter = router({
           ...(effectiveAwayScore !== undefined ? { awayScore: effectiveAwayScore, status: "finished" } : {}),
           ...(voleiSetsJson !== undefined ? { voleiSetsJson } : {}),
           ...(input.time !== undefined ? { time: input.time } : {}),
+          ...(input.date !== undefined ? { date: input.date } : {}),
           ...(input.location !== undefined ? { location: input.location } : {}),
         })
         .where(eq(matches.id, input.matchId));

@@ -28,6 +28,7 @@ export default function CreateTournament() {
   const [, navigate] = useLocation();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [date, setDate] = useState("");
   const [modality, setModality] = useState<"futsal" | "basquete" | "volei" | "handebol">("futsal");
   const [pointsPerWin, setPointsPerWin] = useState(3);
   const [pointsPerDraw, setPointsPerDraw] = useState(1);
@@ -82,11 +83,12 @@ export default function CreateTournament() {
       const gB = teams.filter(t => t.group === "B").length;
       if (gA < 2 || gB < 2) return toast.error("Cada grupo precisa de no mínimo 2 equipes");
     }
-    createMutation.mutate({ 
-      name, 
-      category, 
-      modality, 
-      rounds,
+     createMutation.mutate({ 
+       name, 
+       category, 
+       date,
+       modality, 
+       rounds,
       homeAndAway,
       pointsPerWin, 
       pointsPerDraw: modality === "basquete" ? 0 : pointsPerDraw,
@@ -199,6 +201,18 @@ export default function CreateTournament() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="Ex: Sub-9 Masculino"
+                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Data do Evento
+                </label>
+                <input
+                  type="text"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  placeholder="Ex: 15 de Outubro ou Out/2024"
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                 />
               </div>

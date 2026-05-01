@@ -144,9 +144,10 @@ export async function createTournament(
   pointsPerWin: number = 3,
   pointsPerDraw: number = 1,
   pointsPerLoss: number = 0,
-  rounds: number = 5,
-  homeAndAway: boolean = false
-) {
+   rounds: number = 5,
+   homeAndAway: boolean = false,
+   date?: string
+ ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const result = await db.insert(tournaments).values({
@@ -156,9 +157,10 @@ export async function createTournament(
     pointsPerWin,
     pointsPerDraw,
     pointsPerLoss,
-    homeAndAway: homeAndAway ? 1 : 0,
-    rounds,
-    status: "pending",
+     homeAndAway: homeAndAway ? 1 : 0,
+     rounds,
+     date: date ?? null,
+     status: "pending",
   });
   return result[0].insertId;
 }
@@ -184,6 +186,7 @@ export async function updateTournament(
     modality?: "futsal" | "basquete" | "volei" | "handebol";
     rounds?: number;
     homeAndAway?: number;
+    date?: string;
   }
 ) {
   const db = await getDb();

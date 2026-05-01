@@ -39,6 +39,7 @@ type MatchForModal = {
   location?: string | null;
   status?: string;
   round?: number;
+  date?: string | null;
 };
 
 function TeamBadge({ team, size = "md", showName = false }: { team: any; size?: "sm" | "md" | "lg"; showName?: boolean }) {
@@ -86,7 +87,8 @@ function ScoreModal({
     away: number,
     time: string,
     location: string,
-    voleiSets?: { home: number; away: number }[]
+    voleiSets?: { home: number; away: number }[],
+    date?: string
   ) => void;
 }) {
   const isVolei = modality === "volei";
@@ -97,6 +99,7 @@ function ScoreModal({
   const [away, setAway] = useState(match.awayScore ?? 0);
   const [time, setTime] = useState(match.time ?? "");
   const [location, setLocation] = useState(match.location ?? "");
+  const [date, setDate] = useState(match.date ?? "");
   const addressOptions = useMemo(
     () => (championshipAddresses || []).map((address) => address.trim()).filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index),
     [championshipAddresses]
@@ -204,6 +207,19 @@ function ScoreModal({
         </div>
 
         <div className="space-y-4 mb-8">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data da Partida</label>
+            <div className="relative">
+              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+              <input
+                type="text"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                placeholder="Ex: 15 de Outubro ou 15/10"
+                className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm"
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Horário</label>
@@ -330,7 +346,8 @@ function ScoreModal({
                 effectiveAway,
                 time,
                 location,
-                isVolei ? parsedVoleiSets : undefined
+                isVolei ? parsedVoleiSets : undefined,
+                date
               )
             }
           >
@@ -390,7 +407,9 @@ function MatchCard({
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2 text-slate-500">
             <Clock className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-wider">{match.time || "A DEFINIR"}</span>
+            <span className="text-[10px] font-black uppercase tracking-wider">
+              {match.date ? `${match.date} • ` : ""}{match.time || "A DEFINIR"}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-slate-500">
             <MapPin className="w-3.5 h-3.5" />
@@ -661,7 +680,7 @@ function EditTournamentModal({
   onClose,
   onSave,
 }: {
-  tournament: { id: number; name: string; category: string; modality: string; rounds: number };
+  tournament: { id: number; name: string; category: string; modality: string; rounds: number; date?: string | null };
   teams: { id: number; name: string; shortName: string; color: string; logo: string | null }[];
   onClose: () => void;
   onSave: (data: any) => void;
@@ -670,6 +689,7 @@ function EditTournamentModal({
   const [category, setCategory] = useState(tournament.category);
   const [modality, setModality] = useState(tournament.modality as any);
   const [rounds, setRounds] = useState(tournament.rounds ?? 5);
+  const [date, setDate] = useState(tournament.date ?? "");
   const [teamList, setTeamList] = useState(teams);
 
   const handleUpdateTeam = (index: number, field: string, value: string) => {
@@ -736,6 +756,16 @@ function EditTournamentModal({
               <option value="volei">Vôlei</option>
               <option value="handebol">Handebol</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Data do Evento</label>
+            <input
+              type="text"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              placeholder="Ex: Julho de 2024"
+              className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-sm focus:ring-2 focus:ring-red/20"
+            />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Número de Rodadas</label>
@@ -813,7 +843,7 @@ function EditTournamentModal({
           <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button 
             className="flex-1 bg-red text-white font-bold hover:opacity-90 shadow-brand"
-            onClick={() => onSave({ name, category, modality, rounds, teams: teamList })}
+            onClick={() => onSave({ name, category, modality, rounds, date, teams: teamList })}
           >
             Salvar Alterações
           </Button>
@@ -1018,17 +1048,19 @@ export default function TournamentDetail() {
             home: number,
             away: number,
             time: string,
-            location: string,
-            voleiSets?: { home: number; away: number }[]
-          ) =>
-            updateScore.mutate({
-              matchId,
-              homeScore: home,
-              awayScore: away,
-              voleiSets,
-              time,
-              location,
-            })
+             location: string,
+             voleiSets?: { home: number; away: number }[],
+             date?: string
+           ) =>
+             updateScore.mutate({
+               matchId,
+               homeScore: home,
+               awayScore: away,
+               voleiSets,
+               time,
+               location,
+               date,
+             })
           }
         />
       )}
