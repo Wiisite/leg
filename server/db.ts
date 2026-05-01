@@ -47,11 +47,6 @@ export async function getDb() {
       _db = null;
     }
   }
-    } catch (error) {
-      console.warn("[Database] Failed to connect or migrate:", error);
-      _db = null;
-    }
-  }
   return _db;
 }
 
