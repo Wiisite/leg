@@ -360,6 +360,7 @@ function SiteSettingsSection() {
         homeHeroImages: settings.homeHeroImages || {},
         partners: settings.partners || [],
         clinics: settings.clinics || [],
+        aboutClinics: settings.aboutClinics || [],
         liveStreams: settings.liveStreams || [],
         championshipAddresses: settings.championshipAddresses || [],
       });
@@ -372,12 +373,14 @@ function SiteSettingsSection() {
   });
 
   const handleSave = () => {
-    // Filtrar parceiros sem nome para evitar erro do servidor
+    // Filtrar parceiros e clínicas sem título para evitar erro de validação Zod
     const validPartners = formData.partners?.filter((p: any) => p.name && p.name.trim().length > 0) || [];
+    const validClinics = formData.clinics?.filter((c: any) => c.title && c.title.trim().length > 0) || [];
     
     updateMutation.mutate({
       ...formData,
       partners: validPartners,
+      clinics: validClinics,
       mainLogoFileDataUrl: files.mainLogo,
       footerLogoFileDataUrl: files.footerLogo,
       homeHighlightImageFileDataUrl: files.homeHighlight,
@@ -637,6 +640,54 @@ function SiteSettingsSection() {
                 <p className="text-sm text-slate-400 font-medium">Nenhuma clínica cadastrada.</p>
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
+          <h3 className="text-lg font-black uppercase tracking-widest text-slate-900 border-l-4 border-red pl-4">Quadrados "Quem Somos"</h3>
+          <p className="text-xs text-slate-400 font-medium">Configure as 4 imagens que aparecem na seção de Missão do Quem Somos.</p>
+          <div className="grid grid-cols-2 gap-4">
+            {[0, 1, 2, 3].map((idx) => {
+              const item = formData.aboutClinics?.[idx] || { title: "", imageUrl: "" };
+              return (
+                <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                  <input 
+                    value={item.title} 
+                    onChange={e => {
+                      const newList = [...(formData.aboutClinics || [])];
+                      if (!newList[idx]) newList[idx] = { title: "", imageUrl: "" };
+                      newList[idx].title = e.target.value;
+                      setFormData({ ...formData, aboutClinics: newList });
+                    }} 
+                    className="w-full h-10 bg-white border border-slate-100 rounded-lg px-3 text-xs font-bold" 
+                    placeholder={`Título ${idx + 1}...`} 
+                  />
+                  <div className="flex items-center gap-3">
+                    <div className="relative shrink-0">
+                      <input 
+                        type="file" 
+                        id={`about-clinic-img-${idx}`}
+                        onChange={async (e) => { 
+                          const file = e.target.files?.[0]; 
+                          if (file) { 
+                            const dataUrl = await toDataUrl(file);
+                            const newList = [...(formData.aboutClinics || [])];
+                            if (!newList[idx]) newList[idx] = { title: "", imageUrl: "" };
+                            newList[idx].imageFileDataUrl = dataUrl; 
+                            setFormData({ ...formData, aboutClinics: newList }); 
+                          } 
+                        }} 
+                        className="hidden" 
+                      />
+                      <label htmlFor={`about-clinic-img-${idx}`} className="w-16 h-16 bg-white border border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all overflow-hidden shadow-sm">
+                        {(item.imageFileDataUrl || item.imageUrl) ? <img src={item.imageFileDataUrl || item.imageUrl} className="w-full h-full object-cover" /> : <Upload className="w-4 h-4 text-slate-300" />}
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-slate-400">Imagem quadrada recomendada.</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -1330,6 +1330,11 @@ const siteRouter = router({
           imageFileDataUrl: z.string().max(50_000_000).optional(),
           details: z.array(z.string()).optional(),
         })).optional(),
+        aboutClinics: z.array(z.object({
+          title: z.string().trim().max(100).optional(),
+          imageUrl: z.string().max(50_000_000).optional(),
+          imageFileDataUrl: z.string().max(50_000_000).optional(),
+        })).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1419,6 +1424,19 @@ const siteRouter = router({
               imageUrl:
                 c.imageFileDataUrl && c.imageFileDataUrl.length > 0
                   ? await uploadImage(`clinic-${i}`, c.imageFileDataUrl)
+                  : c.imageUrl,
+            }))
+          )
+        : undefined;
+      
+      const resolvedAboutClinics = input.aboutClinics
+        ? await Promise.all(
+            input.aboutClinics.map(async (c, i) => ({
+              ...c,
+              imageFileDataUrl: undefined,
+              imageUrl:
+                c.imageFileDataUrl && c.imageFileDataUrl.length > 0
+                  ? await uploadImage(`about-clinic-${i}`, c.imageFileDataUrl)
                   : c.imageUrl,
             }))
           )
@@ -1531,6 +1549,9 @@ const siteRouter = router({
           : {}),
         ...(resolvedClinics !== undefined
           ? { clinicsJson: JSON.stringify(resolvedClinics) }
+          : {}),
+        ...(resolvedAboutClinics !== undefined
+          ? { aboutClinicsJson: JSON.stringify(resolvedAboutClinics) }
           : {}),
         ...(resolvedHomeHeroImages !== undefined
           ? {

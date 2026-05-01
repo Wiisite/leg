@@ -107,6 +107,7 @@ export const siteSettings = mysqlTable("site_settings", {
   aboutMissionImageUrl: text("aboutMissionImageUrl"),
   contactHeroImageUrl: text("contactHeroImageUrl"),
   clinicsJson: longtext("clinicsJson"),
+  aboutClinicsJson: longtext("aboutClinicsJson"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 

@@ -118,22 +118,29 @@ export default function QuemSomos() {
             </p>
           </motion.div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-4 pt-8">
-              <div className="aspect-square bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-center p-6 text-center shadow-2xl">
-                <span className="text-sm font-bold">Respeito ao Atleta</span>
+            {(siteSettings?.aboutClinics && siteSettings.aboutClinics.length > 0 ? siteSettings.aboutClinics : [
+              { title: "Respeito ao Atleta", imageUrl: "" },
+              { title: "Organização Profissional", imageUrl: "" },
+              { title: "Sociabilização", imageUrl: "" },
+              { title: "Ética no Esporte", imageUrl: "" },
+            ]).slice(0, 4).map((item, idx) => (
+              <div 
+                key={idx} 
+                className={`aspect-square rounded-2xl flex items-center justify-center p-6 text-center shadow-2xl relative overflow-hidden group ${
+                  idx === 1 ? "bg-red/90" : "bg-white/5 backdrop-blur-md border border-white/10"
+                }`}
+              >
+                {item.imageUrl && (
+                  <div className="absolute inset-0 z-0">
+                    <img src={item.imageUrl} className="w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" alt={item.title} />
+                    <div className={`absolute inset-0 ${idx === 1 ? 'bg-red/40' : 'bg-primary/20'}`} />
+                  </div>
+                )}
+                <span className={`relative z-10 text-sm font-black uppercase tracking-wider ${idx === 1 ? "text-white" : "text-white"}`}>
+                  {item.title}
+                </span>
               </div>
-              <div className="aspect-square bg-red/90 backdrop-blur-md rounded-2xl flex items-center justify-center p-6 text-center shadow-2xl">
-                <span className="text-sm font-black uppercase">Organização Profissional</span>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="aspect-square bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center p-6 text-center shadow-2xl">
-                <span className="text-sm font-bold">Sociabilização</span>
-              </div>
-              <div className="aspect-square bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-center p-6 text-center shadow-2xl">
-                <span className="text-sm font-bold">Ética no Esporte</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
