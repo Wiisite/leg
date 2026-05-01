@@ -1377,6 +1377,7 @@ const siteRouter = router({
           if (message.includes("Storage proxy credentials missing")) {
             return dataUrl;
           }
+          console.error("[SiteRouter] Erro ao salvar configurações:", error);
           throw error;
         }
       };
@@ -1385,7 +1386,6 @@ const siteRouter = router({
         input.mainLogoFileDataUrl && input.mainLogoFileDataUrl.length > 0
           ? await uploadImage("main-logo", input.mainLogoFileDataUrl)
           : undefined;
-
       const resolvedFooterLogoUrl =
         input.footerLogoFileDataUrl && input.footerLogoFileDataUrl.length > 0
           ? await uploadImage("footer-logo", input.footerLogoFileDataUrl)

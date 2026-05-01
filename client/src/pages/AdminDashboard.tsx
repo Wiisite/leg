@@ -654,8 +654,7 @@ function SiteSettingsSection() {
                   <input 
                     value={item.title} 
                     onChange={e => {
-                      const newList = [...(formData.aboutClinics || [])];
-                      if (!newList[idx]) newList[idx] = { title: "", imageUrl: "" };
+                      const newList = Array.from({ length: 4 }, (_, i) => formData.aboutClinics?.[i] || { title: "", imageUrl: "" });
                       newList[idx].title = e.target.value;
                       setFormData({ ...formData, aboutClinics: newList });
                     }} 
@@ -671,8 +670,7 @@ function SiteSettingsSection() {
                           const file = e.target.files?.[0]; 
                           if (file) { 
                             const dataUrl = await toDataUrl(file);
-                            const newList = [...(formData.aboutClinics || [])];
-                            if (!newList[idx]) newList[idx] = { title: "", imageUrl: "" };
+                            const newList = Array.from({ length: 4 }, (_, i) => formData.aboutClinics?.[i] || { title: "", imageUrl: "" });
                             newList[idx].imageFileDataUrl = dataUrl; 
                             setFormData({ ...formData, aboutClinics: newList }); 
                           } 
