@@ -1,22 +1,44 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
-
 import { ENV } from './_core/env';
+import fs from 'fs';
+import path from 'path';
 
 type StorageConfig = { baseUrl: string; apiKey: string };
 
-function getStorageConfig(): StorageConfig {
+function getForgeConfig(): StorageConfig | null {
   const baseUrl = ENV.forgeApiUrl;
   const apiKey = ENV.forgeApiKey;
-
-  if (!baseUrl || !apiKey) {
-    throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
-    );
-  }
-
+  if (!baseUrl || !apiKey) return null;
   return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
 }
+
+// ── Local storage ────────────────────────────────────────────────────────────
+
+function getUploadsDir(): string {
+  const dir = path.resolve(process.cwd(), "uploads");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function getPublicBaseUrl(): string {
+  const port = process.env.PORT || "3000";
+  const host = process.env.APP_URL || `http://localhost:${port}`;
+  return host.replace(/\/+$/, "");
+}
+
+async function localPut(
+  relKey: string,
+  data: Buffer | Uint8Array | string
+): Promise<{ key: string; url: string }> {
+  const uploadsDir = getUploadsDir();
+  // flatten the key into a safe filename (replace slashes with underscores)
+  const fileName = relKey.replace(/\//g, "_");
+  const filePath = path.join(uploadsDir, fileName);
+  fs.writeFileSync(filePath, data as any);
+  const url = `${getPublicBaseUrl()}/uploads/${fileName}`;
+  return { key: relKey, url };
+}
+
+// ── Forge storage ────────────────────────────────────────────────────────────
 
 function buildUploadUrl(baseUrl: string, relKey: string): URL {
   const url = new URL("v1/storage/upload", ensureTrailingSlash(baseUrl));
@@ -67,18 +89,26 @@ function buildAuthHeaders(apiKey: string): HeadersInit {
   return { Authorization: `Bearer ${apiKey}` };
 }
 
+// ── Public API ───────────────────────────────────────────────────────────────
+
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+  const forge = getForgeConfig();
+
+  if (!forge) {
+    console.log("[Storage] Forge credentials not set — using local disk storage.");
+    return localPut(relKey, data);
+  }
+
   const key = normalizeKey(relKey);
-  const uploadUrl = buildUploadUrl(baseUrl, key);
+  const uploadUrl = buildUploadUrl(forge.baseUrl, key);
   const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
   const response = await fetch(uploadUrl, {
     method: "POST",
-    headers: buildAuthHeaders(apiKey),
+    headers: buildAuthHeaders(forge.apiKey),
     body: formData,
   });
 
@@ -92,11 +122,18 @@ export async function storagePut(
   return { key, url };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+  const forge = getForgeConfig();
+
+  if (!forge) {
+    const fileName = relKey.replace(/\//g, "_");
+    const url = `${getPublicBaseUrl()}/uploads/${fileName}`;
+    return { key: relKey, url };
+  }
+
   const key = normalizeKey(relKey);
   return {
     key,
-    url: await buildDownloadUrl(baseUrl, key, apiKey),
+    url: await buildDownloadUrl(forge.baseUrl, key, forge.apiKey),
   };
 }

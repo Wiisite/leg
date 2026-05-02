@@ -114,6 +114,11 @@ async function startServer() {
   app.set("trust proxy", true);
   const server = createServer(app);
 
+  // Serve locally uploaded images
+  const uploadsDir = path.resolve(process.cwd(), "uploads");
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  app.use("/uploads", express.static(uploadsDir));
+
   // Health check endpoint — FIRST, before everything else
   app.get("/api/health", (_req, res) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
