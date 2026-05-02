@@ -418,14 +418,63 @@ function SiteSettingsSection() {
   });
 
   const handleSave = () => {
-    // Filtrar parceiros e clínicas sem título para evitar erro de validação Zod
-    const validPartners = formData.partners?.filter((p: any) => p.name && p.name.trim().length > 0) || [];
-    const validClinics = formData.clinics?.filter((c: any) => c.title && c.title.trim().length > 0) || [];
-    
+    // Remove base64 dos campos de URL
+    // undefined → servidor não toca no campo (mantém o que está no banco)
+    // ""        → servidor apaga o campo (usuário clicou Remover)
+    // "https://..." → servidor salva a URL
+    const realUrl = (v: string | undefined | null): string | undefined => {
+      if (v === undefined || v === null) return undefined;
+      if (v.startsWith("data:")) return undefined; // base64 → não alterar
+      return v.trim(); // "" ou URL real
+    };
+
+    const realUrlMap = (map: Record<string, string> | undefined) => {
+      if (!map) return undefined;
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(map)) {
+        const u = realUrl(v);
+        if (u) out[k] = u;
+      }
+      return out;
+    };
+
+    const validPartners = (formData.partners || [])
+      .filter((p: any) => p.name?.trim())
+      .map((p: any) => ({
+        name: p.name,
+        logoUrl: p.logoFileDataUrl ? undefined : realUrl(p.logoUrl),
+        logoFileDataUrl: p.logoFileDataUrl,
+      }));
+
+    const validClinics = (formData.clinics || [])
+      .filter((c: any) => c.title?.trim())
+      .map((c: any) => ({
+        ...c,
+        imageUrl: c.imageFileDataUrl ? undefined : realUrl(c.imageUrl),
+      }));
+
+    const validAboutClinics = (formData.aboutClinics || []).map((c: any) => ({
+      ...c,
+      imageUrl: c.imageFileDataUrl ? undefined : realUrl(c.imageUrl),
+    }));
+
     updateMutation.mutate({
-      ...formData,
+      homeHeroTitles: formData.homeHeroTitles,
+      liveStreams: formData.liveStreams,
+      championshipAddresses: formData.championshipAddresses,
+      // URLs reais (base64 é ignorado — campo fica undefined, servidor não altera)
+      mainLogoUrl: realUrl(formData.mainLogoUrl),
+      footerLogoUrl: realUrl(formData.footerLogoUrl),
+      homeHighlightImageUrl: realUrl(formData.homeHighlightImageUrl),
+      clinicsHeroImageUrl: realUrl(formData.clinicsHeroImageUrl),
+      aboutHeroImageUrl: realUrl(formData.aboutHeroImageUrl),
+      aboutMissionImageUrl: realUrl(formData.aboutMissionImageUrl),
+      contactHeroImageUrl: realUrl(formData.contactHeroImageUrl),
+      homeHeroImages: realUrlMap(formData.homeHeroImages),
       partners: validPartners,
       clinics: validClinics,
+      aboutClinics: validAboutClinics,
+      // Arquivos novos (upload)
       mainLogoFileDataUrl: files.mainLogo,
       footerLogoFileDataUrl: files.footerLogo,
       homeHighlightImageFileDataUrl: files.homeHighlight,
