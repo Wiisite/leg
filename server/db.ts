@@ -61,7 +61,16 @@ async function runMigrations(db: ReturnType<typeof drizzle>) {
 
     console.log(`[Migrations] Aplicando ${entry.tag} (${statements.length} statements)...`);
     for (const stmt of statements) {
-      await db.execute(sql.raw(stmt));
+      try {
+        await db.execute(sql.raw(stmt));
+      } catch (e: any) {
+        // Ignora erros de "tabela já existe" ou "coluna já existe" para permitir que o deploy continue
+        if (e.code === 'ER_TABLE_EXISTS_ERROR' || e.code === 'ER_DUP_FIELDNAME' || e.message?.includes("already exists")) {
+          console.warn(`[Migrations] Ignorando erro em ${entry.tag}: ${e.message}`);
+        } else {
+          throw e;
+        }
+      }
     }
 
     await db.execute(
