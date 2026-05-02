@@ -46,7 +46,7 @@ async function runMigrations(db: ReturnType<typeof drizzle>) {
   for (const entry of journal.entries) {
     if (applied.has(entry.tag)) continue;
 
-    const sqlFile = path.join(migrationsDir, `${String(entry.idx).padStart(4, "0")}_${entry.tag}.sql`);
+    const sqlFile = path.join(migrationsDir, `${entry.tag}.sql`);
     if (!fs.existsSync(sqlFile)) {
       console.warn(`[Migrations] Arquivo não encontrado: ${sqlFile}`);
       continue;
