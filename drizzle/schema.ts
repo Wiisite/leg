@@ -31,7 +31,7 @@ export const tournaments = mysqlTable("tournaments", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   category: varchar("category", { length: 100 }).notNull().default("Geral"),
-  modality: mysqlEnum("modality", ["futsal", "basquete", "volei", "handebol"])
+  modality: mysqlEnum("modality", ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"])
     .default("futsal")
     .notNull(),
   status: mysqlEnum("status", ["pending", "group_stage", "semifinals", "final", "finished"])

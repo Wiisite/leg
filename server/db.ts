@@ -20,7 +20,7 @@ export type SiteLiveStream = {
 
 export type SiteChampionshipAddress = string;
 
-const MODALITY_KEYS = ["futsal", "basquete", "volei", "handebol"] as const;
+const MODALITY_KEYS = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
 type ModalityKey = (typeof MODALITY_KEYS)[number];
 export type SiteModalityImageMap = Partial<Record<ModalityKey, string>>;
 export type SiteModalityTextMap = Partial<Record<ModalityKey, string>>;
