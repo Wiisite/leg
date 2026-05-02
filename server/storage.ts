@@ -20,6 +20,9 @@ function getUploadsDir(): string {
 }
 
 function getPublicBaseUrl(): string {
+  if (!process.env.APP_URL) {
+    console.warn("[Storage] AVISO: APP_URL não definida no .env — imagens salvas com URL localhost não funcionarão na VPS. Defina APP_URL=https://seudominio.com.br");
+  }
   const port = process.env.PORT || "3000";
   const host = process.env.APP_URL || `http://localhost:${port}`;
   return host.replace(/\/+$/, "");

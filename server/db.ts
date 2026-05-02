@@ -2,8 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { contactMessages, InsertContactMessage, InsertUser, matches, siteSettings, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-
-import { migrate } from "drizzle-orm/mysql2/migrator";
+import fs from "fs";
 import path from "path";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -26,19 +25,64 @@ type ModalityKey = (typeof MODALITY_KEYS)[number];
 export type SiteModalityImageMap = Partial<Record<ModalityKey, string>>;
 export type SiteModalityTextMap = Partial<Record<ModalityKey, string>>;
 
+async function runMigrations(db: ReturnType<typeof drizzle>) {
+  const migrationsDir = path.join(process.cwd(), "drizzle");
+  const journalPath = path.join(migrationsDir, "meta/_journal.json");
+  if (!fs.existsSync(journalPath)) return;
+
+  // Tabela de controle de migrations
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS __drizzle_migrations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      hash VARCHAR(255) NOT NULL UNIQUE,
+      created_at BIGINT
+    )
+  `));
+
+  const journal = JSON.parse(fs.readFileSync(journalPath, "utf-8"));
+  const rows = await db.execute(sql.raw(`SELECT hash FROM __drizzle_migrations`));
+  const applied = new Set((rows[0] as any[]).map((r: any) => r.hash));
+
+  for (const entry of journal.entries) {
+    if (applied.has(entry.tag)) continue;
+
+    const sqlFile = path.join(migrationsDir, `${String(entry.idx).padStart(4, "0")}_${entry.tag}.sql`);
+    if (!fs.existsSync(sqlFile)) {
+      console.warn(`[Migrations] Arquivo não encontrado: ${sqlFile}`);
+      continue;
+    }
+
+    const content = fs.readFileSync(sqlFile, "utf-8");
+    // Drizzle usa '--> statement-breakpoint' para separar statements
+    const statements = content
+      .split("--> statement-breakpoint")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    console.log(`[Migrations] Aplicando ${entry.tag} (${statements.length} statements)...`);
+    for (const stmt of statements) {
+      await db.execute(sql.raw(stmt));
+    }
+
+    await db.execute(
+      sql.raw(`INSERT INTO __drizzle_migrations (hash, created_at) VALUES ('${entry.tag}', ${Date.now()})`)
+    );
+    console.log(`[Migrations] ${entry.tag} aplicado.`);
+  }
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       _db = drizzle(process.env.DATABASE_URL);
-      
+
       if (!_migrated) {
         console.log("[Database] Running migrations...");
         try {
-          await migrate(_db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+          await runMigrations(_db);
           console.log("[Database] Migrations completed successfully.");
         } catch (e) {
           console.error("[Database] Migration error:", e);
-          // Não interrompe o servidor, mas registra o erro
         }
         _migrated = true;
       }
