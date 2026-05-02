@@ -465,22 +465,28 @@ export async function getSiteSettings() {
     }
   }
 
+  const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
+
   return {
-    mainLogoUrl: row.mainLogoUrl,
-    footerLogoUrl: row.footerLogoUrl,
-    homeHighlightImageUrl: row.homeHighlightImageUrl,
-    homeHeroImages: parseModalityImageMap(row.homeHeroImagesJson),
+    mainLogoUrl: sanitize(row.mainLogoUrl),
+    footerLogoUrl: sanitize(row.footerLogoUrl),
+    homeHighlightImageUrl: sanitize(row.homeHighlightImageUrl),
+    homeHeroImages: Object.fromEntries(
+      Object.entries(parseModalityImageMap(row.homeHeroImagesJson)).map(([k, v]) => [k, sanitize(v)])
+    ),
     homeHeroTitles: parseModalityTextMap((row as any).homeHeroTitlesJson),
-    modalityBannerImages: parseModalityImageMap(row.modalityBannerImagesJson),
-    partners,
+    modalityBannerImages: Object.fromEntries(
+      Object.entries(parseModalityImageMap(row.modalityBannerImagesJson)).map(([k, v]) => [k, sanitize(v)])
+    ),
+    partners: partners.map(p => ({ ...p, logoUrl: sanitize(p.logoUrl) })),
     liveStreams: parseLiveStreams((row as any).liveStreamsJson),
     championshipAddresses: parseChampionshipAddresses((row as any).championshipAddressesJson),
-    clinicsHeroImageUrl: row.clinicsHeroImageUrl,
-    aboutHeroImageUrl: row.aboutHeroImageUrl,
-    aboutMissionImageUrl: row.aboutMissionImageUrl,
-    contactHeroImageUrl: row.contactHeroImageUrl,
-    clinics: row.clinicsJson ? JSON.parse(row.clinicsJson) : [],
-    aboutClinics: row.aboutClinicsJson ? JSON.parse(row.aboutClinicsJson) : [],
+    clinicsHeroImageUrl: sanitize(row.clinicsHeroImageUrl),
+    aboutHeroImageUrl: sanitize(row.aboutHeroImageUrl),
+    aboutMissionImageUrl: sanitize(row.aboutMissionImageUrl),
+    contactHeroImageUrl: sanitize(row.contactHeroImageUrl),
+    clinics: (row.clinicsJson ? JSON.parse(row.clinicsJson) : []).map((c: any) => ({ ...c, imageUrl: sanitize(c.imageUrl) })),
+    aboutClinics: (row.aboutClinicsJson ? JSON.parse(row.aboutClinicsJson) : []).map((ac: any) => ({ ...ac, imageUrl: sanitize(ac.imageUrl) })),
   };
 }
 
