@@ -553,8 +553,23 @@ export async function upsertSiteSettings(data: {
 
   try {
     if (existing) {
+      // Garante que as colunas suportem dados grandes (LongText)
+      await db.execute(sql.raw(`
+        ALTER TABLE site_settings 
+        MODIFY mainLogoUrl LONGTEXT,
+        MODIFY footerLogoUrl LONGTEXT,
+        MODIFY homeHighlightImageUrl LONGTEXT,
+        MODIFY clinicsHeroImageUrl LONGTEXT,
+        MODIFY aboutHeroImageUrl LONGTEXT,
+        MODIFY aboutMissionImageUrl LONGTEXT,
+        MODIFY contactHeroImageUrl LONGTEXT,
+        MODIFY homeHeroImagesJson LONGTEXT,
+        MODIFY modalityBannerImagesJson LONGTEXT
+      `)).catch(() => {});
+
       // Atualiza campos individualmente para evitar pacotes SQL gigantescos
       for (const [key, value] of Object.entries(patch)) {
+        console.log(`[DB] Atualizando campo ${key}...`);
         await db.update(siteSettings)
           .set({ [key]: value })
           .where(eq(siteSettings.id, existing.id));
