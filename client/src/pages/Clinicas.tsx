@@ -10,6 +10,9 @@ import { trpc } from "@/lib/trpc";
 export default function Clinicas() {
   const [, navigate] = useLocation();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
+  const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
+  const clinicsHeroImageUrl = sanitize(siteSettings?.clinicsHeroImageUrl);
+
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -21,9 +24,9 @@ export default function Clinicas() {
 
       {/* Hero Section */}
       <section className="relative py-20 bg-slate-900 text-white overflow-hidden min-h-[450px] flex items-center">
-        {siteSettings?.clinicsHeroImageUrl ? (
+        {clinicsHeroImageUrl ? (
           <div className="absolute inset-0 z-0">
-            <img src={siteSettings.clinicsHeroImageUrl} className="w-full h-full object-cover" alt="Clinics Hero" />
+            <img src={clinicsHeroImageUrl} className="w-full h-full object-cover" alt="Clinics Hero" />
             <div className="absolute inset-0 bg-slate-900/70" />
           </div>
         ) : (

@@ -10,6 +10,10 @@ import { trpc } from "@/lib/trpc";
 export default function QuemSomos() {
   const [, navigate] = useLocation();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
+  const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
+  const aboutHeroImageUrl = sanitize(siteSettings?.aboutHeroImageUrl);
+  const aboutMissionImageUrl = sanitize(siteSettings?.aboutMissionImageUrl);
+
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -61,9 +65,9 @@ export default function QuemSomos() {
 
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 overflow-hidden min-h-[400px] flex items-center">
-        {siteSettings?.aboutHeroImageUrl ? (
+        {aboutHeroImageUrl ? (
           <div className="absolute inset-0 z-[-1]">
-            <img src={siteSettings.aboutHeroImageUrl} className="w-full h-full object-cover" alt="Hero background" />
+            <img src={aboutHeroImageUrl} className="w-full h-full object-cover" alt="Hero background" />
             <div className="absolute inset-0 bg-[#07174B]/80" />
           </div>
         ) : (
@@ -79,11 +83,11 @@ export default function QuemSomos() {
             animate={{ opacity: 1, y: 0 }}
             className="max-w-3xl"
           >
-            <h1 className={`text-4xl md:text-6xl font-black leading-tight mb-6 ${siteSettings?.aboutHeroImageUrl ? 'text-white' : 'text-primary'}`}>
+            <h1 className={`text-4xl md:text-6xl font-black leading-tight mb-6 ${aboutHeroImageUrl ? 'text-white' : 'text-primary'}`}>
               Compromisso com o <br />
               <span className="text-red">Esporte Educacional</span>
             </h1>
-            <p className={`text-lg md:text-xl leading-relaxed ${siteSettings?.aboutHeroImageUrl ? 'text-blue-100/90' : 'text-muted-foreground'}`}>
+            <p className={`text-lg md:text-xl leading-relaxed ${aboutHeroImageUrl ? 'text-blue-100/90' : 'text-muted-foreground'}`}>
               A Liga Escolar Guarulhense (LEG) nasceu com o objetivo de se tornar referência esportiva 
               para crianças e adolescentes matriculados nas escolas do município de Guarulhos.
             </p>
@@ -93,9 +97,9 @@ export default function QuemSomos() {
 
       {/* Mission Section */}
       <section className="relative py-20 bg-primary text-white overflow-hidden">
-        {siteSettings?.aboutMissionImageUrl && (
+        {aboutMissionImageUrl && (
           <div className="absolute inset-0 z-0">
-            <img src={siteSettings.aboutMissionImageUrl} className="w-full h-full object-cover opacity-30" alt="Mission background" />
+            <img src={aboutMissionImageUrl} className="w-full h-full object-cover opacity-30" alt="Mission background" />
             <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/95 to-primary/80" />
           </div>
         )}

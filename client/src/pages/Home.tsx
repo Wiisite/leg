@@ -122,16 +122,32 @@ export default function Home() {
   const { data: tournaments } = trpc.tournament.list.useQuery();
   const { data: homeNews } = trpc.tournament.getHomeNews.useQuery();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
+  const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
 
-  const mainLogoUrl = siteSettings?.mainLogoUrl?.trim() ? siteSettings.mainLogoUrl : "/logo.png";
-  const footerLogoUrl = siteSettings?.footerLogoUrl?.trim() ? siteSettings.footerLogoUrl : mainLogoUrl;
+
+  const mainLogoUrl = sanitize(siteSettings?.mainLogoUrl) || "/logo.png";
+  const footerLogoUrl = sanitize(siteSettings?.footerLogoUrl) || mainLogoUrl;
   const homeHighlightImageUrl =
-    siteSettings?.homeHighlightImageUrl?.trim()
-      ? siteSettings.homeHighlightImageUrl
+    sanitize(siteSettings?.homeHighlightImageUrl)
+      ? sanitize(siteSettings.homeHighlightImageUrl)!
       : "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1800&q=80";
-  const homeHeroImages = siteSettings?.homeHeroImages ?? {};
+  
+  // Sanitiza objetos e arrays
+  const homeHeroImages = useMemo(() => {
+    const obj: any = {};
+    if (siteSettings?.homeHeroImages) {
+      Object.entries(siteSettings.homeHeroImages).forEach(([k, v]) => {
+        obj[k] = sanitize(v);
+      });
+    }
+    return obj;
+  }, [siteSettings?.homeHeroImages]);
+
   const homeHeroTitles = siteSettings?.homeHeroTitles ?? {};
-  const partners = siteSettings?.partners ?? [];
+  const partners = useMemo(() => 
+    (siteSettings?.partners ?? []).map((p: any) => ({ ...p, logoUrl: sanitize(p.logoUrl) })),
+    [siteSettings?.partners]
+  );
 
   const getHomeHeroImage = (modality: string) => {
     const configured = homeHeroImages[modality as keyof typeof homeHeroImages];

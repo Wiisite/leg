@@ -11,6 +11,9 @@ import { trpc } from "@/lib/trpc";
 export default function Contato() {
   const [, navigate] = useLocation();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
+  const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
+  const contactHeroImageUrl = sanitize(siteSettings?.contactHeroImageUrl);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -41,9 +44,9 @@ export default function Contato() {
 
       {/* Hero Section */}
       <section className="py-20 bg-primary text-white relative overflow-hidden min-h-[350px] flex items-center">
-        {siteSettings?.contactHeroImageUrl ? (
+        {contactHeroImageUrl ? (
           <div className="absolute inset-0 z-0">
-            <img src={siteSettings.contactHeroImageUrl} className="w-full h-full object-cover" alt="Contact Hero" />
+            <img src={contactHeroImageUrl} className="w-full h-full object-cover" alt="Contact Hero" />
             <div className="absolute inset-0 bg-[#07174B]/80" />
           </div>
         ) : (

@@ -316,19 +316,21 @@ function SiteSettingsSection() {
 
   useEffect(() => {
     if (settings) {
+      const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
+
       setFormData({
-        mainLogoUrl: settings.mainLogoUrl || "",
-        footerLogoUrl: settings.footerLogoUrl || "",
-        homeHighlightImageUrl: settings.homeHighlightImageUrl || "",
-        clinicsHeroImageUrl: settings.clinicsHeroImageUrl || "",
-        aboutHeroImageUrl: settings.aboutHeroImageUrl || "",
-        aboutMissionImageUrl: settings.aboutMissionImageUrl || "",
-        contactHeroImageUrl: settings.contactHeroImageUrl || "",
+        mainLogoUrl: sanitize(settings.mainLogoUrl),
+        footerLogoUrl: sanitize(settings.footerLogoUrl),
+        homeHighlightImageUrl: sanitize(settings.homeHighlightImageUrl),
+        clinicsHeroImageUrl: sanitize(settings.clinicsHeroImageUrl),
+        aboutHeroImageUrl: sanitize(settings.aboutHeroImageUrl),
+        aboutMissionImageUrl: sanitize(settings.aboutMissionImageUrl),
+        contactHeroImageUrl: sanitize(settings.contactHeroImageUrl),
         homeHeroTitles: settings.homeHeroTitles || {},
         homeHeroImages: settings.homeHeroImages || {},
-        partners: settings.partners || [],
-        clinics: settings.clinics || [],
-        aboutClinics: settings.aboutClinics || [],
+        partners: (settings.partners || []).map((p: any) => ({ ...p, logoUrl: sanitize(p.logoUrl) })),
+        clinics: (settings.clinics || []).map((c: any) => ({ ...c, imageUrl: sanitize(c.imageUrl) })),
+        aboutClinics: (settings.aboutClinics || []).map((ac: any) => ({ ...ac, imageUrl: sanitize(ac.imageUrl) })),
         liveStreams: settings.liveStreams || [],
         championshipAddresses: settings.championshipAddresses || [],
       });
