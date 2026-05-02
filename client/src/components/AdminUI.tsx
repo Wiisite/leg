@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export const toDataUrl = (file: File, maxWidth = 1920, quality = 0.8): Promise<string> => {
+export const toDataUrl = (file: File, maxWidth = 1024, quality = 0.5): Promise<string> => {
   if (file.size > MAX_FILE_SIZE) {
     return Promise.reject(new Error(`Arquivo muito grande. Máximo: 10MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(1)}MB`));
   }

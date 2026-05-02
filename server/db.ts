@@ -536,26 +536,36 @@ export async function upsertSiteSettings(data: {
     return getSiteSettings();
   }
 
-  if (existing) {
-    await db.update(siteSettings).set(patch).where(eq(siteSettings.id, existing.id));
-  } else {
-    await db.insert(siteSettings).values({
-      mainLogoUrl: data.mainLogoUrl ?? null,
-      footerLogoUrl: data.footerLogoUrl ?? null,
-      homeHighlightImageUrl: data.homeHighlightImageUrl ?? null,
-      homeHeroImagesJson: JSON.stringify(data.homeHeroImages ?? {}),
-      homeHeroTitlesJson: JSON.stringify(data.homeHeroTitles ?? {}),
-      modalityBannerImagesJson: JSON.stringify(data.modalityBannerImages ?? {}),
-      partnersJson: JSON.stringify(data.partners ?? []),
-      liveStreamsJson: JSON.stringify(data.liveStreams ?? []),
-      championshipAddressesJson: JSON.stringify(data.championshipAddresses ?? []),
-      clinicsHeroImageUrl: data.clinicsHeroImageUrl ?? null,
-      aboutHeroImageUrl: data.aboutHeroImageUrl ?? null,
-      aboutMissionImageUrl: data.aboutMissionImageUrl ?? null,
-      contactHeroImageUrl: data.contactHeroImageUrl ?? null,
-      clinicsJson: data.clinicsJson ?? null,
-      aboutClinicsJson: data.aboutClinicsJson ?? null,
-    });
+  try {
+    if (existing) {
+      // Atualiza campos individualmente para evitar pacotes SQL gigantescos
+      for (const [key, value] of Object.entries(patch)) {
+        await db.update(siteSettings)
+          .set({ [key]: value })
+          .where(eq(siteSettings.id, existing.id));
+      }
+    } else {
+      await db.insert(siteSettings).values({
+        mainLogoUrl: data.mainLogoUrl ?? null,
+        footerLogoUrl: data.footerLogoUrl ?? null,
+        homeHighlightImageUrl: data.homeHighlightImageUrl ?? null,
+        homeHeroImagesJson: JSON.stringify(data.homeHeroImages ?? {}),
+        homeHeroTitlesJson: JSON.stringify(data.homeHeroTitles ?? {}),
+        modalityBannerImagesJson: JSON.stringify(data.modalityBannerImages ?? {}),
+        partnersJson: JSON.stringify(data.partners ?? []),
+        liveStreamsJson: JSON.stringify(data.liveStreams ?? []),
+        championshipAddressesJson: JSON.stringify(data.championshipAddresses ?? []),
+        clinicsHeroImageUrl: data.clinicsHeroImageUrl ?? null,
+        aboutHeroImageUrl: data.aboutHeroImageUrl ?? null,
+        aboutMissionImageUrl: data.aboutMissionImageUrl ?? null,
+        contactHeroImageUrl: data.contactHeroImageUrl ?? null,
+        clinicsJson: data.clinicsJson ?? null,
+        aboutClinicsJson: data.aboutClinicsJson ?? null,
+      });
+    }
+  } catch (error) {
+    console.error("[DB] Erro ao salvar configurações do site:", error);
+    throw error;
   }
 
   return getSiteSettings();
