@@ -1251,9 +1251,9 @@ const siteRouter = router({
   updateSettings: protectedProcedure
     .input(
       z.object({
-        mainLogoUrl: z.string().trim().max(50_000_000).optional(),
-        footerLogoUrl: z.string().trim().max(50_000_000).optional(),
-        homeHighlightImageUrl: z.string().trim().max(50_000_000).optional(),
+        mainLogoUrl: z.string().trim().max(50_000_000).optional().nullable(),
+        footerLogoUrl: z.string().trim().max(50_000_000).optional().nullable(),
+        homeHighlightImageUrl: z.string().trim().max(50_000_000).optional().nullable(),
         homeHeroImages: z
           .object({
             futsal: z.string().trim().max(50_000_000).optional(),
@@ -1305,8 +1305,8 @@ const siteRouter = router({
           .array(
             z.object({
               name: z.string().trim().min(1).max(120),
-              logoUrl: z.string().trim().max(50_000_000).optional(),
-              logoFileDataUrl: z.string().max(50_000_000).optional(),
+              logoUrl: z.string().trim().max(50_000_000).optional().nullable(),
+              logoFileDataUrl: z.string().max(50_000_000).optional().nullable(),
             })
           )
           .optional(),
@@ -1319,25 +1319,25 @@ const siteRouter = router({
           )
           .optional(),
         championshipAddresses: z.array(z.string().trim().min(1).max(250)).optional(),
-        clinicsHeroImageUrl: z.string().trim().max(50_000_000).optional(),
-        clinicsHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
-        aboutHeroImageUrl: z.string().trim().max(50_000_000).optional(),
-        aboutHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
-        aboutMissionImageUrl: z.string().trim().max(50_000_000).optional(),
-        aboutMissionImageFileDataUrl: z.string().max(50_000_000).optional(),
-        contactHeroImageUrl: z.string().trim().max(50_000_000).optional(),
-        contactHeroImageFileDataUrl: z.string().max(50_000_000).optional(),
+        clinicsHeroImageUrl: z.string().trim().max(50_000_000).optional().nullable(),
+        clinicsHeroImageFileDataUrl: z.string().max(50_000_000).optional().nullable(),
+        aboutHeroImageUrl: z.string().trim().max(50_000_000).optional().nullable(),
+        aboutHeroImageFileDataUrl: z.string().max(50_000_000).optional().nullable(),
+        aboutMissionImageUrl: z.string().trim().max(50_000_000).optional().nullable(),
+        aboutMissionImageFileDataUrl: z.string().max(50_000_000).optional().nullable(),
+        contactHeroImageUrl: z.string().trim().max(50_000_000).optional().nullable(),
+        contactHeroImageFileDataUrl: z.string().max(50_000_000).optional().nullable(),
         clinics: z.array(z.object({
           title: z.string().trim().max(200).optional(),
           description: z.string().trim().max(1000).optional(),
-          imageUrl: z.string().max(50_000_000).optional(),
-          imageFileDataUrl: z.string().max(50_000_000).optional(),
+          imageUrl: z.string().max(50_000_000).optional().nullable(),
+          imageFileDataUrl: z.string().max(50_000_000).optional().nullable(),
           details: z.array(z.string()).optional(),
         })).optional(),
         aboutClinics: z.array(z.object({
           title: z.string().trim().max(100).optional(),
-          imageUrl: z.string().max(50_000_000).optional(),
-          imageFileDataUrl: z.string().max(50_000_000).optional(),
+          imageUrl: z.string().max(50_000_000).optional().nullable(),
+          imageFileDataUrl: z.string().max(50_000_000).optional().nullable(),
         })).optional(),
       })
     )
