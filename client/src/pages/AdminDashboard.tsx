@@ -329,12 +329,12 @@ function ModalitiesManagerSection() {
               </label>
               <input
                 type="url"
-                value={bannerFiles[m] ? "" : (modalityBannerImages[m] || "")}
+                value={bannerFiles[m] ? "" : cleanUrl(modalityBannerImages[m])}
                 onChange={e => {
                   setBannerFiles(prev => { const n = {...prev}; delete n[m]; return n; });
                   setModalityBannerImages(prev => ({ ...prev, [m]: e.target.value }));
                 }}
-                placeholder="Ou cole uma URL de imagem..."
+                placeholder="Ou cole uma URL de imagem (ex: WordPress)..."
                 className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-400"
               />
             </div>
@@ -475,9 +475,13 @@ function SiteSettingsSection() {
 
   const modalities = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
 
+  const isBase64 = (v: string) => v?.startsWith("data:");
+  const cleanUrl = (v: string) => (isBase64(v) ? "" : (v || ""));
+
   const ImageUploadField = ({ label, id, fileKey, currentUrl, fileData }: any) => {
     const urlKey = `${fileKey}Url` as string;
     const preview = fileData || currentUrl;
+    const hasStoredImage = !fileData && currentUrl && !isBase64(currentUrl);
     return (
       <div className="space-y-2">
         <div className="flex justify-between items-center px-1">
@@ -504,6 +508,7 @@ function SiteSettingsSection() {
               try {
                 const dataUrl = await toDataUrl(file);
                 setFiles((prev: any) => ({ ...prev, [fileKey]: dataUrl }));
+                setFormData((prev: any) => ({ ...prev, [urlKey]: "" }));
               } catch (err: any) {
                 toast.error(err.message || "Erro ao processar imagem.");
                 e.target.value = "";
@@ -518,19 +523,20 @@ function SiteSettingsSection() {
         >
           <Upload className="w-3.5 h-3.5" /> Escolher Arquivo
         </label>
-        <input
-          type="url"
-          value={fileData ? "" : (currentUrl || "")}
-          onChange={e => {
-            setFiles((prev: any) => ({ ...prev, [fileKey]: undefined }));
-            setFormData((prev: any) => ({ ...prev, [urlKey]: e.target.value }));
-          }}
-          placeholder="Ou cole uma URL de imagem..."
-          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-400"
-        />
+        {!fileData && (
+          <input
+            type="url"
+            value={hasStoredImage ? currentUrl : cleanUrl(currentUrl)}
+            onChange={e => {
+              setFormData((prev: any) => ({ ...prev, [urlKey]: e.target.value }));
+            }}
+            placeholder="Ou cole uma URL de imagem (ex: WordPress)..."
+            className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-400"
+          />
+        )}
         <div className="h-24 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
           {preview ? (
-            <img src={preview} className="h-full w-full object-contain p-2" />
+            <img src={preview} className="h-full w-full object-contain p-2" onError={e => (e.currentTarget.style.display = "none")} />
           ) : (
             <ImageIcon className="w-5 h-5 text-slate-200" />
           )}
@@ -616,12 +622,12 @@ function SiteSettingsSection() {
                 </label>
                 <input
                   type="url"
-                  value={files.homeHero?.[m] ? "" : (formData.homeHeroImages?.[m] || "")}
+                  value={files.homeHero?.[m] ? "" : cleanUrl(formData.homeHeroImages?.[m])}
                   onChange={e => {
                     setFiles((prev: any) => { const n = {...prev, homeHero: {...prev.homeHero}}; delete n.homeHero[m]; return n; });
                     setFormData((prev: any) => ({ ...prev, homeHeroImages: { ...prev.homeHeroImages, [m]: e.target.value } }));
                   }}
-                  placeholder="Ou cole uma URL de imagem..."
+                  placeholder="Ou cole uma URL de imagem (ex: WordPress)..."
                   className="w-full h-10 bg-white border border-slate-100 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-300"
                 />
               </div>
@@ -688,14 +694,14 @@ function SiteSettingsSection() {
                       <p className="text-[10px] text-slate-400 leading-tight">Recomendado: PNG transparente ou fundo branco.</p>
                       <input
                         type="url"
-                        value={p.logoFileDataUrl ? "" : (p.logoUrl || "")}
+                        value={p.logoFileDataUrl ? "" : cleanUrl(p.logoUrl)}
                         onChange={e => {
                           const np = [...formData.partners];
                           np[i].logoFileDataUrl = undefined;
                           np[i].logoUrl = e.target.value;
                           setFormData({ ...formData, partners: np });
                         }}
-                        placeholder="Ou cole URL do logo..."
+                        placeholder="Ou cole URL do logo (ex: WordPress)..."
                         className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-300"
                       />
                     </div>
@@ -777,14 +783,14 @@ function SiteSettingsSection() {
                     />
                     <input
                       type="url"
-                      value={c.imageFileDataUrl ? "" : (c.imageUrl || "")}
+                      value={c.imageFileDataUrl ? "" : cleanUrl(c.imageUrl)}
                       onChange={e => {
                         const nc = [...formData.clinics];
                         nc[i].imageFileDataUrl = undefined;
                         nc[i].imageUrl = e.target.value;
                         setFormData({ ...formData, clinics: nc });
                       }}
-                      placeholder="Ou cole URL da imagem..."
+                      placeholder="Ou cole URL da imagem (ex: WordPress)..."
                       className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-300"
                     />
                   </div>
@@ -852,14 +858,14 @@ function SiteSettingsSection() {
                       <p className="text-[10px] text-slate-400">Imagem quadrada recomendada.</p>
                       <input
                         type="url"
-                        value={item.imageFileDataUrl ? "" : (item.imageUrl || "")}
+                        value={item.imageFileDataUrl ? "" : cleanUrl(item.imageUrl)}
                         onChange={e => {
                           const newList = Array.from({ length: 4 }, (_, i) => formData.aboutClinics?.[i] || { title: "", imageUrl: "" });
                           newList[idx].imageFileDataUrl = undefined;
                           newList[idx].imageUrl = e.target.value;
                           setFormData({ ...formData, aboutClinics: newList });
                         }}
-                        placeholder="Ou cole URL..."
+                        placeholder="Ou cole URL (ex: WordPress)..."
                         className="w-full h-8 bg-white border border-slate-100 rounded-lg px-2 text-[10px] text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-300"
                       />
                     </div>

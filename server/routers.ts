@@ -1371,6 +1371,14 @@ const siteRouter = router({
 
       const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 
+      // Se vier base64 num campo de URL, ignora (não salva base64 como URL)
+      const sanitizeUrl = (url: string | null | undefined): string | null => {
+        if (!url) return null;
+        const trimmed = url.trim();
+        if (trimmed.startsWith("data:")) return null;
+        return trimmed.length > 0 ? trimmed : null;
+      };
+
       const uploadImage = async (prefix: string, dataUrl: string) => {
         const { mimeType, buffer } = decodeDataUrl(dataUrl);
         if (!ALLOWED_MIME_TYPES.includes(mimeType.toLowerCase())) {
@@ -1462,8 +1470,7 @@ const siteRouter = router({
           }
 
           if (urlMap && Object.prototype.hasOwnProperty.call(urlMap, modality)) {
-            const trimmed = (urlMap[modality] || "").trim();
-            result[modality] = trimmed.length > 0 ? trimmed : null;
+            result[modality] = sanitizeUrl(urlMap[modality]);
             hasAnyChange = true;
           }
         }
@@ -1517,37 +1524,37 @@ const siteRouter = router({
           ...(resolvedMainLogoUrl !== undefined
             ? { mainLogoUrl: resolvedMainLogoUrl }
             : input.mainLogoUrl !== undefined
-              ? { mainLogoUrl: input.mainLogoUrl.length > 0 ? input.mainLogoUrl : null }
+              ? { mainLogoUrl: sanitizeUrl(input.mainLogoUrl) }
             : {}),
           ...(resolvedFooterLogoUrl !== undefined
             ? { footerLogoUrl: resolvedFooterLogoUrl }
             : input.footerLogoUrl !== undefined
-              ? { footerLogoUrl: input.footerLogoUrl.length > 0 ? input.footerLogoUrl : null }
+              ? { footerLogoUrl: sanitizeUrl(input.footerLogoUrl) }
             : {}),
           ...(resolvedHomeHighlightImageUrl !== undefined
             ? { homeHighlightImageUrl: resolvedHomeHighlightImageUrl }
             : input.homeHighlightImageUrl !== undefined
-              ? { homeHighlightImageUrl: input.homeHighlightImageUrl.length > 0 ? input.homeHighlightImageUrl : null }
+              ? { homeHighlightImageUrl: sanitizeUrl(input.homeHighlightImageUrl) }
             : {}),
           ...(resolvedClinicsHeroImageUrl !== undefined
             ? { clinicsHeroImageUrl: resolvedClinicsHeroImageUrl }
             : input.clinicsHeroImageUrl !== undefined
-              ? { clinicsHeroImageUrl: input.clinicsHeroImageUrl.length > 0 ? input.clinicsHeroImageUrl : null }
+              ? { clinicsHeroImageUrl: sanitizeUrl(input.clinicsHeroImageUrl) }
             : {}),
           ...(resolvedAboutHeroImageUrl !== undefined
             ? { aboutHeroImageUrl: resolvedAboutHeroImageUrl }
             : input.aboutHeroImageUrl !== undefined
-              ? { aboutHeroImageUrl: input.aboutHeroImageUrl.length > 0 ? input.aboutHeroImageUrl : null }
+              ? { aboutHeroImageUrl: sanitizeUrl(input.aboutHeroImageUrl) }
             : {}),
           ...(resolvedAboutMissionImageUrl !== undefined
             ? { aboutMissionImageUrl: resolvedAboutMissionImageUrl }
             : input.aboutMissionImageUrl !== undefined
-              ? { aboutMissionImageUrl: input.aboutMissionImageUrl.length > 0 ? input.aboutMissionImageUrl : null }
+              ? { aboutMissionImageUrl: sanitizeUrl(input.aboutMissionImageUrl) }
             : {}),
           ...(resolvedContactHeroImageUrl !== undefined
             ? { contactHeroImageUrl: resolvedContactHeroImageUrl }
             : input.contactHeroImageUrl !== undefined
-              ? { contactHeroImageUrl: input.contactHeroImageUrl.length > 0 ? input.contactHeroImageUrl : null }
+              ? { contactHeroImageUrl: sanitizeUrl(input.contactHeroImageUrl) }
             : {}),
           ...(resolvedClinics !== undefined
             ? { clinicsJson: JSON.stringify(resolvedClinics) }
