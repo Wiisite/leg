@@ -418,63 +418,13 @@ function SiteSettingsSection() {
   });
 
   const handleSave = () => {
-    // Remove base64 dos campos de URL
-    // undefined → servidor não toca no campo (mantém o que está no banco)
-    // ""        → servidor apaga o campo (usuário clicou Remover)
-    // "https://..." → servidor salva a URL
-    const realUrl = (v: string | undefined | null): string | undefined => {
-      if (v === undefined || v === null) return undefined;
-      if (v.startsWith("data:")) return undefined; // base64 → não alterar
-      return v.trim(); // "" ou URL real
-    };
-
-    const realUrlMap = (map: Record<string, string> | undefined) => {
-      if (!map) return undefined;
-      const out: Record<string, string> = {};
-      for (const [k, v] of Object.entries(map)) {
-        const u = realUrl(v);
-        if (u) out[k] = u;
-      }
-      return out;
-    };
-
-    const validPartners = (formData.partners || [])
-      .filter((p: any) => p.name?.trim())
-      .map((p: any) => ({
-        name: p.name,
-        logoUrl: p.logoFileDataUrl ? undefined : realUrl(p.logoUrl),
-        logoFileDataUrl: p.logoFileDataUrl,
-      }));
-
-    const validClinics = (formData.clinics || [])
-      .filter((c: any) => c.title?.trim())
-      .map((c: any) => ({
-        ...c,
-        imageUrl: c.imageFileDataUrl ? undefined : realUrl(c.imageUrl),
-      }));
-
-    const validAboutClinics = (formData.aboutClinics || []).map((c: any) => ({
-      ...c,
-      imageUrl: c.imageFileDataUrl ? undefined : realUrl(c.imageUrl),
-    }));
+    const validPartners = (formData.partners || []).filter((p: any) => p.name?.trim());
+    const validClinics = (formData.clinics || []).filter((c: any) => c.title?.trim());
 
     updateMutation.mutate({
-      homeHeroTitles: formData.homeHeroTitles,
-      liveStreams: formData.liveStreams,
-      championshipAddresses: formData.championshipAddresses,
-      // URLs reais (base64 é ignorado — campo fica undefined, servidor não altera)
-      mainLogoUrl: realUrl(formData.mainLogoUrl),
-      footerLogoUrl: realUrl(formData.footerLogoUrl),
-      homeHighlightImageUrl: realUrl(formData.homeHighlightImageUrl),
-      clinicsHeroImageUrl: realUrl(formData.clinicsHeroImageUrl),
-      aboutHeroImageUrl: realUrl(formData.aboutHeroImageUrl),
-      aboutMissionImageUrl: realUrl(formData.aboutMissionImageUrl),
-      contactHeroImageUrl: realUrl(formData.contactHeroImageUrl),
-      homeHeroImages: realUrlMap(formData.homeHeroImages),
+      ...formData,
       partners: validPartners,
       clinics: validClinics,
-      aboutClinics: validAboutClinics,
-      // Arquivos novos (upload)
       mainLogoFileDataUrl: files.mainLogo,
       footerLogoFileDataUrl: files.footerLogo,
       homeHighlightImageFileDataUrl: files.homeHighlight,
@@ -524,13 +474,8 @@ function SiteSettingsSection() {
 
   const modalities = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
 
-  const isBase64 = (v: string) => v?.startsWith("data:");
-  const cleanUrl = (v: string) => (isBase64(v) ? "" : (v || ""));
-
   const ImageUploadField = ({ label, id, fileKey, currentUrl, fileData }: any) => {
-    const urlKey = `${fileKey}Url` as string;
     const preview = fileData || currentUrl;
-    const hasStoredImage = !fileData && currentUrl && !isBase64(currentUrl);
     return (
       <div className="space-y-2">
         <div className="flex justify-between items-center px-1">
@@ -539,7 +484,7 @@ function SiteSettingsSection() {
             <button
               onClick={() => {
                 setFiles((prev: any) => ({ ...prev, [fileKey]: undefined }));
-                setFormData((prev: any) => ({ ...prev, [urlKey]: "" }));
+                setFormData((prev: any) => ({ ...prev, [`${fileKey}Url`]: "" }));
               }}
               className="text-[10px] font-bold text-slate-400 hover:text-red flex items-center gap-1"
             >
@@ -557,7 +502,6 @@ function SiteSettingsSection() {
               try {
                 const dataUrl = await toDataUrl(file);
                 setFiles((prev: any) => ({ ...prev, [fileKey]: dataUrl }));
-                setFormData((prev: any) => ({ ...prev, [urlKey]: "" }));
               } catch (err: any) {
                 toast.error(err.message || "Erro ao processar imagem.");
                 e.target.value = "";
@@ -572,20 +516,9 @@ function SiteSettingsSection() {
         >
           <Upload className="w-3.5 h-3.5" /> Escolher Arquivo
         </label>
-        {!fileData && (
-          <input
-            type="url"
-            value={hasStoredImage ? currentUrl : cleanUrl(currentUrl)}
-            onChange={e => {
-              setFormData((prev: any) => ({ ...prev, [urlKey]: e.target.value }));
-            }}
-            placeholder="Ou cole uma URL de imagem (ex: WordPress)..."
-            className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-400"
-          />
-        )}
         <div className="h-24 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
           {preview ? (
-            <img src={preview} className="h-full w-full object-contain p-2" onError={e => (e.currentTarget.style.display = "none")} />
+            <img src={preview} className="h-full w-full object-contain p-2" />
           ) : (
             <ImageIcon className="w-5 h-5 text-slate-200" />
           )}

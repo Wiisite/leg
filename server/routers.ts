@@ -1371,24 +1371,19 @@ const siteRouter = router({
 
       const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 
-      // Se vier base64 num campo de URL, ignora (não salva base64 como URL)
       const sanitizeUrl = (url: string | null | undefined): string | null => {
         if (!url) return null;
         const trimmed = url.trim();
-        if (trimmed.startsWith("data:")) return null;
         return trimmed.length > 0 ? trimmed : null;
       };
 
-      const uploadImage = async (prefix: string, dataUrl: string) => {
-        const { mimeType, buffer } = decodeDataUrl(dataUrl);
+      // Salva a imagem como base64 direto no banco — simples e sem depedência de storage
+      const uploadImage = async (_prefix: string, dataUrl: string) => {
+        const { mimeType } = decodeDataUrl(dataUrl);
         if (!ALLOWED_MIME_TYPES.includes(mimeType.toLowerCase())) {
           throw new TRPCError({ code: "BAD_REQUEST", message: `Tipo de imagem não permitido: ${mimeType}` });
         }
-        const extension = extensionFromMime(mimeType);
-        const uid = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
-        const key = `site-settings/${prefix}-${Date.now()}-${uid}.${extension}`;
-        const uploaded = await storagePut(key, buffer, mimeType);
-        return uploaded.url;
+        return dataUrl;
       };
 
       const resolvedMainLogoUrl =
