@@ -63,9 +63,14 @@ export default function CreateTournament() {
   };
 
   const handleLogoUpload = (index: number, file: File) => {
+    const MAX = 5 * 1024 * 1024;
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (file.size > MAX) { toast.error(`Logo muito grande. Máximo: 5MB.`); return; }
+    if (!allowed.includes(file.type)) { toast.error("Use JPG, PNG ou WebP para o logo."); return; }
     const reader = new FileReader();
+    reader.onerror = () => toast.error("Falha ao ler o arquivo de logo.");
     reader.onloadend = () => {
-      updateTeam(index, "logo", reader.result as string);
+      if (reader.result) updateTeam(index, "logo", reader.result as string);
     };
     reader.readAsDataURL(file);
   };

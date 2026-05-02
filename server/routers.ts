@@ -1369,20 +1369,18 @@ const siteRouter = router({
         return map[mimeType.toLowerCase()] || "bin";
       };
 
+      const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+
       const uploadImage = async (prefix: string, dataUrl: string) => {
         const { mimeType, buffer } = decodeDataUrl(dataUrl);
-        const extension = extensionFromMime(mimeType);
-        const key = `site-settings/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
-        try {
-          const uploaded = await storagePut(key, buffer, mimeType);
-          return uploaded.url;
-        } catch (error: any) {
-          const message = String(error?.message || "");
-          if (message.includes("Storage proxy credentials missing")) {
-            return dataUrl;
-          }
-          throw error;
+        if (!ALLOWED_MIME_TYPES.includes(mimeType.toLowerCase())) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Tipo de imagem não permitido: ${mimeType}` });
         }
+        const extension = extensionFromMime(mimeType);
+        const uid = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+        const key = `site-settings/${prefix}-${Date.now()}-${uid}.${extension}`;
+        const uploaded = await storagePut(key, buffer, mimeType);
+        return uploaded.url;
       };
 
       const resolvedMainLogoUrl =

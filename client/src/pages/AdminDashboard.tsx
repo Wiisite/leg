@@ -239,12 +239,23 @@ function ModalitiesManagerSection() {
     updateMutation.mutate({ modalityBannerImages, modalityBannerImageFiles: bannerFiles });
   };
 
-  const toDataUrl = (file: File, maxWidth = 1200, quality = 0.7): Promise<string> => {
-    return new Promise((resolve) => {
+  const MAX_FILE_SIZE_MOD = 10 * 1024 * 1024;
+
+  const toDataUrl = (file: File, maxWidth = 1920, quality = 0.85): Promise<string> => {
+    if (file.size > MAX_FILE_SIZE_MOD) {
+      return Promise.reject(new Error(`Arquivo muito grande. Máximo: 10MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(1)}MB`));
+    }
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      return Promise.reject(new Error(`Tipo não permitido: ${file.type}. Use JPG, PNG ou WebP.`));
+    }
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Falha ao ler o arquivo."));
       reader.readAsDataURL(file);
       reader.onload = (event) => {
         const img = new Image();
+        img.onerror = () => reject(new Error("Arquivo inválido ou corrompido."));
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement("canvas");
@@ -297,12 +308,17 @@ function ModalitiesManagerSection() {
                 id={`file-${m}`}
                 accept="image/*" 
                 onChange={async (e) => {
-                  const file = e.target.files?.[0]; 
+                  const file = e.target.files?.[0];
                   if (file) {
-                    const dataUrl = await toDataUrl(file);
-                    setBannerFiles(prev => ({ ...prev, [m]: dataUrl }));
+                    try {
+                      const dataUrl = await toDataUrl(file);
+                      setBannerFiles(prev => ({ ...prev, [m]: dataUrl }));
+                    } catch (err: any) {
+                      toast.error(err.message || "Erro ao processar imagem.");
+                      e.target.value = "";
+                    }
                   }
-                }} 
+                }}
                 className="hidden" 
               />
               <label 
@@ -411,12 +427,23 @@ function SiteSettingsSection() {
     });
   };
 
-  const toDataUrl = (file: File, maxWidth = 1200, quality = 0.7): Promise<string> => {
-    return new Promise((resolve) => {
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+  const toDataUrl = (file: File, maxWidth = 1920, quality = 0.85): Promise<string> => {
+    if (file.size > MAX_FILE_SIZE) {
+      return Promise.reject(new Error(`Arquivo muito grande. Máximo: 10MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(1)}MB`));
+    }
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      return Promise.reject(new Error(`Tipo não permitido: ${file.type}. Use JPG, PNG ou WebP.`));
+    }
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Falha ao ler o arquivo."));
       reader.readAsDataURL(file);
       reader.onload = (event) => {
         const img = new Image();
+        img.onerror = () => reject(new Error("Arquivo inválido ou corrompido."));
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement("canvas");
@@ -459,12 +486,17 @@ function SiteSettingsSection() {
         id={id}
         accept="image/*" 
         onChange={async (e) => {
-          const file = e.target.files?.[0]; 
+          const file = e.target.files?.[0];
           if (file) {
-            const dataUrl = await toDataUrl(file);
-            setFiles((prev: any) => ({ ...prev, [fileKey]: dataUrl }));
+            try {
+              const dataUrl = await toDataUrl(file);
+              setFiles((prev: any) => ({ ...prev, [fileKey]: dataUrl }));
+            } catch (err: any) {
+              toast.error(err.message || "Erro ao processar imagem.");
+              e.target.value = "";
+            }
           }
-        }} 
+        }}
         className="hidden" 
       />
       <label 
@@ -625,14 +657,25 @@ function SiteSettingsSection() {
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Clínicas</h3>
-            <Button size="sm" variant="ghost" className="text-red font-bold hover:bg-red/5" onClick={() => setFormData({ ...formData, clinics: [...(formData.clinics || []), { title: "", description: "", imageUrl: "", details: [] }] })}>
-              <Plus className="w-4 h-4 mr-1" /> Adicionar Clínica
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" className="text-slate-400 font-bold hover:text-red hover:bg-red/5" onClick={() => { if(confirm("Deseja remover todas as clínicas?")) setFormData({ ...formData, clinics: [] }); }}>
+                <Trash2 className="w-4 h-4 mr-1" /> Limpar Todas
+              </Button>
+              <Button size="sm" variant="ghost" className="text-red font-bold hover:bg-red/5" onClick={() => setFormData({ ...formData, clinics: [...(formData.clinics || []), { title: "", description: "", imageUrl: "", details: [] }] })}>
+                <Plus className="w-4 h-4 mr-1" /> Adicionar Clínica
+              </Button>
+            </div>
           </div>
           <div className="space-y-6">
             {formData.clinics?.map((c: any, i: number) => (
-              <div key={i} className="p-6 rounded-[32px] bg-slate-50 border border-slate-100 flex flex-col gap-4 relative">
-                <button className="absolute top-4 right-4 text-slate-300 hover:text-red transition-colors" onClick={() => setFormData({ ...formData, clinics: formData.clinics.filter((_:any,idx:number)=>idx!==i) })}><Trash2 className="w-5 h-5" /></button>
+              <div key={i} className="p-6 rounded-[32px] bg-slate-50 border border-slate-100 flex flex-col gap-4 relative group">
+                <button 
+                  className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-300 hover:text-red hover:border-red/20 transition-all opacity-0 group-hover:opacity-100" 
+                  onClick={() => setFormData({ ...formData, clinics: formData.clinics.filter((_:any,idx:number)=>idx!==i) })}
+                  title="Remover Clínica"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
                 
                 <input value={c.title} onChange={e => { const nc = [...formData.clinics]; nc[i].title = e.target.value; setFormData({ ...formData, clinics: nc }); }} className="h-12 bg-white border border-slate-100 rounded-xl px-4 text-sm font-bold" placeholder="Título da Clínica" />
                 <textarea value={c.description} onChange={e => { const nc = [...formData.clinics]; nc[i].description = e.target.value; setFormData({ ...formData, clinics: nc }); }} className="bg-white border border-slate-100 rounded-xl p-4 text-sm resize-none" rows={3} placeholder="Descrição curta..." />
@@ -682,7 +725,12 @@ function SiteSettingsSection() {
         </div>
 
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-          <h3 className="text-lg font-black uppercase tracking-widest text-slate-900 border-l-4 border-red pl-4">Quadrados "Quem Somos"</h3>
+          <div className="flex justify-between items-center border-l-4 border-red pl-4">
+            <h3 className="text-lg font-black uppercase tracking-widest text-slate-900">Quadrados "Quem Somos"</h3>
+            <Button size="sm" variant="ghost" className="text-slate-400 font-bold hover:text-red hover:bg-red/5" onClick={() => { if(confirm("Deseja limpar todos os quadrados?")) setFormData({ ...formData, aboutClinics: [] }); }}>
+              <Trash2 className="w-4 h-4 mr-1" /> Limpar Todos
+            </Button>
+          </div>
           <p className="text-xs text-slate-400 font-medium">Configure as 4 imagens que aparecem na seção de Missão do Quem Somos.</p>
           <div className="grid grid-cols-2 gap-4">
             {[0, 1, 2, 3].map((idx) => {
