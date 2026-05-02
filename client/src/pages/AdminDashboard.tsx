@@ -321,12 +321,22 @@ function ModalitiesManagerSection() {
                 }}
                 className="hidden" 
               />
-              <label 
+              <label
                 htmlFor={`file-${m}`}
                 className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-all border-dashed"
               >
                 <Upload className="w-4 h-4" /> Escolher Banner
               </label>
+              <input
+                type="url"
+                value={bannerFiles[m] ? "" : (modalityBannerImages[m] || "")}
+                onChange={e => {
+                  setBannerFiles(prev => { const n = {...prev}; delete n[m]; return n; });
+                  setModalityBannerImages(prev => ({ ...prev, [m]: e.target.value }));
+                }}
+                placeholder="Ou cole uma URL de imagem..."
+                className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-400"
+              />
             </div>
 
             <div className="h-40 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
@@ -465,55 +475,69 @@ function SiteSettingsSection() {
 
   const modalities = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
 
-  const ImageUploadField = ({ label, id, fileKey, currentUrl, fileData }: any) => (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center px-1">
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</label>
-        {(fileData || currentUrl) && (
-          <button 
-            onClick={() => {
-              setFiles((prev: any) => ({ ...prev, [fileKey]: undefined }));
-              setFormData((prev: any) => ({ ...prev, [`${fileKey}Url`]: "" }));
-            }}
-            className="text-[10px] font-bold text-slate-400 hover:text-red flex items-center gap-1"
-          >
-            <Trash2 className="w-3 h-3" /> Remover
-          </button>
-        )}
-      </div>
-      <input 
-        type="file" 
-        id={id}
-        accept="image/*" 
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (file) {
-            try {
-              const dataUrl = await toDataUrl(file);
-              setFiles((prev: any) => ({ ...prev, [fileKey]: dataUrl }));
-            } catch (err: any) {
-              toast.error(err.message || "Erro ao processar imagem.");
-              e.target.value = "";
+  const ImageUploadField = ({ label, id, fileKey, currentUrl, fileData }: any) => {
+    const urlKey = `${fileKey}Url` as string;
+    const preview = fileData || currentUrl;
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center px-1">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</label>
+          {preview && (
+            <button
+              onClick={() => {
+                setFiles((prev: any) => ({ ...prev, [fileKey]: undefined }));
+                setFormData((prev: any) => ({ ...prev, [urlKey]: "" }));
+              }}
+              className="text-[10px] font-bold text-slate-400 hover:text-red flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" /> Remover
+            </button>
+          )}
+        </div>
+        <input
+          type="file"
+          id={id}
+          accept="image/*"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              try {
+                const dataUrl = await toDataUrl(file);
+                setFiles((prev: any) => ({ ...prev, [fileKey]: dataUrl }));
+              } catch (err: any) {
+                toast.error(err.message || "Erro ao processar imagem.");
+                e.target.value = "";
+              }
             }
-          }
-        }}
-        className="hidden" 
-      />
-      <label 
-        htmlFor={id}
-        className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-all border-dashed"
-      >
-        <Upload className="w-3.5 h-3.5" /> Escolher Arquivo
-      </label>
-      <div className="h-24 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
-        {(fileData || currentUrl) ? (
-          <img src={fileData || currentUrl} className="h-full w-full object-contain p-2" />
-        ) : (
-          <ImageIcon className="w-5 h-5 text-slate-200" />
-        )}
+          }}
+          className="hidden"
+        />
+        <label
+          htmlFor={id}
+          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-all border-dashed"
+        >
+          <Upload className="w-3.5 h-3.5" /> Escolher Arquivo
+        </label>
+        <input
+          type="url"
+          value={fileData ? "" : (currentUrl || "")}
+          onChange={e => {
+            setFiles((prev: any) => ({ ...prev, [fileKey]: undefined }));
+            setFormData((prev: any) => ({ ...prev, [urlKey]: e.target.value }));
+          }}
+          placeholder="Ou cole uma URL de imagem..."
+          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-400"
+        />
+        <div className="h-24 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
+          {preview ? (
+            <img src={preview} className="h-full w-full object-contain p-2" />
+          ) : (
+            <ImageIcon className="w-5 h-5 text-slate-200" />
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-10 pb-20">
@@ -565,26 +589,41 @@ function SiteSettingsSection() {
               </div>
               <input value={formData.homeHeroTitles?.[m] || ""} onChange={e => setFormData({ ...formData, homeHeroTitles: { ...formData.homeHeroTitles, [m]: e.target.value } })} className="w-full h-12 bg-white border border-slate-100 rounded-xl px-4 text-sm" placeholder="Título do Slide..." />
               
-              <div className="relative">
-                <input 
-                  type="file" 
+              <div className="space-y-2">
+                <input
+                  type="file"
                   id={`hero-slide-${m}`}
-                  accept="image/*" 
+                  accept="image/*"
                   onChange={async (e) => {
-                    const file = e.target.files?.[0]; 
+                    const file = e.target.files?.[0];
                     if (file) {
-                      const dataUrl = await toDataUrl(file);
-                      setFiles((prev: any) => ({ ...prev, homeHero: { ...prev.homeHero, [m]: dataUrl } }));
+                      try {
+                        const dataUrl = await toDataUrl(file);
+                        setFiles((prev: any) => ({ ...prev, homeHero: { ...prev.homeHero, [m]: dataUrl } }));
+                      } catch (err: any) {
+                        toast.error(err.message || "Erro ao processar imagem.");
+                        e.target.value = "";
+                      }
                     }
-                  }} 
-                  className="hidden" 
+                  }}
+                  className="hidden"
                 />
-                <label 
+                <label
                   htmlFor={`hero-slide-${m}`}
                   className="w-full h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer transition-all border-dashed"
                 >
                   <Upload className="w-3.5 h-3.5" /> Escolher Imagem do Slide
                 </label>
+                <input
+                  type="url"
+                  value={files.homeHero?.[m] ? "" : (formData.homeHeroImages?.[m] || "")}
+                  onChange={e => {
+                    setFiles((prev: any) => { const n = {...prev, homeHero: {...prev.homeHero}}; delete n.homeHero[m]; return n; });
+                    setFormData((prev: any) => ({ ...prev, homeHeroImages: { ...prev.homeHeroImages, [m]: e.target.value } }));
+                  }}
+                  placeholder="Ou cole uma URL de imagem..."
+                  className="w-full h-10 bg-white border border-slate-100 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-300"
+                />
               </div>
 
               <div className="h-24 rounded-xl border border-slate-200 overflow-hidden bg-white flex items-center justify-center">
@@ -619,28 +658,46 @@ function SiteSettingsSection() {
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Logo do Parceiro</label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4">
                     <div className="relative shrink-0">
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         id={`partner-logo-${i}`}
-                        onChange={async (e) => { 
-                          const file = e.target.files?.[0]; 
-                          if (file) { 
-                            const dataUrl = await toDataUrl(file);
-                            const np = [...formData.partners]; 
-                            np[i].logoFileDataUrl = dataUrl; 
-                            setFormData({ ...formData, partners: np }); 
-                          } 
-                        }} 
-                        className="hidden" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const dataUrl = await toDataUrl(file);
+                              const np = [...formData.partners];
+                              np[i].logoFileDataUrl = dataUrl;
+                              setFormData({ ...formData, partners: np });
+                            } catch (err: any) {
+                              toast.error(err.message || "Erro ao processar imagem.");
+                              e.target.value = "";
+                            }
+                          }
+                        }}
+                        className="hidden"
                       />
                       <label htmlFor={`partner-logo-${i}`} className="w-20 h-20 bg-white border border-slate-200 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all overflow-hidden">
                         {(p.logoFileDataUrl || p.logoUrl) ? <img src={p.logoFileDataUrl || p.logoUrl} className="w-full h-full object-contain p-2" /> : <Upload className="w-6 h-6 text-slate-300" />}
                       </label>
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-2">
                       <p className="text-[10px] text-slate-400 leading-tight">Recomendado: PNG transparente ou fundo branco.</p>
+                      <input
+                        type="url"
+                        value={p.logoFileDataUrl ? "" : (p.logoUrl || "")}
+                        onChange={e => {
+                          const np = [...formData.partners];
+                          np[i].logoFileDataUrl = undefined;
+                          np[i].logoUrl = e.target.value;
+                          setFormData({ ...formData, partners: np });
+                        }}
+                        placeholder="Ou cole URL do logo..."
+                        className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-300"
+                      />
                     </div>
                   </div>
                 </div>
@@ -680,21 +737,27 @@ function SiteSettingsSection() {
                 <input value={c.title} onChange={e => { const nc = [...formData.clinics]; nc[i].title = e.target.value; setFormData({ ...formData, clinics: nc }); }} className="h-12 bg-white border border-slate-100 rounded-xl px-4 text-sm font-bold" placeholder="Título da Clínica" />
                 <textarea value={c.description} onChange={e => { const nc = [...formData.clinics]; nc[i].description = e.target.value; setFormData({ ...formData, clinics: nc }); }} className="bg-white border border-slate-100 rounded-xl p-4 text-sm resize-none" rows={3} placeholder="Descrição curta..." />
                 
-                <div className="flex items-center gap-4">
+                <div className="flex items-start gap-4">
                   <div className="relative shrink-0">
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       id={`clinic-img-${i}`}
-                      onChange={async (e) => { 
-                        const file = e.target.files?.[0]; 
-                        if (file) { 
-                          const dataUrl = await toDataUrl(file);
-                          const nc = [...formData.clinics]; 
-                          nc[i].imageFileDataUrl = dataUrl; 
-                          setFormData({ ...formData, clinics: nc }); 
-                        } 
-                      }} 
-                      className="hidden" 
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            const dataUrl = await toDataUrl(file);
+                            const nc = [...formData.clinics];
+                            nc[i].imageFileDataUrl = dataUrl;
+                            setFormData({ ...formData, clinics: nc });
+                          } catch (err: any) {
+                            toast.error(err.message || "Erro ao processar imagem.");
+                            e.target.value = "";
+                          }
+                        }
+                      }}
+                      className="hidden"
                     />
                     <label htmlFor={`clinic-img-${i}`} className="w-24 h-24 bg-white border border-slate-200 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all overflow-hidden shadow-sm">
                       {(c.imageFileDataUrl || c.imageUrl) ? <img src={c.imageFileDataUrl || c.imageUrl} className="w-full h-full object-cover" /> : <Upload className="w-6 h-6 text-slate-300" />}
@@ -702,15 +765,27 @@ function SiteSettingsSection() {
                   </div>
                   <div className="flex-1 space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400">Detalhes (separados por vírgula)</label>
-                    <input 
-                      value={c.details?.join(", ") || ""} 
-                      onChange={e => { 
-                        const nc = [...formData.clinics]; 
-                        nc[i].details = e.target.value.split(",").map(s => s.trim()); 
-                        setFormData({ ...formData, clinics: nc }); 
-                      }} 
-                      className="w-full h-10 bg-white border border-slate-100 rounded-lg px-3 text-xs" 
-                      placeholder="Ex: Regras, Tática, Fundamentos" 
+                    <input
+                      value={c.details?.join(", ") || ""}
+                      onChange={e => {
+                        const nc = [...formData.clinics];
+                        nc[i].details = e.target.value.split(",").map(s => s.trim());
+                        setFormData({ ...formData, clinics: nc });
+                      }}
+                      className="w-full h-10 bg-white border border-slate-100 rounded-lg px-3 text-xs"
+                      placeholder="Ex: Regras, Tática, Fundamentos"
+                    />
+                    <input
+                      type="url"
+                      value={c.imageFileDataUrl ? "" : (c.imageUrl || "")}
+                      onChange={e => {
+                        const nc = [...formData.clinics];
+                        nc[i].imageFileDataUrl = undefined;
+                        nc[i].imageUrl = e.target.value;
+                        setFormData({ ...formData, clinics: nc });
+                      }}
+                      placeholder="Ou cole URL da imagem..."
+                      className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 text-xs text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-300"
                     />
                   </div>
                 </div>
@@ -747,27 +822,47 @@ function SiteSettingsSection() {
                     className="w-full h-10 bg-white border border-slate-100 rounded-lg px-3 text-xs font-bold" 
                     placeholder={`Título ${idx + 1}...`} 
                   />
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start gap-3">
                     <div className="relative shrink-0">
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         id={`about-clinic-img-${idx}`}
-                        onChange={async (e) => { 
-                          const file = e.target.files?.[0]; 
-                          if (file) { 
-                            const dataUrl = await toDataUrl(file);
-                            const newList = Array.from({ length: 4 }, (_, i) => formData.aboutClinics?.[i] || { title: "", imageUrl: "" });
-                            newList[idx].imageFileDataUrl = dataUrl; 
-                            setFormData({ ...formData, aboutClinics: newList }); 
-                          } 
-                        }} 
-                        className="hidden" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const dataUrl = await toDataUrl(file);
+                              const newList = Array.from({ length: 4 }, (_, i) => formData.aboutClinics?.[i] || { title: "", imageUrl: "" });
+                              newList[idx].imageFileDataUrl = dataUrl;
+                              setFormData({ ...formData, aboutClinics: newList });
+                            } catch (err: any) {
+                              toast.error(err.message || "Erro ao processar imagem.");
+                              e.target.value = "";
+                            }
+                          }
+                        }}
+                        className="hidden"
                       />
                       <label htmlFor={`about-clinic-img-${idx}`} className="w-16 h-16 bg-white border border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-all overflow-hidden shadow-sm">
                         {(item.imageFileDataUrl || item.imageUrl) ? <img src={item.imageFileDataUrl || item.imageUrl} className="w-full h-full object-cover" /> : <Upload className="w-4 h-4 text-slate-300" />}
                       </label>
                     </div>
-                    <p className="text-[10px] text-slate-400">Imagem quadrada recomendada.</p>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-[10px] text-slate-400">Imagem quadrada recomendada.</p>
+                      <input
+                        type="url"
+                        value={item.imageFileDataUrl ? "" : (item.imageUrl || "")}
+                        onChange={e => {
+                          const newList = Array.from({ length: 4 }, (_, i) => formData.aboutClinics?.[i] || { title: "", imageUrl: "" });
+                          newList[idx].imageFileDataUrl = undefined;
+                          newList[idx].imageUrl = e.target.value;
+                          setFormData({ ...formData, aboutClinics: newList });
+                        }}
+                        placeholder="Ou cole URL..."
+                        className="w-full h-8 bg-white border border-slate-100 rounded-lg px-2 text-[10px] text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-slate-300"
+                      />
+                    </div>
                   </div>
                 </div>
               );
