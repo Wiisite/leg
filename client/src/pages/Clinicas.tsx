@@ -81,26 +81,7 @@ export default function Clinicas() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {(siteSettings?.clinics && siteSettings.clinics.length > 0 ? siteSettings.clinics : [
-              {
-                title: "Arbitragem de Vôlei de Praia",
-                description: "Capacitação técnica para árbitros e interessados nas regras oficiais da modalidade na areia.",
-                imageUrl: "https://images.unsplash.com/photo-1612872086822-48b6a421670f?auto=format&fit=crop&w=800&q=80",
-                details: ["Regras Oficiais", "Posicionamento", "Sinalização"],
-              },
-              {
-                title: "Xadrez Educacional",
-                description: "Clínicas focadas no desenvolvimento do raciocínio lógico e estratégias aplicadas ao ambiente escolar.",
-                imageUrl: "https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=800&q=80",
-                details: ["Aberturas", "Finais de Jogo", "Tática"],
-              },
-              {
-                title: "Futsal de Alto Rendimento",
-                description: "Treinamentos específicos com treinadores experientes para aprimorar a técnica individual e coletiva.",
-                imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
-                details: ["Fundamentos", "Sistemas de Jogo", "Goleiros"],
-              }
-            ]).map((clinic, idx) => (
+            {(siteSettings?.clinics && siteSettings.clinics.length > 0) ? siteSettings.clinics.map((clinic, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -126,7 +107,7 @@ export default function Clinicas() {
                   </p>
                   {clinic.details && clinic.details.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-8">
-                      {clinic.details.map((d, i) => (
+                      {clinic.details.map((d: string, i: number) => (
                         <span key={i} className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase">
                           {d}
                         </span>
@@ -141,7 +122,14 @@ export default function Clinicas() {
                   </Button>
                 </div>
               </motion.div>
-            ))}
+            )) : (
+              <div className="col-span-full py-20 text-center">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                  <GraduationCap className="w-10 h-10" />
+                </div>
+                <p className="text-slate-400 font-medium">Novas clínicas serão anunciadas em breve.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>

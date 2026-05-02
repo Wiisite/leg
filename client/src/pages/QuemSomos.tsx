@@ -118,12 +118,7 @@ export default function QuemSomos() {
             </p>
           </motion.div>
           <div className="grid grid-cols-2 gap-4">
-            {(siteSettings?.aboutClinics && siteSettings.aboutClinics.length > 0 ? siteSettings.aboutClinics : [
-              { title: "Respeito ao Atleta", imageUrl: "" },
-              { title: "Organização Profissional", imageUrl: "" },
-              { title: "Sociabilização", imageUrl: "" },
-              { title: "Ética no Esporte", imageUrl: "" },
-            ]).slice(0, 4).map((item, idx) => (
+            {(siteSettings?.aboutClinics && siteSettings.aboutClinics.length > 0) ? siteSettings.aboutClinics.slice(0, 4).map((item: any, idx: number) => (
               <div 
                 key={idx} 
                 className={`aspect-square rounded-2xl flex items-center justify-center p-6 text-center shadow-2xl relative overflow-hidden group ${
@@ -140,7 +135,7 @@ export default function QuemSomos() {
                   {item.title}
                 </span>
               </div>
-            ))}
+            )) : null}
           </div>
         </div>
       </section>

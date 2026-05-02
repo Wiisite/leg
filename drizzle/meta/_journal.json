@@ -50,6 +50,13 @@
       "when": 1777658049339,
       "tag": "0006_wooden_turbo",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1777744668768,
+      "tag": "0007_crazy_sue_storm",
+      "breakpoints": true
     }
   ]
 }
