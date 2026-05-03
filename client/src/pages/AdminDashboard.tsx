@@ -200,6 +200,40 @@ export default function AdminDashboard() {
 // ─── Sections ──────────────────────────────────────────────────────────────────
 
 function TournamentsSection({ tournaments, navigate }: { tournaments: any[], navigate: any }) {
+  const modalityTabs = [
+    { id: "all", label: "Todas" },
+    { id: "futsal", label: "Futsal" },
+    { id: "basquete", label: "Basquete" },
+    { id: "volei", label: "Vôlei" },
+    { id: "handebol", label: "Handebol" },
+  ] as const;
+
+  const modalityLabels: Record<string, string> = {
+    futsal: "Futsal",
+    basquete: "Basquete",
+    volei: "Vôlei",
+    handebol: "Handebol",
+  };
+
+  const [activeModalityTab, setActiveModalityTab] = useState<(typeof modalityTabs)[number]["id"]>("all");
+
+  const normalizedModality = (value?: string | null) => {
+    if (!value) return "";
+    return value.toLowerCase().trim();
+  };
+
+  const modalityCounts = tournaments.reduce((acc, tournament) => {
+    const modality = normalizedModality(tournament.modality);
+    if (modality in modalityLabels) {
+      acc[modality] = (acc[modality] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const filteredTournaments = activeModalityTab === "all"
+    ? tournaments
+    : tournaments.filter((tournament) => normalizedModality(tournament.modality) === activeModalityTab);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -211,16 +245,46 @@ function TournamentsSection({ tournaments, navigate }: { tournaments: any[], nav
           <Plus className="w-5 h-5 mr-2" /> Novo Torneio
         </Button>
       </div>
+
+      <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl overflow-x-auto no-scrollbar">
+        {modalityTabs.map((tab) => {
+          const count = tab.id === "all"
+            ? tournaments.length
+            : (modalityCounts[tab.id] || 0);
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveModalityTab(tab.id)}
+              className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                activeModalityTab === tab.id
+                  ? "bg-white text-red shadow-sm"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              {tab.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {tournaments.map((t) => (
+        {filteredTournaments.map((t) => (
           <div key={t.id} className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm hover:shadow-xl transition-all">
             <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg shadow-primary/20"><Trophy className="w-6 h-6 text-white" /></div>
             <h3 className="text-xl font-black text-slate-900 mb-1">{t.name}</h3>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{t.category}</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{t.category}</p>
+            <p className="text-[11px] font-black text-red uppercase tracking-wider mb-6">{modalityLabels[normalizedModality(t.modality)] || "Modalidade"}</p>
             <div className="flex gap-3"><Button className="flex-1 h-12 bg-slate-900 text-white font-black uppercase tracking-widest rounded-xl hover:bg-slate-800" onClick={() => navigate(`/tournament/${t.id}`)}>Gerenciar</Button></div>
           </div>
         ))}
       </div>
+
+      {filteredTournaments.length === 0 && (
+        <div className="bg-white border border-slate-100 rounded-[24px] p-10 text-center text-slate-500 font-medium">
+          Nenhum torneio encontrado nesta modalidade.
+        </div>
+      )}
     </div>
   );
 }
