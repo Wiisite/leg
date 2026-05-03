@@ -793,7 +793,7 @@ function EditTournamentModal({
               />
               <span>
                 <span className="block text-xs font-black text-slate-700 uppercase tracking-widest">Ida e volta na fase de grupos</span>
-                <span className="block text-[11px] text-slate-500 mt-1">Usado quando houver grupo único com 4 equipes.</span>
+                <span className="block text-[11px] text-slate-500 mt-1">Usado quando houver grupo único.</span>
               </span>
             </label>
           </div>

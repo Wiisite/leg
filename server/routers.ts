@@ -786,7 +786,8 @@ const tournamentRouter = router({
       const { updateTeamGroup } = await import("./db");
       const totalTeams = teamList.length;
       const numGroups = totalTeams <= 4 ? 1 : 2;
-      const shouldGenerateHomeAndAway = numGroups === 1 && totalTeams === 4 && (tournament.homeAndAway ?? 0) === 1;
+      const homeAndAwayEnabled = Number(tournament.homeAndAway ?? 0) === 1;
+      const shouldGenerateHomeAndAway = numGroups === 1 && totalTeams >= 3 && homeAndAwayEnabled;
       const groups: (typeof teamList)[] = [];
 
       if (input.mode === "manual" && input.manualGroups && numGroups >= 2) {
