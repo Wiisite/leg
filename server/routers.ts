@@ -787,7 +787,6 @@ const tournamentRouter = router({
       const totalTeams = teamList.length;
       const numGroups = totalTeams <= 4 ? 1 : 2;
       const homeAndAwayEnabled = Number(tournament.homeAndAway ?? 0) === 1;
-      const shouldGenerateHomeAndAway = numGroups === 1 && totalTeams >= 3 && homeAndAwayEnabled;
       const groups: (typeof teamList)[] = [];
 
       if (input.mode === "manual" && input.manualGroups && numGroups >= 2) {
@@ -827,6 +826,8 @@ const tournamentRouter = router({
       const GROUP_NAMES = ["A", "B"];
       for (let g = 0; g < groups.length; g++) {
         const groupTeams = [...groups[g]];
+        const realGroupTeamCount = groupTeams.length;
+        const shouldGenerateHomeAndAwayForGroup = homeAndAwayEnabled && realGroupTeamCount >= 2;
         if (groupTeams.length % 2 !== 0) {
           groupTeams.push({ id: -1, name: "BYE", shortName: "BYE", color: "#000", tournamentId: input.tournamentId, createdAt: new Date(), logo: null, groupName: GROUP_NAMES[g] } as any);
         }
@@ -835,7 +836,7 @@ const tournamentRouter = router({
         const fullRounds = n - 1;
         const matchesPerRound = n / 2;
         const requestedRounds = Math.max(1, tournament.rounds || fullRounds);
-        const roundsToGenerate = shouldGenerateHomeAndAway ? fullRounds : Math.min(requestedRounds, fullRounds);
+        const roundsToGenerate = shouldGenerateHomeAndAwayForGroup ? fullRounds : Math.min(requestedRounds, fullRounds);
 
         for (let round = 1; round <= roundsToGenerate; round++) {
           for (let m = 0; m < matchesPerRound; m++) {
@@ -843,7 +844,7 @@ const tournamentRouter = router({
             const away = groupTeams[n - 1 - m];
             if (home.id !== -1 && away.id !== -1) {
               await createMatch(input.tournamentId, "group", home.id, away.id, round);
-              if (shouldGenerateHomeAndAway) {
+              if (shouldGenerateHomeAndAwayForGroup) {
                 await createMatch(input.tournamentId, "group", away.id, home.id, round + fullRounds);
               }
             }
