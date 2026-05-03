@@ -91,7 +91,15 @@ async function ensureColumn(
   try {
     await db.execute(sql.raw(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`));
   } catch (e: any) {
-    if (e?.code === "ER_DUP_FIELDNAME" || e?.message?.includes("Duplicate column") || e?.message?.includes("already exists")) {
+    const nested = e?.cause ?? e?.original ?? e;
+    const code = nested?.code ?? e?.code;
+    const message = String(
+      nested?.sqlMessage ??
+      nested?.message ??
+      e?.message ??
+      "",
+    );
+    if (code === "ER_DUP_FIELDNAME" || message.includes("Duplicate column") || message.includes("already exists")) {
       return;
     }
     throw e;
