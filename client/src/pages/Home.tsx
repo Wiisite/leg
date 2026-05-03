@@ -125,6 +125,11 @@ export default function Home() {
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
   const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
 
+  const firstDivisionLeader = overallStandings?.leaders?.firstDivision;
+  const secondDivisionLeader = overallStandings?.leaders?.secondDivision;
+  const hasFirstDivisionLeader = (firstDivisionLeader?.totalPoints ?? 0) > 0;
+  const hasSecondDivisionLeader = (secondDivisionLeader?.totalPoints ?? 0) > 0;
+
 
   const mainLogoUrl = sanitize(siteSettings?.mainLogoUrl) || "/logo.png";
   const footerLogoUrl = sanitize(siteSettings?.footerLogoUrl) || mainLogoUrl;
@@ -613,10 +618,10 @@ export default function Home() {
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-100 mb-2">Líder 1ª Divisão</p>
               <div className="flex items-center gap-2 text-xl font-black uppercase">
                 <Trophy className="w-5 h-5 text-amber-300" />
-                {overallStandings?.leaders?.firstDivision?.schoolName ?? "A definir"}
+                {hasFirstDivisionLeader ? firstDivisionLeader?.schoolName : "—"}
               </div>
               <p className="text-xs text-blue-100 mt-2">
-                {overallStandings?.leaders?.firstDivision?.totalPoints ?? 0} pontos
+                {hasFirstDivisionLeader ? `${firstDivisionLeader?.totalPoints ?? 0} pontos` : ""}
               </p>
             </div>
 
@@ -624,10 +629,10 @@ export default function Home() {
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-100 mb-2">Líder 2ª Divisão</p>
               <div className="flex items-center gap-2 text-xl font-black uppercase">
                 <Trophy className="w-5 h-5 text-amber-300" />
-                {overallStandings?.leaders?.secondDivision?.schoolName ?? "A definir"}
+                {hasSecondDivisionLeader ? secondDivisionLeader?.schoolName : "—"}
               </div>
               <p className="text-xs text-blue-100 mt-2">
-                {overallStandings?.leaders?.secondDivision?.totalPoints ?? 0} pontos
+                {hasSecondDivisionLeader ? `${secondDivisionLeader?.totalPoints ?? 0} pontos` : ""}
               </p>
             </div>
           </div>
