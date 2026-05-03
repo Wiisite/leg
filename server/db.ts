@@ -140,6 +140,9 @@ async function ensureLegacySchemaCompatibility(db: ReturnType<typeof drizzle>) {
   await db.execute(
     sql.raw("ALTER TABLE tournaments MODIFY COLUMN updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
   ).catch(() => {});
+  await db.execute(
+    sql.raw("ALTER TABLE teams MODIFY COLUMN logo LONGTEXT NULL"),
+  ).catch(() => {});
 }
 
 export async function getDb() {
