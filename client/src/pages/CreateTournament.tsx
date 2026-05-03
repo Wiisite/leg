@@ -239,7 +239,10 @@ export default function CreateTournament() {
                   type="number"
                   min={1}
                   value={rounds}
-                  onChange={(e) => setRounds(Number(e.target.value))}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    setRounds(Number.isFinite(next) && next >= 1 ? Math.floor(next) : 1);
+                  }}
                   className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold"
                 />
               </div>

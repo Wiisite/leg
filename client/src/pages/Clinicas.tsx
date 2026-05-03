@@ -84,7 +84,7 @@ export default function Clinicas() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {(siteSettings?.clinics && siteSettings.clinics.length > 0) ? siteSettings.clinics.map((clinic, idx) => (
+            {(siteSettings?.clinics && siteSettings.clinics.length > 0) ? siteSettings.clinics.map((clinic: any, idx: number) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, scale: 0.95 }}

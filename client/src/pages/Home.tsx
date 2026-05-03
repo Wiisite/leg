@@ -129,7 +129,7 @@ export default function Home() {
   const footerLogoUrl = sanitize(siteSettings?.footerLogoUrl) || mainLogoUrl;
   const homeHighlightImageUrl =
     sanitize(siteSettings?.homeHighlightImageUrl)
-      ? sanitize(siteSettings.homeHighlightImageUrl)!
+      ? sanitize(siteSettings?.homeHighlightImageUrl)!
       : "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1800&q=80";
   
   // Sanitiza objetos e arrays

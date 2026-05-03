@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { contactMessages, InsertContactMessage, InsertUser, matches, siteSettings, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -41,7 +41,9 @@ async function runMigrations(db: ReturnType<typeof drizzle>) {
 
   const journal = JSON.parse(fs.readFileSync(journalPath, "utf-8"));
   const rows = await db.execute(sql.raw(`SELECT hash FROM __drizzle_migrations`));
-  const applied = new Set((rows[0] as any[]).map((r: any) => r.hash));
+  const rawRows = rows as unknown as [Array<{ hash?: string }>?, unknown?];
+  const migrationRows = Array.isArray(rawRows[0]) ? rawRows[0] : [];
+  const applied = new Set(migrationRows.map((r) => r.hash).filter((hash): hash is string => !!hash));
 
   for (const entry of journal.entries) {
     if (applied.has(entry.tag)) continue;
@@ -80,6 +82,58 @@ async function runMigrations(db: ReturnType<typeof drizzle>) {
   }
 }
 
+async function ensureColumn(
+  db: ReturnType<typeof drizzle>,
+  table: string,
+  column: string,
+  definition: string,
+) {
+  try {
+    await db.execute(sql.raw(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`));
+  } catch (e: any) {
+    if (e?.code === "ER_DUP_FIELDNAME" || e?.message?.includes("Duplicate column") || e?.message?.includes("already exists")) {
+      return;
+    }
+    throw e;
+  }
+}
+
+async function ensureLegacySchemaCompatibility(db: ReturnType<typeof drizzle>) {
+  // tournaments
+  await ensureColumn(db, "tournaments", "modality", "ENUM('futsal','basquete','volei','handebol','extra1','extra2') NOT NULL DEFAULT 'futsal'");
+  await ensureColumn(db, "tournaments", "pointsPerWin", "INT NOT NULL DEFAULT 3");
+  await ensureColumn(db, "tournaments", "pointsPerDraw", "INT NOT NULL DEFAULT 1");
+  await ensureColumn(db, "tournaments", "pointsPerLoss", "INT NOT NULL DEFAULT 0");
+  await ensureColumn(db, "tournaments", "homeAndAway", "INT NOT NULL DEFAULT 0");
+  await ensureColumn(db, "tournaments", "rounds", "INT NOT NULL DEFAULT 5");
+  await ensureColumn(db, "tournaments", "date", "VARCHAR(50) NULL");
+
+  // matches
+  await ensureColumn(db, "matches", "bracket", "ENUM('ouro','prata') NULL");
+  await ensureColumn(db, "matches", "voleiSetsJson", "LONGTEXT NULL");
+  await ensureColumn(db, "matches", "time", "VARCHAR(20) NULL");
+  await ensureColumn(db, "matches", "location", "VARCHAR(255) NULL");
+  await ensureColumn(db, "matches", "date", "VARCHAR(50) NULL");
+
+  // keep enum/defaults compatible with current code
+  await db.execute(
+    sql.raw(
+      "ALTER TABLE tournaments MODIFY COLUMN modality ENUM('futsal','basquete','volei','handebol','extra1','extra2') NOT NULL DEFAULT 'futsal'",
+    ),
+  ).catch(() => {});
+  await db.execute(
+    sql.raw(
+      "ALTER TABLE matches MODIFY COLUMN phase ENUM('group','quarterfinal','semifinal','third_place','final') NOT NULL",
+    ),
+  ).catch(() => {});
+  await db.execute(
+    sql.raw("ALTER TABLE tournaments MODIFY COLUMN createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"),
+  ).catch(() => {});
+  await db.execute(
+    sql.raw("ALTER TABLE tournaments MODIFY COLUMN updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+  ).catch(() => {});
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -89,6 +143,7 @@ export async function getDb() {
         console.log("[Database] Running migrations...");
         try {
           await runMigrations(_db);
+          await ensureLegacySchemaCompatibility(_db);
           console.log("[Database] Migrations completed successfully.");
         } catch (e) {
           console.error("[Database] Migration error:", e);
@@ -203,6 +258,7 @@ export async function createTournament(
  ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const normalizedDate = typeof date === "string" && date.trim().length > 0 ? date.trim() : null;
   const result = await db.insert(tournaments).values({
     name,
     category,
@@ -212,10 +268,17 @@ export async function createTournament(
     pointsPerLoss,
      homeAndAway: homeAndAway ? 1 : 0,
      rounds,
-     date: date ?? null,
+     date: normalizedDate,
      status: "pending",
   });
-  return result[0].insertId;
+  const insertResult = Array.isArray(result) ? result[0] : result;
+  const rawInsertId = (insertResult as any)?.insertId;
+  const parsedInsertId = typeof rawInsertId === "number" ? rawInsertId : Number(rawInsertId);
+  if (Number.isFinite(parsedInsertId) && parsedInsertId > 0) return parsedInsertId;
+
+  const latest = await db.select({ id: tournaments.id }).from(tournaments).orderBy(desc(tournaments.id)).limit(1);
+  if (!latest[0]?.id) throw new Error("Failed to resolve created tournament id");
+  return latest[0].id;
 }
 
 export async function updateTournamentStatus(

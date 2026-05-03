@@ -418,7 +418,7 @@ const tournamentRouter = router({
         pointsPerDraw: z.number().default(1),
         pointsPerLoss: z.number().default(0),
         homeAndAway: z.boolean().default(false),
-        rounds: z.number().default(5),
+        rounds: z.number().int().min(1).max(20).default(5),
         teams: z
           .array(
             z.object({
@@ -601,7 +601,8 @@ const tournamentRouter = router({
         const n = groupTeams.length;
         const fullRounds = n - 1;
         const matchesPerRound = n / 2;
-        const roundsToGenerate = shouldGenerateHomeAndAway ? fullRounds : (tournament.rounds || fullRounds);
+        const requestedRounds = Math.max(1, tournament.rounds || fullRounds);
+        const roundsToGenerate = shouldGenerateHomeAndAway ? fullRounds : Math.min(requestedRounds, fullRounds);
 
         for (let round = 1; round <= roundsToGenerate; round++) {
           for (let m = 0; m < matchesPerRound; m++) {

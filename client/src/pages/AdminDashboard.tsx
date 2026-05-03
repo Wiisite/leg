@@ -281,9 +281,9 @@ function ModalitiesManagerSection() {
 function MessagesSection() {
   const utils = trpc.useUtils();
   const { data: messages } = trpc.contact.list.useQuery();
-  const statusMutation = trpc.contact.updateStatus.useStatus.useMutation({
+  const statusMutation = trpc.contact.updateStatus.useMutation({
     onSuccess: () => { utils.contact.list.invalidate(); toast.success("Status atualizado"); },
-    onError: (e) => toast.error(e.message)
+    onError: (e: { message: string }) => toast.error(e.message)
   });
 
   return (
