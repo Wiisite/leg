@@ -42,6 +42,26 @@ type MatchForModal = {
   date?: string | null;
 };
 
+const normalizeDateForInput = (value?: string | null): string => {
+  if (!value) return "";
+  const raw = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const brDate = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/);
+  if (!brDate) return "";
+  const day = brDate[1].padStart(2, "0");
+  const month = brDate[2].padStart(2, "0");
+  const year = (brDate[3] || String(new Date().getFullYear())).padStart(4, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatMatchDate = (value?: string | null): string => {
+  if (!value) return "";
+  const raw = value.trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  return raw;
+};
+
 function TeamBadge({ team, size = "md", showName = false }: { team: any; size?: "sm" | "md" | "lg"; showName?: boolean }) {
   const sizes = { 
     sm: "w-8 h-8", 
@@ -99,7 +119,7 @@ function ScoreModal({
   const [away, setAway] = useState(match.awayScore ?? 0);
   const [time, setTime] = useState(match.time ?? "");
   const [location, setLocation] = useState(match.location ?? "");
-  const [date, setDate] = useState(match.date ?? "");
+  const [date, setDate] = useState(() => normalizeDateForInput(match.date));
   const addressOptions = useMemo(
     () => (championshipAddresses || []).map((address) => address.trim()).filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index),
     [championshipAddresses]
@@ -212,15 +232,14 @@ function ScoreModal({
             <div className="relative">
               <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
               <input
-                type="text"
+                type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                placeholder="Ex: 15 de Outubro ou 15/10"
                 className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm"
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Horário</label>
               <div className="relative">
@@ -242,9 +261,9 @@ function ScoreModal({
                   <select
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm appearance-none"
+                    className="w-full pl-11 pr-8 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-[13px] font-semibold text-slate-700 focus:outline-none focus:border-red/20 transition-all shadow-sm appearance-none"
                   >
-                    <option value="">Selecione um endereço</option>
+                    <option value="">Selecione um endereço completo</option>
                     {locationOptions.map((address) => (
                       <option key={address} value={address}>
                         {address}
@@ -256,8 +275,8 @@ function ScoreModal({
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Ginásio"
-                    className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-red/20 transition-all shadow-sm"
+                    placeholder="Digite o endereço completo"
+                    className="w-full pl-11 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-[13px] font-semibold text-slate-700 focus:outline-none focus:border-red/20 transition-all shadow-sm"
                   />
                 )}
               </div>
@@ -347,7 +366,7 @@ function ScoreModal({
                 time,
                 location,
                 isVolei ? parsedVoleiSets : undefined,
-                date
+                date || undefined
               )
             }
           >
@@ -408,12 +427,12 @@ function MatchCard({
           <div className="flex items-center gap-2 text-slate-500">
             <Clock className="w-3.5 h-3.5" />
             <span className="text-[10px] font-black uppercase tracking-wider">
-              {match.date ? `${match.date} • ` : ""}{match.time || "A DEFINIR"}
+              {match.date ? `${formatMatchDate(match.date)} • ` : ""}{match.time || "A DEFINIR"}
             </span>
           </div>
           <div className="flex items-center gap-2 text-slate-500">
             <MapPin className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-wider">{match.location || "A DEFINIR"}</span>
+            <span className="text-[11px] font-bold text-slate-600 leading-tight">{match.location || "A DEFINIR"}</span>
           </div>
         </div>
         
@@ -466,7 +485,7 @@ function MatchCardCompact({
           </div>
           {match.date && (
             <div className="mt-1">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{match.date}</span>
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{formatMatchDate(match.date)}</span>
             </div>
           )}
         </div>

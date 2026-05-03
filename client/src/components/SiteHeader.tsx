@@ -17,31 +17,39 @@ const modalityLabels: Record<string, string> = {
   handebol: "Handebol",
 };
 
+const getLogoMetrics = (scrollY: number, isHome: boolean) => {
+  const startTop = isHome ? 88 : 64;
+  const endTop = 50;
+  const startScale = isHome ? 1 : 0.78;
+  const endScale = isHome ? 0.56 : 0.62;
+  const progress = Math.min(scrollY / (isHome ? 140 : 90), 1);
+
+  return {
+    top: startTop - (startTop - endTop) * progress,
+    scale: startScale - (startScale - endScale) * progress,
+  };
+};
+
 export function SiteHeader({ isHome = false }: SiteHeaderProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const { data: settings } = trpc.site.getSettings.useQuery();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [logoTop, setLogoTop] = useState(isHome ? 88 : 50);
-  const [logoScale, setLogoScale] = useState(isHome ? 1 : 0.5);
+  const initialMetrics = getLogoMetrics(0, isHome);
+  const [logoTop, setLogoTop] = useState(initialMetrics.top);
+  const [logoScale, setLogoScale] = useState(initialMetrics.scale);
 
   const mainLogoUrl = settings?.mainLogoUrl || "/logo.png";
 
   useEffect(() => {
-    if (!isHome) {
-      setLogoTop(0);
-      setLogoScale(0.45);
-      return;
-    }
-
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const progress = Math.min(scrollY / 140, 1);
-      setLogoTop(88 - progress * 38);
-      setLogoScale(1 - progress * 0.5);
+      const metrics = getLogoMetrics(window.scrollY, isHome);
+      setLogoTop(metrics.top);
+      setLogoScale(metrics.scale);
     };
 
+    handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isHome]);
@@ -118,7 +126,7 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
             style={{ top: `${logoTop}%` }}
           >
             <div
-              className="w-36 h-36 md:w-44 md:h-44 drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)] origin-center transition-transform duration-150 pointer-events-auto cursor-pointer"
+              className="w-40 h-40 md:w-48 md:h-48 drop-shadow-[0_16px_34px_rgba(0,0,0,0.42)] origin-center transition-transform duration-150 pointer-events-auto cursor-pointer"
               style={{ transform: `scale(${logoScale})` }}
               onClick={() => handleNav("/")}
             >
