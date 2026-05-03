@@ -14,6 +14,7 @@ import {
   Star,
   CheckCircle2,
   Clock,
+  CalendarDays,
   MapPin,
   Trash2,
   Shield,
@@ -103,8 +104,8 @@ function ScoreModal({
   onClose: () => void;
   onSave: (
     matchId: number,
-    home: number,
-    away: number,
+    home: number | undefined,
+    away: number | undefined,
     time: string,
     location: string,
     voleiSets?: { home: number; away: number }[],
@@ -117,6 +118,7 @@ function ScoreModal({
   const awayTeam = teams.find((t) => t.id === match.awayTeamId);
   const [home, setHome] = useState(match.homeScore ?? 0);
   const [away, setAway] = useState(match.awayScore ?? 0);
+  const [scoreTouched, setScoreTouched] = useState(false);
   const [time, setTime] = useState(match.time ?? "");
   const [location, setLocation] = useState(match.location ?? "");
   const [date, setDate] = useState(() => normalizeDateForInput(match.date));
@@ -150,6 +152,7 @@ function ScoreModal({
       return [{ home: "", away: "" }, { home: "", away: "" }, { home: "", away: "" }];
     }
   });
+  const [voleiSetsTouched, setVoleiSetsTouched] = useState(false);
 
   const parsedVoleiSets = voleiSetsInput
     .map((set) => ({
@@ -167,13 +170,17 @@ function ScoreModal({
   const invalidStraightWinIn3Sets =
     parsedVoleiSets.length === 3 &&
     ((voleiHomeSets === 2 && voleiAwaySets === 0) || (voleiAwaySets === 2 && voleiHomeSets === 0));
+  const shouldSubmitRegularScore = !isVolei && scoreTouched;
+  const shouldSubmitVoleiScore = isVolei && voleiSetsTouched;
+
   const voleiValid =
     !isVolei ||
+    !shouldSubmitVoleiScore ||
     (voleiHasEnoughSets && !hasSetDraw && hasVoleiWinner && !invalidStraightWinIn3Sets);
 
   const effectiveHome = isVolei ? voleiHomeSets : home;
   const effectiveAway = isVolei ? voleiAwaySets : away;
-  const basqueteValid = !isBasquete || effectiveHome !== effectiveAway;
+  const basqueteValid = !isBasquete || !shouldSubmitRegularScore || effectiveHome !== effectiveAway;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -199,6 +206,7 @@ function ScoreModal({
                 value={isVolei ? effectiveHome : home}
                 onChange={(e) => {
                   if (isVolei) return;
+                  setScoreTouched(true);
                   setHome(Math.max(0, parseInt(e.target.value) || 0));
                 }}
                 readOnly={isVolei}
@@ -212,6 +220,7 @@ function ScoreModal({
                 value={isVolei ? effectiveAway : away}
                 onChange={(e) => {
                   if (isVolei) return;
+                  setScoreTouched(true);
                   setAway(Math.max(0, parseInt(e.target.value) || 0));
                 }}
                 readOnly={isVolei}
@@ -295,6 +304,7 @@ function ScoreModal({
                     min={0}
                     value={set.home}
                     onChange={(e) => {
+                      setVoleiSetsTouched(true);
                       const next = [...voleiSetsInput];
                       next[idx] = { ...next[idx], home: e.target.value };
                       setVoleiSetsInput(next);
@@ -308,6 +318,7 @@ function ScoreModal({
                     min={0}
                     value={set.away}
                     onChange={(e) => {
+                      setVoleiSetsTouched(true);
                       const next = [...voleiSetsInput];
                       next[idx] = { ...next[idx], away: e.target.value };
                       setVoleiSetsInput(next);
@@ -361,11 +372,11 @@ function ScoreModal({
             onClick={() =>
               onSave(
                 match.id,
-                effectiveHome,
-                effectiveAway,
+                shouldSubmitRegularScore ? effectiveHome : undefined,
+                shouldSubmitRegularScore ? effectiveAway : undefined,
                 time,
                 location,
-                isVolei ? parsedVoleiSets : undefined,
+                shouldSubmitVoleiScore ? parsedVoleiSets : undefined,
                 date || undefined
               )
             }
@@ -420,25 +431,28 @@ function MatchCard({
           <TeamBadge team={away} size="md" />
           <span className="text-[11px] font-black text-slate-700 uppercase text-center leading-tight min-h-[2.5rem] flex items-center justify-center px-2">{away?.name}</span>
         </div>
+
       </div>
 
       <div className="flex items-center justify-between pt-6 border-t border-slate-200">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2 text-slate-500">
-            <Clock className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-black uppercase tracking-wider">
-              {match.date ? `${formatMatchDate(match.date)} • ` : ""}{match.time || "A DEFINIR"}
-            </span>
+            <CalendarDays className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-black uppercase tracking-wider">{formatMatchDate(match.date) || "A DEFINIR"}</span>
           </div>
           <div className="flex items-center gap-2 text-slate-500">
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="text-[11px] font-bold text-slate-600 leading-tight">{match.location || "A DEFINIR"}</span>
+            <Clock className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-black uppercase tracking-wider">{match.time || "A DEFINIR"}</span>
+          </div>
+          <div className="flex items-start gap-2 text-slate-500">
+            <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span className="text-[11px] font-bold text-slate-600 leading-tight break-words max-w-[210px]">{match.location || "A DEFINIR"}</span>
           </div>
         </div>
-        
+
         {isAdmin && onEdit && (
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             onClick={() => onEdit(match)}
             className="bg-slate-100 hover:bg-slate-700 hover:text-white text-slate-600 text-[10px] font-black uppercase px-6 rounded-2xl transition-all shadow-sm active:scale-95"
           >
@@ -461,54 +475,7 @@ function MatchCardCompact({
   isAdmin: boolean;
   onEdit?: (m: MatchForModal) => void;
 }) {
-  const home = teams.find((t) => t.id === match.homeTeamId);
-  const away = teams.find((t) => t.id === match.awayTeamId);
-  const finished = match.homeScore !== null;
-
-  return (
-    <div className="bg-slate-50/95 border border-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-slate-300 transition-all border-b-4 border-b-slate-300">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 flex flex-col items-center gap-2">
-          <TeamBadge team={home} size="md" />
-          <span className="text-[10px] font-black text-slate-700 uppercase text-center leading-tight">{home?.shortName}</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1.5 px-2">
-          <div className="flex items-center gap-3">
-            <span className={`text-2xl font-black ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
-              {match.homeScore ?? "0"}
-            </span>
-            <span className="text-slate-300 font-black text-sm">×</span>
-            <span className={`text-2xl font-black ${finished ? 'text-slate-800' : 'text-slate-300'}`}>
-              {match.awayScore ?? "0"}
-            </span>
-          </div>
-          {match.date && (
-            <div className="mt-1">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{formatMatchDate(match.date)}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 flex flex-col items-center gap-2">
-          <TeamBadge team={away} size="md" />
-          <span className="text-[10px] font-black text-slate-700 uppercase text-center leading-tight">{away?.shortName}</span>
-        </div>
-      </div>
-
-      {isAdmin && onEdit && (
-        <div className="mt-3 pt-3 border-t border-slate-200 text-center">
-          <Button 
-            size="sm" 
-            onClick={() => onEdit(match)}
-            className="bg-slate-100 hover:bg-slate-700 hover:text-white text-slate-600 text-[9px] font-black uppercase px-4 py-1 rounded-xl transition-all shadow-sm active:scale-95"
-          >
-            {finished ? "Editar" : "Registrar"}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+  return <MatchCard match={match} teams={teams} isAdmin={isAdmin} onEdit={onEdit} />;
 }
 
 function StandingsTable({ standings, modality }: { standings: any[]; modality?: string }) {
@@ -1058,8 +1025,8 @@ export default function TournamentDetail() {
           onClose={() => setEditingMatch(null)}
           onSave={(
             matchId: number,
-            home: number,
-            away: number,
+            home: number | undefined,
+            away: number | undefined,
             time: string,
              location: string,
              voleiSets?: { home: number; away: number }[],
