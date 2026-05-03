@@ -609,10 +609,32 @@ function BracketView({
   const finalMatch = bracket.final[0];
   const finalWinner = finalMatch ? getWinner(finalMatch) : null;
   const champion = finalWinner ? teams.find(t => t.id === finalWinner) : null;
+  const quarterfinalMatches = [...(bracket.quarterfinal ?? [])].sort((a, b) => a.round - b.round);
+  const semifinalMatches = [...(bracket.semifinal ?? [])].sort((a, b) => a.round - b.round);
+  const hasQuarterfinals = quarterfinalMatches.length > 0;
 
   return (
     <div className="overflow-x-auto pb-4">
       <div className="flex items-start gap-12 min-w-max px-4 py-6">
+        {hasQuarterfinals && (
+          <>
+            <div className="flex flex-col gap-6 justify-center">
+              <div className="text-center mb-2">
+                <span className="text-xs text-muted-foreground uppercase tracking-widest font-medium">
+                  Quartas de Final
+                </span>
+              </div>
+              {quarterfinalMatches.map((m: any, i: number) => (
+                <BracketMatch key={m.id} match={m} label={`Quarta ${i + 1}`} />
+              ))}
+            </div>
+
+            <div className="flex flex-col items-center justify-center self-center mt-6">
+              <div className="w-8 h-px bg-border/60" />
+            </div>
+          </>
+        )}
+
         {/* Semis */}
         <div className="flex flex-col gap-8 justify-center">
           <div className="text-center mb-2">
@@ -625,7 +647,7 @@ function BracketView({
               <span className="text-xs text-muted-foreground">Aguardando fase de grupos</span>
             </div>
           ) : (
-            bracket.semifinal.map((m: any, i: number) => (
+            semifinalMatches.map((m: any, i: number) => (
               <BracketMatch key={m.id} match={m} label={`Semifinal ${i + 1}`} />
             ))
           )}
