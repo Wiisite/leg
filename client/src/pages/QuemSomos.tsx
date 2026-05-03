@@ -66,7 +66,7 @@ export default function QuemSomos() {
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 overflow-hidden min-h-[400px] flex items-center">
         {aboutHeroImageUrl ? (
-          <div className="absolute inset-0 z-[-1]">
+          <div className="absolute inset-0 z-0">
             <img src={aboutHeroImageUrl} className="w-full h-full object-cover" alt="Hero background" />
             <div className="absolute inset-0 bg-[#07174B]/80" />
           </div>
