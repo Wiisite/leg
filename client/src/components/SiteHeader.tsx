@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
+import { getLoginUrl, getRegisterUrl } from "@/const";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { LogOut, Menu, Shield, X, Contact, ChevronDown } from "lucide-react";
@@ -94,10 +94,10 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <button onClick={() => navigate("/login")} className="hover:text-red-200 transition-colors">
+                <button onClick={() => (window.location.href = getLoginUrl())} className="hover:text-red-200 transition-colors">
                   Login
                 </button>
-                <button onClick={() => (window.location.href = getLoginUrl())} className="hover:text-red-200 transition-colors">
+                <button onClick={() => (window.location.href = getRegisterUrl())} className="hover:text-red-200 transition-colors">
                   Cadastro
                 </button>
               </div>

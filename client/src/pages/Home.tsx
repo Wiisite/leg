@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
+import { getLoginUrl, getRegisterUrl } from "@/const";
 import { useLocation } from "wouter";
 import {
   ChevronDown,
@@ -350,10 +350,10 @@ export default function Home() {
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <button onClick={() => navigate("/login")} className="hover:text-red-200 transition-colors">
+                <button onClick={() => (window.location.href = getLoginUrl())} className="hover:text-red-200 transition-colors">
                   Login
                 </button>
-                <button onClick={() => (window.location.href = getLoginUrl())} className="hover:text-red-200 transition-colors">
+                <button onClick={() => (window.location.href = getRegisterUrl())} className="hover:text-red-200 transition-colors">
                   Cadastro
                 </button>
               </div>
