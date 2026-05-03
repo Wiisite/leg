@@ -690,11 +690,13 @@ function BracketView({
 function EditTournamentModal({
   tournament,
   teams,
+  hasFinishedMatches,
   onClose,
   onSave,
 }: {
-  tournament: { id: number; name: string; category: string; modality: string; rounds: number; date?: string | null };
+  tournament: { id: number; name: string; category: string; modality: string; rounds: number; date?: string | null; homeAndAway?: number | boolean | null };
   teams: { id: number; name: string; shortName: string; color: string; logo: string | null }[];
+  hasFinishedMatches: boolean;
   onClose: () => void;
   onSave: (data: any) => void;
 }) {
@@ -702,7 +704,9 @@ function EditTournamentModal({
   const [category, setCategory] = useState(tournament.category);
   const [modality, setModality] = useState(tournament.modality as any);
   const [rounds, setRounds] = useState(tournament.rounds ?? 5);
+  const [homeAndAway, setHomeAndAway] = useState(Boolean(tournament.homeAndAway));
   const [teamList, setTeamList] = useState(teams);
+  const disableTeamEditing = hasFinishedMatches;
 
   const handleUpdateTeam = (index: number, field: string, value: string) => {
     const newTeams = [...teamList];
@@ -779,12 +783,32 @@ function EditTournamentModal({
               className="w-full px-4 py-2.5 bg-input border border-border rounded-xl text-sm focus:ring-2 focus:ring-red/20"
             />
           </div>
+          <div className="sm:col-span-2">
+            <label className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={homeAndAway}
+                onChange={(e) => setHomeAndAway(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300"
+              />
+              <span>
+                <span className="block text-xs font-black text-slate-700 uppercase tracking-widest">Ida e volta na fase de grupos</span>
+                <span className="block text-[11px] text-slate-500 mt-1">Usado quando houver grupo único com 4 equipes.</span>
+              </span>
+            </label>
+          </div>
         </div>
+
+        {disableTeamEditing && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[11px] text-amber-800 font-semibold">
+            Este torneio já possui jogos com placar. Para segurança, edição de equipes foi bloqueada para não comprometer partidas já realizadas.
+          </div>
+        )}
 
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Equipes Participantes</label>
-            <Button size="sm" variant="outline" className="h-7 text-[10px] uppercase font-bold" onClick={handleAddTeam}>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] uppercase font-bold" onClick={handleAddTeam} disabled={disableTeamEditing}>
               <Plus className="w-3 h-3 mr-1" /> Adicionar Equipe
             </Button>
           </div>
@@ -818,9 +842,10 @@ function EditTournamentModal({
                         placeholder="Nome do Colégio / Equipe"
                         value={team.name}
                         onChange={(e) => handleUpdateTeam(idx, "name", e.target.value)}
+                        disabled={disableTeamEditing}
                         className="flex-1 px-4 py-2.5 bg-white border border-border rounded-xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-red/20"
                       />
-                      <Button size="icon" variant="ghost" className="h-10 w-10 text-slate-400 hover:text-red hover:bg-red/5 shrink-0" onClick={() => handleRemoveTeam(idx)}>
+                      <Button size="icon" variant="ghost" className="h-10 w-10 text-slate-400 hover:text-red hover:bg-red/5 shrink-0" onClick={() => handleRemoveTeam(idx)} disabled={disableTeamEditing}>
                         <X className="w-5 h-5" />
                       </Button>
                     </div>
@@ -830,6 +855,7 @@ function EditTournamentModal({
                         placeholder="Sigla (Ex: COL)"
                         value={team.shortName}
                         onChange={(e) => handleUpdateTeam(idx, "shortName", e.target.value)}
+                        disabled={disableTeamEditing}
                         className="w-32 px-4 py-2 bg-white border border-border rounded-xl text-xs uppercase font-black tracking-widest text-center shadow-sm"
                       />
                       <div className="flex-1" /> {/* Espaçador */}
@@ -845,7 +871,7 @@ function EditTournamentModal({
           <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button 
             className="flex-1 bg-red text-white font-bold hover:opacity-90 shadow-brand"
-            onClick={() => onSave({ name, category, modality, rounds, teams: teamList })}
+            onClick={() => onSave({ name, category, modality, rounds, homeAndAway, teams: teamList })}
           >
             Salvar Alterações
           </Button>
@@ -967,6 +993,12 @@ export default function TournamentDetail() {
   const semiMatches = matches.filter((m) => m.phase === "semifinal");
   const thirdPlaceMatches = matches.filter((m) => m.phase === "third_place");
   const finalMatches = matches.filter((m) => m.phase === "final");
+  const hasFinishedMatches = matches.some(
+    (match) =>
+      match.status === "finished" ||
+      match.homeScore !== null ||
+      match.awayScore !== null
+  );
 
   const handebolOuroSemi = semiMatches.filter((m: any) => m.bracket === "ouro");
   const handebolPrataSemi = semiMatches.filter((m: any) => m.bracket === "prata");
@@ -1034,6 +1066,7 @@ export default function TournamentDetail() {
         <EditTournamentModal
           tournament={tournament as any}
           teams={teams}
+          hasFinishedMatches={hasFinishedMatches}
           onClose={() => setIsEditingTournament(false)}
           onSave={(data) => updateTournament.mutate({ id: tournamentId, ...data })}
         />

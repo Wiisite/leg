@@ -670,6 +670,44 @@ const tournamentRouter = router({
       const db = await getDb();
       if (!db) throw new Error("DB not available");
 
+      const existingTeams = await getTeamsByTournament(input.id);
+      const tournamentMatches = await getMatchesByTournament(input.id);
+      const hasFinishedMatches = tournamentMatches.some(
+        (match) =>
+          match.status === "finished" ||
+          match.homeScore !== null ||
+          match.awayScore !== null
+      );
+
+      const existingTeamsById = new Map(existingTeams.map((team) => [team.id, team]));
+      const inputTeamIds = input.teams
+        .map((team) => team.id)
+        .filter((teamId): teamId is number => typeof teamId === "number");
+
+      const hasTeamRemoved = existingTeams.some((team) => !inputTeamIds.includes(team.id));
+      const hasTeamAdded = input.teams.some((team) => !team.id);
+      const hasTeamEdited = input.teams.some((team) => {
+        if (!team.id) return false;
+        const existing = existingTeamsById.get(team.id);
+        if (!existing) return true;
+        const oldLogo = existing.logo ?? null;
+        const newLogo = team.logo ?? null;
+        return (
+          existing.name !== team.name ||
+          existing.shortName !== team.shortName ||
+          existing.color !== team.color ||
+          oldLogo !== newLogo
+        );
+      });
+
+      if (hasFinishedMatches && (hasTeamRemoved || hasTeamAdded || hasTeamEdited)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Este torneio já possui jogos com placar. Para segurança, só é permitido editar dados gerais do torneio; mudanças em equipes exigem recriar a tabela.",
+        });
+      }
+
       // 1. Atualiza dados básicos do torneio
       const tournamentUpdateData: Parameters<typeof updateTournament>[1] = {
         name: input.name,
@@ -686,12 +724,11 @@ const tournamentRouter = router({
       await updateTournament(input.id, tournamentUpdateData);
 
       // 2. Gerencia equipes
-      const existingTeams = await getTeamsByTournament(input.id);
-      const inputTeamIds = input.teams.map(t => t.id).filter(Boolean);
+      const inputTeamIdsForDelete = input.teams.map(t => t.id).filter(Boolean);
 
       // Remover equipes que não estão no input
       for (const et of existingTeams) {
-        if (!inputTeamIds.includes(et.id)) {
+        if (!inputTeamIdsForDelete.includes(et.id)) {
           await db.delete(teams).where(eq(teams.id, et.id));
         }
       }
