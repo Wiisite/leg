@@ -371,6 +371,7 @@ export default function Home() {
           <div className="container relative h-24 flex items-center justify-between">
             <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
               <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="hover:text-red-100 transition-colors">Home</button>
+              <button onClick={() => navigate("/classificacao-geral")} className="hover:text-red-100 transition-colors">Classificação Geral</button>
               <button onClick={() => scrollToSection("noticias")} className="hover:text-red-100 transition-colors">Notícia</button>
               <div className="relative group">
                 <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
@@ -434,6 +435,7 @@ export default function Home() {
             <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
               <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
                 <button onClick={() => navigate("/")} className="text-left">Home</button>
+                <button onClick={() => navigate("/classificacao-geral")} className="text-left">Classificação Geral</button>
                 <button onClick={() => navigate("/clinicas")} className="text-left">Clínicas</button>
                 <button onClick={() => navigate("/quem-somos")} className="text-left">Quem Somos</button>
                 <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2">

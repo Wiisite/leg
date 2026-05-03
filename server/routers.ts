@@ -24,7 +24,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { storagePut } from "./storage";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createContactMessage, getAllContactMessages, updateMessageStatus } from "./db";
 import nodemailer from "nodemailer";
 
@@ -880,7 +880,7 @@ const tournamentRouter = router({
       };
     }),
 
-  updateOverallStandingsConfig: protectedProcedure
+  updateOverallStandingsConfig: adminProcedure
     .input(
       z.object({
         season: z.number().int().min(2020).max(2100).optional(),
@@ -903,7 +903,7 @@ const tournamentRouter = router({
       return computeOverallStandingsSnapshot();
     }),
 
-  setSchoolDivision: protectedProcedure
+  setSchoolDivision: adminProcedure
     .input(
       z.object({
         schoolName: z.string().trim().min(1).max(255),
@@ -926,7 +926,7 @@ const tournamentRouter = router({
       return computeOverallStandingsSnapshot();
     }),
 
-  applyOverallPromotionRelegation: protectedProcedure
+  applyOverallPromotionRelegation: adminProcedure
     .input(
       z
         .object({

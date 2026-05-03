@@ -96,7 +96,8 @@ function DivisionTable({
 }
 
 export default function ClassificacaoGeral() {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const { data: settings } = trpc.site.getSettings.useQuery();
   const { data, isLoading } = trpc.tournament.getOverallStandings.useQuery();
@@ -165,7 +166,7 @@ export default function ClassificacaoGeral() {
           </div>
         </section>
 
-        {isAuthenticated && (
+        {isAdmin && (
           <section className="rounded-3xl border border-slate-200 bg-white p-4 md:p-5 shadow-sm">
             <div className="flex flex-wrap items-center gap-3 justify-between">
               <p className="text-xs font-black text-slate-500 uppercase tracking-widest">
@@ -215,7 +216,7 @@ export default function ClassificacaoGeral() {
               title="1ª Divisão"
               subtitle="Classificação principal"
               rows={data?.firstDivision ?? []}
-              isAdmin={isAuthenticated}
+              isAdmin={isAdmin}
               onSetDivision={(schoolName, division) => setSchoolDivision.mutate({ schoolName, division })}
             />
 
@@ -223,7 +224,7 @@ export default function ClassificacaoGeral() {
               title="2ª Divisão"
               subtitle="Disputa por acesso"
               rows={data?.secondDivision ?? []}
-              isAdmin={isAuthenticated}
+              isAdmin={isAdmin}
               onSetDivision={(schoolName, division) => setSchoolDivision.mutate({ schoolName, division })}
             />
           </>
