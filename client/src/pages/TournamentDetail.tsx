@@ -1221,7 +1221,7 @@ export default function TournamentDetail() {
                 onClick={() => generateSemis.mutate({ tournamentId })}
                 disabled={generateSemis.isPending}
               >
-                Gerar Semifinais
+                Gerar Mata-mata
               </Button>
             )}
             {(tournament.status === "semifinals" || (usesAdvancedSeries && tournament.status === "final")) && (
@@ -1607,7 +1607,7 @@ export default function TournamentDetail() {
                 <Medal className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm">
                   {isAuthenticated
-                    ? 'Conclua a fase de grupos e clique em "Gerar Semifinais"'
+                    ? 'Conclua a fase de grupos e clique em "Gerar Mata-mata"'
                     : "Fase eliminatória ainda não gerada"}
                 </p>
               </div>
