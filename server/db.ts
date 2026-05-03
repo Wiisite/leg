@@ -143,10 +143,14 @@ export async function getDb() {
         console.log("[Database] Running migrations...");
         try {
           await runMigrations(_db);
-          await ensureLegacySchemaCompatibility(_db);
-          console.log("[Database] Migrations completed successfully.");
         } catch (e) {
           console.error("[Database] Migration error:", e);
+        }
+        try {
+          await ensureLegacySchemaCompatibility(_db);
+          console.log("[Database] Schema compatibility check completed.");
+        } catch (e) {
+          console.error("[Database] Schema compatibility error:", e);
         }
         _migrated = true;
       }
