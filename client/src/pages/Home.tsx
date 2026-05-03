@@ -121,6 +121,7 @@ export default function Home() {
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
   const { data: homeNews } = trpc.tournament.getHomeNews.useQuery();
+  const { data: overallStandings } = trpc.tournament.getOverallStandings.useQuery();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
   const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
 
@@ -582,6 +583,51 @@ export default function Home() {
                 </article>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="container mb-14">
+        <div className="rounded-3xl border border-[#0A2D78]/15 bg-gradient-to-r from-[#05206F] via-[#10398B] to-[#D50000] text-white p-6 md:p-8 shadow-xl">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-red-100">
+                Classificação Geral • Temporada {overallStandings?.config?.season ?? new Date().getFullYear()}
+              </p>
+              <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight mt-2">
+                Líderes das Divisões
+              </h3>
+            </div>
+            <Button
+              onClick={() => navigate("/classificacao-geral")}
+              className="bg-white text-[#05206F] hover:bg-red-50 font-black uppercase tracking-widest"
+            >
+              Ver classificação completa
+            </Button>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl border border-white/25 bg-white/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-100 mb-2">Líder 1ª Divisão</p>
+              <div className="flex items-center gap-2 text-xl font-black uppercase">
+                <Trophy className="w-5 h-5 text-amber-300" />
+                {overallStandings?.leaders?.firstDivision?.schoolName ?? "A definir"}
+              </div>
+              <p className="text-xs text-blue-100 mt-2">
+                {overallStandings?.leaders?.firstDivision?.totalPoints ?? 0} pontos
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/25 bg-white/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-100 mb-2">Líder 2ª Divisão</p>
+              <div className="flex items-center gap-2 text-xl font-black uppercase">
+                <Trophy className="w-5 h-5 text-amber-300" />
+                {overallStandings?.leaders?.secondDivision?.schoolName ?? "A definir"}
+              </div>
+              <p className="text-xs text-blue-100 mt-2">
+                {overallStandings?.leaders?.secondDivision?.totalPoints ?? 0} pontos
+              </p>
+            </div>
           </div>
         </div>
       </section>

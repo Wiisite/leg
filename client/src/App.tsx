@@ -15,6 +15,7 @@ import RegulamentosPage from "./pages/RegulamentosPage";
 import QuemSomos from "./pages/QuemSomos";
 import Clinicas from "./pages/Clinicas";
 import Contato from "./pages/Contato";
+import ClassificacaoGeral from "./pages/ClassificacaoGeral";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/quem-somos" component={QuemSomos} />
       <Route path="/clinicas" component={Clinicas} />
       <Route path="/contato" component={Contato} />
+      <Route path="/classificacao-geral" component={ClassificacaoGeral} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

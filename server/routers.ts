@@ -15,6 +15,7 @@ import {
   updateTournament,
   getDb,
   getSiteSettings,
+  type OverallStandingsConfig,
   upsertSiteSettings,
 } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -225,6 +226,200 @@ function computeStandings(
     if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
     return b.goalsFor - a.goalsFor;
   });
+}
+
+type OverallSchoolRow = {
+  schoolKey: string;
+  schoolName: string;
+  totalPoints: number;
+  tournamentPoints: Array<{
+    tournamentId: number;
+    tournamentName: string;
+    category: string;
+    modality: string;
+    position: number;
+    awardedPoints: number;
+    playedMatches: number;
+  }>;
+  division: 1 | 2;
+  rank: number;
+  promotionZone: boolean;
+  relegationZone: boolean;
+};
+
+const DEFAULT_OVERALL_CONFIG: OverallStandingsConfig = {
+  season: new Date().getFullYear(),
+  promotionSlots: 3,
+  relegationSlots: 3,
+  positionPoints: [15, 12, 10, 7, 6],
+  schoolDivisions: {},
+};
+
+const normalizeSchoolName = (value: string) => value.trim().replace(/\s+/g, " ").toUpperCase();
+
+function sortStandingEntries(entries: StandingEntry[], modality: string) {
+  return [...entries].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (modality === "volei") {
+      const setsAverageA = a.setsAverage ?? 0;
+      const setsAverageB = b.setsAverage ?? 0;
+      if (setsAverageB !== setsAverageA) return setsAverageB - setsAverageA;
+
+      const pointsAverageA = a.pointsAverage ?? 0;
+      const pointsAverageB = b.pointsAverage ?? 0;
+      if (pointsAverageB !== pointsAverageA) return pointsAverageB - pointsAverageA;
+    }
+    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
+    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+    return a.teamName.localeCompare(b.teamName, "pt-BR");
+  });
+}
+
+function getTournamentLiveRanking(
+  tournament: {
+    pointsPerWin: number;
+    pointsPerDraw: number;
+    pointsPerLoss: number;
+    modality: string;
+  },
+  teamList: { id: number; name: string; shortName: string; color: string; logo: string | null; groupName: string | null }[],
+  groupMatches: {
+    homeTeamId: number;
+    awayTeamId: number;
+    homeScore: number | null;
+    awayScore: number | null;
+    voleiSetsJson: string | null;
+    status: "scheduled" | "finished";
+  }[],
+) {
+  const groupNames = teamList
+    .map((t) => t.groupName)
+    .filter((g): g is string => g != null)
+    .filter((v, i, a) => a.indexOf(v) === i);
+
+  if (groupNames.length <= 1) {
+    return computeStandings(
+      teamList,
+      groupMatches,
+      tournament.pointsPerWin,
+      tournament.pointsPerDraw,
+      tournament.pointsPerLoss,
+      tournament.modality,
+    );
+  }
+
+  const merged: StandingEntry[] = [];
+  for (const groupName of groupNames) {
+    const groupTeams = teamList.filter((t) => t.groupName === groupName);
+    const groupTeamIds = new Set(groupTeams.map((t) => t.id));
+    const groupOnlyMatches = groupMatches.filter((m) => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId));
+    const groupStandings = computeStandings(
+      groupTeams,
+      groupOnlyMatches,
+      tournament.pointsPerWin,
+      tournament.pointsPerDraw,
+      tournament.pointsPerLoss,
+      tournament.modality,
+    );
+    merged.push(...groupStandings);
+  }
+
+  return sortStandingEntries(merged, tournament.modality);
+}
+
+async function computeOverallStandingsSnapshot() {
+  const [allTournaments, settings] = await Promise.all([getAllTournaments(), getSiteSettings()]);
+  const overallConfig: OverallStandingsConfig = settings.overallStandingsConfig ?? DEFAULT_OVERALL_CONFIG;
+  const schoolMap = new Map<
+    string,
+    {
+      schoolKey: string;
+      schoolName: string;
+      totalPoints: number;
+      tournamentPoints: OverallSchoolRow["tournamentPoints"];
+    }
+  >();
+
+  for (const tournament of allTournaments) {
+    const [teamList, groupMatches] = await Promise.all([
+      getTeamsByTournament(tournament.id),
+      getMatchesByPhase(tournament.id, "group"),
+    ]);
+
+    if (teamList.length === 0) continue;
+
+    const ranking = getTournamentLiveRanking(tournament, teamList, groupMatches);
+    ranking.forEach((entry, index) => {
+      const schoolKey = normalizeSchoolName(entry.teamName);
+      const existing = schoolMap.get(schoolKey) ?? {
+        schoolKey,
+        schoolName: entry.teamName,
+        totalPoints: 0,
+        tournamentPoints: [],
+      };
+
+      const awardedPoints = entry.played > 0 ? overallConfig.positionPoints[index] ?? 0 : 0;
+      existing.totalPoints += awardedPoints;
+      existing.tournamentPoints.push({
+        tournamentId: tournament.id,
+        tournamentName: tournament.name,
+        category: tournament.category,
+        modality: tournament.modality,
+        position: index + 1,
+        awardedPoints,
+        playedMatches: entry.played,
+      });
+
+      schoolMap.set(schoolKey, existing);
+    });
+  }
+
+  const allSchoolsRanked = Array.from(schoolMap.values())
+    .sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      return a.schoolName.localeCompare(b.schoolName, "pt-BR");
+    })
+    .map((school, index, arr) => {
+      const hasDivisionMap = Object.keys(overallConfig.schoolDivisions ?? {}).length > 0;
+      const fallbackDivision: 1 | 2 = index < Math.ceil(arr.length / 2) ? 1 : 2;
+      const division = overallConfig.schoolDivisions?.[school.schoolKey] ?? (hasDivisionMap ? 2 : fallbackDivision);
+      return {
+        ...school,
+        division,
+      };
+    });
+
+  const firstDivisionBase = allSchoolsRanked.filter((school) => school.division === 1);
+  const secondDivisionBase = allSchoolsRanked.filter((school) => school.division === 2);
+
+  const firstDivision: OverallSchoolRow[] = firstDivisionBase.map((school, index) => ({
+    ...school,
+    division: 1,
+    rank: index + 1,
+    promotionZone: false,
+    relegationZone:
+      firstDivisionBase.length > 0 && index >= Math.max(0, firstDivisionBase.length - overallConfig.relegationSlots),
+  }));
+
+  const secondDivision: OverallSchoolRow[] = secondDivisionBase.map((school, index) => ({
+    ...school,
+    division: 2,
+    rank: index + 1,
+    promotionZone: index < overallConfig.promotionSlots,
+    relegationZone: false,
+  }));
+
+  return {
+    config: overallConfig,
+    leaders: {
+      firstDivision: firstDivision[0] ?? null,
+      secondDivision: secondDivision[0] ?? null,
+    },
+    allSchools: allSchoolsRanked,
+    firstDivision,
+    secondDivision,
+    lastUpdatedAt: new Date().toISOString(),
+  };
 }
 
 // ─── Seed helper ───────────────────────────────────────────────────────────────
@@ -665,6 +860,110 @@ const tournamentRouter = router({
         });
       }
       return result;
+    }),
+
+  getOverallStandings: publicProcedure
+    .input(
+      z
+        .object({
+          season: z.number().int().optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const snapshot = await computeOverallStandingsSnapshot();
+      if (!input?.season || input.season === snapshot.config.season) return snapshot;
+      return {
+        ...snapshot,
+        firstDivision: [],
+        secondDivision: [],
+      };
+    }),
+
+  updateOverallStandingsConfig: protectedProcedure
+    .input(
+      z.object({
+        season: z.number().int().min(2020).max(2100).optional(),
+        promotionSlots: z.number().int().min(1).max(10).optional(),
+        relegationSlots: z.number().int().min(1).max(10).optional(),
+        positionPoints: z.array(z.number().int().min(0)).min(1).max(12).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const settings = await getSiteSettings();
+      const currentConfig: OverallStandingsConfig = settings.overallStandingsConfig ?? DEFAULT_OVERALL_CONFIG;
+      const nextConfig: OverallStandingsConfig = {
+        ...currentConfig,
+        ...(input.season !== undefined ? { season: input.season } : {}),
+        ...(input.promotionSlots !== undefined ? { promotionSlots: input.promotionSlots } : {}),
+        ...(input.relegationSlots !== undefined ? { relegationSlots: input.relegationSlots } : {}),
+        ...(input.positionPoints !== undefined ? { positionPoints: input.positionPoints } : {}),
+      };
+      await upsertSiteSettings({ overallStandingsConfig: nextConfig });
+      return computeOverallStandingsSnapshot();
+    }),
+
+  setSchoolDivision: protectedProcedure
+    .input(
+      z.object({
+        schoolName: z.string().trim().min(1).max(255),
+        division: z.union([z.literal(1), z.literal(2)]),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const settings = await getSiteSettings();
+      const currentConfig: OverallStandingsConfig = settings.overallStandingsConfig ?? DEFAULT_OVERALL_CONFIG;
+      const schoolKey = normalizeSchoolName(input.schoolName);
+      await upsertSiteSettings({
+        overallStandingsConfig: {
+          ...currentConfig,
+          schoolDivisions: {
+            ...(currentConfig.schoolDivisions ?? {}),
+            [schoolKey]: input.division,
+          },
+        },
+      });
+      return computeOverallStandingsSnapshot();
+    }),
+
+  applyOverallPromotionRelegation: protectedProcedure
+    .input(
+      z
+        .object({
+          incrementSeason: z.boolean().default(false),
+        })
+        .optional()
+    )
+    .mutation(async ({ input }) => {
+      const snapshot = await computeOverallStandingsSnapshot();
+      const currentConfig: OverallStandingsConfig = snapshot.config ?? DEFAULT_OVERALL_CONFIG;
+      const nextDivisionMap = { ...(currentConfig.schoolDivisions ?? {}) };
+
+      const relegated = snapshot.firstDivision
+        .slice(-Math.min(currentConfig.relegationSlots, snapshot.firstDivision.length))
+        .map((school) => school.schoolKey);
+      const promoted = snapshot.secondDivision
+        .slice(0, Math.min(currentConfig.promotionSlots, snapshot.secondDivision.length))
+        .map((school) => school.schoolKey);
+
+      for (const schoolKey of relegated) nextDivisionMap[schoolKey] = 2;
+      for (const schoolKey of promoted) nextDivisionMap[schoolKey] = 1;
+
+      const nextConfig: OverallStandingsConfig = {
+        ...currentConfig,
+        season: input?.incrementSeason ? currentConfig.season + 1 : currentConfig.season,
+        schoolDivisions: nextDivisionMap,
+      };
+
+      await upsertSiteSettings({ overallStandingsConfig: nextConfig });
+
+      return {
+        moved: {
+          promoted,
+          relegated,
+        },
+        snapshot: await computeOverallStandingsSnapshot(),
+      };
     }),
 
   delete: protectedProcedure

@@ -118,6 +118,7 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
           <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
             <button onClick={() => handleNav("/")} className="hover:text-red-100 transition-colors">Home</button>
             <button onClick={() => handleNav("/clinicas")} className="hover:text-red-100 transition-colors">Clínicas</button>
+            <button onClick={() => handleNav("/classificacao-geral")} className="hover:text-red-100 transition-colors">Classificação Geral</button>
             <button onClick={() => handleNav("/quem-somos")} className="hover:text-red-100 transition-colors">Quem Somos</button>
           </nav>
 
@@ -178,6 +179,7 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
             <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
               <button onClick={() => handleNav("/")} className="text-left">Home</button>
               <button onClick={() => handleNav("/clinicas")} className="text-left">Clínicas</button>
+              <button onClick={() => handleNav("/classificacao-geral")} className="text-left">Classificação Geral</button>
               <button onClick={() => handleNav("/quem-somos")} className="text-left">Quem Somos</button>
               <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-100 mb-2">Modalidades</p>

@@ -20,6 +20,14 @@ export type SiteLiveStream = {
 
 export type SiteChampionshipAddress = string;
 
+export type OverallStandingsConfig = {
+  season: number;
+  promotionSlots: number;
+  relegationSlots: number;
+  positionPoints: number[];
+  schoolDivisions: Record<string, 1 | 2>;
+};
+
 const MODALITY_KEYS = ["futsal", "basquete", "volei", "handebol", "extra1", "extra2"] as const;
 type ModalityKey = (typeof MODALITY_KEYS)[number];
 export type SiteModalityImageMap = Partial<Record<ModalityKey, string>>;
@@ -122,6 +130,9 @@ async function ensureLegacySchemaCompatibility(db: ReturnType<typeof drizzle>) {
   await ensureColumn(db, "matches", "time", "VARCHAR(20) NULL");
   await ensureColumn(db, "matches", "location", "VARCHAR(255) NULL");
   await ensureColumn(db, "matches", "date", "VARCHAR(50) NULL");
+
+  // site_settings
+  await ensureColumn(db, "site_settings", "overallStandingsConfigJson", "LONGTEXT NULL");
 
   // keep enum/defaults compatible with current code
   await db.execute(
@@ -411,6 +422,51 @@ export async function getMatchById(matchId: number) {
 // ─── Site Settings ─────────────────────────────────────────────────────────────
 
 export async function getSiteSettings() {
+  const defaultOverallStandingsConfig: OverallStandingsConfig = {
+    season: new Date().getFullYear(),
+    promotionSlots: 3,
+    relegationSlots: 3,
+    positionPoints: [15, 12, 10, 7, 6],
+    schoolDivisions: {},
+  };
+
+  const parseOverallStandingsConfig = (value: string | null | undefined): OverallStandingsConfig => {
+    if (!value) return defaultOverallStandingsConfig;
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== "object") return defaultOverallStandingsConfig;
+
+      const schoolDivisionsRaw = (parsed as Record<string, unknown>).schoolDivisions;
+      const schoolDivisions: Record<string, 1 | 2> = {};
+      if (schoolDivisionsRaw && typeof schoolDivisionsRaw === "object") {
+        for (const [schoolName, division] of Object.entries(schoolDivisionsRaw as Record<string, unknown>)) {
+          if (typeof schoolName !== "string" || schoolName.trim().length === 0) continue;
+          if (division === 1 || division === 2) schoolDivisions[schoolName.trim().toUpperCase()] = division;
+        }
+      }
+
+      const season = Number((parsed as Record<string, unknown>).season);
+      const promotionSlots = Number((parsed as Record<string, unknown>).promotionSlots);
+      const relegationSlots = Number((parsed as Record<string, unknown>).relegationSlots);
+      const positionPointsRaw = (parsed as Record<string, unknown>).positionPoints;
+      const positionPoints = Array.isArray(positionPointsRaw)
+        ? positionPointsRaw
+            .map((point) => Number(point))
+            .filter((point) => Number.isFinite(point) && point >= 0)
+        : defaultOverallStandingsConfig.positionPoints;
+
+      return {
+        season: Number.isInteger(season) ? season : defaultOverallStandingsConfig.season,
+        promotionSlots: Number.isInteger(promotionSlots) && promotionSlots > 0 ? promotionSlots : defaultOverallStandingsConfig.promotionSlots,
+        relegationSlots: Number.isInteger(relegationSlots) && relegationSlots > 0 ? relegationSlots : defaultOverallStandingsConfig.relegationSlots,
+        positionPoints: positionPoints.length > 0 ? positionPoints : defaultOverallStandingsConfig.positionPoints,
+        schoolDivisions,
+      };
+    } catch {
+      return defaultOverallStandingsConfig;
+    }
+  };
+
   const parseModalityImageMap = (value: string | null | undefined): SiteModalityImageMap => {
     if (!value) return {};
     try {
@@ -500,6 +556,7 @@ export async function getSiteSettings() {
       contactHeroImageUrl: null,
       clinics: [] as any[],
       aboutClinics: [] as any[],
+      overallStandingsConfig: defaultOverallStandingsConfig,
     };
   }
 
@@ -523,6 +580,7 @@ export async function getSiteSettings() {
       contactHeroImageUrl: null,
       clinics: [] as any[],
       aboutClinics: [] as any[],
+      overallStandingsConfig: defaultOverallStandingsConfig,
     };
   }
 
@@ -565,6 +623,7 @@ export async function getSiteSettings() {
     contactHeroImageUrl: sanitize(row.contactHeroImageUrl),
     clinics: (row.clinicsJson ? JSON.parse(row.clinicsJson) : []).map((c: any) => ({ ...c, imageUrl: sanitize(c.imageUrl) })),
     aboutClinics: (row.aboutClinicsJson ? JSON.parse(row.aboutClinicsJson) : []).map((ac: any) => ({ ...ac, imageUrl: sanitize(ac.imageUrl) })),
+    overallStandingsConfig: parseOverallStandingsConfig((row as any).overallStandingsConfigJson),
   };
 }
 
@@ -584,6 +643,7 @@ export async function upsertSiteSettings(data: {
   contactHeroImageUrl?: string | null;
   clinicsJson?: string | null;
   aboutClinicsJson?: string | null;
+  overallStandingsConfig?: OverallStandingsConfig;
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -607,6 +667,7 @@ export async function upsertSiteSettings(data: {
     contactHeroImageUrl?: string | null;
     clinicsJson?: string | null;
     aboutClinicsJson?: string | null;
+    overallStandingsConfigJson?: string | null;
   } = {};
 
   if (data.mainLogoUrl !== undefined) patch.mainLogoUrl = data.mainLogoUrl;
@@ -624,6 +685,7 @@ export async function upsertSiteSettings(data: {
   if (data.contactHeroImageUrl !== undefined) patch.contactHeroImageUrl = data.contactHeroImageUrl;
   if (data.clinicsJson !== undefined) patch.clinicsJson = data.clinicsJson;
   if (data.aboutClinicsJson !== undefined) patch.aboutClinicsJson = data.aboutClinicsJson;
+  if (data.overallStandingsConfig !== undefined) patch.overallStandingsConfigJson = JSON.stringify(data.overallStandingsConfig);
 
   if (existing && Object.keys(patch).length === 0) {
     return getSiteSettings();
@@ -642,7 +704,8 @@ export async function upsertSiteSettings(data: {
         MODIFY aboutMissionImageUrl LONGTEXT,
         MODIFY contactHeroImageUrl LONGTEXT,
         MODIFY homeHeroImagesJson LONGTEXT,
-        MODIFY modalityBannerImagesJson LONGTEXT
+        MODIFY modalityBannerImagesJson LONGTEXT,
+        MODIFY overallStandingsConfigJson LONGTEXT
       `)).catch(() => {});
 
       // Atualiza campos individualmente para evitar pacotes SQL gigantescos
@@ -669,6 +732,13 @@ export async function upsertSiteSettings(data: {
         contactHeroImageUrl: data.contactHeroImageUrl ?? null,
         clinicsJson: data.clinicsJson ?? null,
         aboutClinicsJson: data.aboutClinicsJson ?? null,
+        overallStandingsConfigJson: JSON.stringify(data.overallStandingsConfig ?? {
+          season: new Date().getFullYear(),
+          promotionSlots: 3,
+          relegationSlots: 3,
+          positionPoints: [15, 12, 10, 7, 6],
+          schoolDivisions: {},
+        }),
       });
     }
   } catch (error) {
