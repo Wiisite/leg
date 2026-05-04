@@ -10,6 +10,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { buildTournamentMatchesPdf } from "../pdf/tournamentPdf";
+import { buildModalitySchedulePdf } from "../pdf/modalitySchedulePdf";
 
 const REGULATION_FILE_CANDIDATES_BY_MODALITY: Record<string, string[]> = {
   futsal: [
@@ -37,11 +38,65 @@ const REGULATION_KEYWORD_BY_MODALITY: Record<string, string> = {
   handebol: "handebol",
 };
 
+const MODALITY_LABELS: Record<string, string> = {
+  futsal: "Futsal",
+  basquete: "Basquete",
+  volei: "Voleibol",
+  handebol: "Handebol",
+};
+
+const MONTH_LABELS: Record<number, string> = {
+  1: "Janeiro",
+  2: "Fevereiro",
+  3: "Marco",
+  4: "Abril",
+  5: "Maio",
+  6: "Junho",
+  7: "Julho",
+  8: "Agosto",
+  9: "Setembro",
+  10: "Outubro",
+  11: "Novembro",
+  12: "Dezembro",
+};
+
 function normalizeText(value: string): string {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+function normalizeForGrouping(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function detectDivisionLabel(tournamentName: string, category: string): string {
+  const source = normalizeForGrouping(`${tournamentName} ${category}`);
+
+  if (/(1a|1o|primeira|1\.)\s*divis/.test(source)) return "1a Divisao";
+  if (/(2a|2o|segunda|2\.)\s*divis/.test(source)) return "2a Divisao";
+  if (/(3a|3o|terceira|3\.)\s*divis/.test(source)) return "3a Divisao";
+  if (/ouro/.test(source)) return "Serie Ouro";
+  if (/prata/.test(source)) return "Serie Prata";
+  return "Geral";
+}
+
+function parseIsoDate(value?: string | null): { year: number; month: number; day: number } | null {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return { year, month, day };
 }
 
 function getBaseUrl(req: express.Request): string {
@@ -281,6 +336,107 @@ async function startServer() {
       console.error("[Tournament PDF] Erro ao gerar PDF:", error);
       if (!res.headersSent) {
         res.status(500).json({ message: "Erro interno ao gerar PDF do torneio" });
+      }
+    }
+  });
+
+  app.get("/api/modality/:modality/schedule/pdf", async (req, res) => {
+    try {
+      const modality = String(req.params.modality || "").toLowerCase();
+      if (!MODALITY_LABELS[modality]) {
+        res.status(400).json({ message: "Modalidade inválida" });
+        return;
+      }
+
+      const now = new Date();
+      const month = Number(req.query.month ?? now.getMonth() + 1);
+      const year = Number(req.query.year ?? now.getFullYear());
+      if (!Number.isFinite(month) || month < 1 || month > 12) {
+        res.status(400).json({ message: "Mês inválido" });
+        return;
+      }
+      if (!Number.isFinite(year) || year < 2000 || year > 2100) {
+        res.status(400).json({ message: "Ano inválido" });
+        return;
+      }
+
+      const { getAllTournaments, getTeamsByTournament, getMatchesByTournament } = await import("../db");
+      const tournaments = (await getAllTournaments()).filter(
+        (item) => String(item.modality || "").toLowerCase() === modality
+      );
+
+      const rows: Array<{
+        matchId: number;
+        date: string;
+        formattedDate: string;
+        time: string;
+        category: string;
+        division: string;
+        homeTeam: string;
+        awayTeam: string;
+        location: string;
+      }> = [];
+
+      for (const tournament of tournaments) {
+        const teams = await getTeamsByTournament(tournament.id);
+        const teamById = new Map(teams.map((team) => [team.id, team]));
+        const matches = await getMatchesByTournament(tournament.id);
+        const division = detectDivisionLabel(tournament.name, tournament.category);
+
+        for (const match of matches) {
+          const parsedDate = parseIsoDate(match.date);
+          if (!parsedDate) continue;
+          if (parsedDate.year !== year || parsedDate.month !== month) continue;
+
+          rows.push({
+            matchId: match.id,
+            date: match.date || "",
+            formattedDate: `${String(parsedDate.day).padStart(2, "0")}/${String(parsedDate.month).padStart(2, "0")}`,
+            time: String(match.time || "").trim() || "-",
+            category: tournament.category,
+            division,
+            homeTeam: teamById.get(match.homeTeamId)?.name || `Equipe ${match.homeTeamId}`,
+            awayTeam: teamById.get(match.awayTeamId)?.name || `Equipe ${match.awayTeamId}`,
+            location: String(match.location || "").trim() || "-",
+          });
+        }
+      }
+
+      const sortedRows = rows.sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        if (a.time !== b.time) {
+          if (a.time === "-") return 1;
+          if (b.time === "-") return -1;
+          return a.time.localeCompare(b.time);
+        }
+        if (a.category !== b.category) return a.category.localeCompare(b.category);
+        if (a.division !== b.division) return a.division.localeCompare(b.division);
+        return a.matchId - b.matchId;
+      });
+
+      const pdfBuffer = buildModalitySchedulePdf({
+        modalityLabel: MODALITY_LABELS[modality],
+        monthLabel: MONTH_LABELS[month] || String(month),
+        year,
+        rows: sortedRows.map((row) => ({
+          formattedDate: row.formattedDate,
+          time: row.time,
+          category: `${row.category} - ${row.division}`,
+          homeTeam: row.homeTeam,
+          awayTeam: row.awayTeam,
+          location: row.location,
+        })),
+      });
+
+      const fileName = `tabelao-${modality}-${year}-${String(month).padStart(2, "0")}.pdf`;
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Length", String(pdfBuffer.length));
+      res.status(200).send(pdfBuffer);
+    } catch (error) {
+      console.error("[Modality Schedule PDF] Erro ao gerar PDF:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Erro interno ao gerar PDF do tabelão" });
       }
     }
   });

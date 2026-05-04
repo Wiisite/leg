@@ -3,7 +3,7 @@ import { getLoginUrl, getRegisterUrl } from "@/const";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { ChevronDown, ChevronRight, Contact, Dribbble, Dumbbell, LogOut, Menu, Target, Trophy, Volleyball, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Contact, Dribbble, Dumbbell, FileDown, LogOut, Menu, Target, Trophy, Volleyball, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 
@@ -137,26 +137,12 @@ export default function ModalityPage() {
     return filteredFromHome.length > 0 ? filteredFromHome : fallbackModalityNews;
   }, [homeNews, modality, fallbackModalityNews]);
 
-  const groupedSchedule = useMemo(() => {
-    type ModalityScheduleRow = NonNullable<typeof modalitySchedule>[number];
-    const divisionMap = new Map<string, Map<string, ModalityScheduleRow[]>>();
+  const scheduleRows = modalitySchedule ?? [];
 
-    for (const row of modalitySchedule ?? []) {
-      const byCategory = divisionMap.get(row.division) ?? new Map<string, ModalityScheduleRow[]>();
-      const currentCategoryRows = byCategory.get(row.category) ?? [];
-      currentCategoryRows.push(row);
-      byCategory.set(row.category, currentCategoryRows);
-      divisionMap.set(row.division, byCategory);
-    }
-
-    return Array.from(divisionMap.entries()).map(([division, categories]) => ({
-      division,
-      categories: Array.from(categories.entries()).map(([category, matches]) => ({
-        category,
-        matches,
-      })),
-    }));
-  }, [modalitySchedule]);
+  const handleDownloadSchedulePdf = () => {
+    const url = `/api/modality/${modality}/schedule/pdf?month=${selectedMonth}&year=${selectedYear}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   useEffect(() => {
     const onScroll = () => {
@@ -360,6 +346,13 @@ export default function ModalityPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleDownloadSchedulePdf}
+                    className="h-10 rounded-lg bg-[#05206F] text-white hover:bg-[#041955] font-black uppercase tracking-[0.08em] text-xs px-3"
+                  >
+                    <FileDown className="w-4 h-4 mr-1.5" /> PDF
+                  </Button>
                   <select
                     value={selectedMonth}
                     onChange={(event) => setSelectedMonth(Number(event.target.value))}
@@ -392,60 +385,49 @@ export default function ModalityPage() {
                 <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm font-bold text-slate-500">
                   Carregando tabelão de jogos...
                 </div>
-              ) : groupedSchedule.length === 0 ? (
+              ) : scheduleRows.length === 0 ? (
                 <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm font-bold text-slate-500">
                   Não há jogos cadastrados para este mês na modalidade {config.label}.
                 </div>
               ) : (
-                groupedSchedule.map((divisionGroup) => (
-                  <div key={`division-${divisionGroup.division}`} className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div className="bg-[#05206F] px-4 py-3 text-white text-xs md:text-sm font-black uppercase tracking-[0.12em]">
-                      {divisionGroup.division}
-                    </div>
-
-                    <div className="divide-y divide-slate-200">
-                      {divisionGroup.categories.map((categoryGroup) => (
-                        <div key={`category-${divisionGroup.division}-${categoryGroup.category}`}>
-                          <div className="px-4 py-2.5 bg-slate-100 text-[11px] font-black uppercase tracking-[0.12em] text-slate-700">
-                            {categoryGroup.category}
-                          </div>
-
-                          <div className="overflow-x-auto">
-                            <table className="w-full min-w-[680px]">
-                              <thead>
-                                <tr className="text-[11px] uppercase tracking-[0.12em] text-slate-500 bg-white">
-                                  <th className="text-left px-3 py-2 font-black">Data</th>
-                                  <th className="text-left px-3 py-2 font-black">Horário</th>
-                                  <th className="text-left px-3 py-2 font-black">Equipe A</th>
-                                  <th className="text-left px-3 py-2 font-black">Equipe B</th>
-                                  <th className="text-left px-3 py-2 font-black">Endereço</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {categoryGroup.matches.map((match) => (
-                                  <tr
-                                    key={`schedule-${match.matchId}`}
-                                    onClick={() => navigate(`/torneio/${match.tournamentId}`)}
-                                    className="border-t border-slate-100 text-sm text-slate-700 cursor-pointer hover:bg-blue-50/55 transition-colors"
-                                  >
-                                    <td className="px-3 py-2.5 font-bold">{match.formattedDate}</td>
-                                    <td className="px-3 py-2.5 font-bold">{match.time}</td>
-                                    <td className="px-3 py-2.5">{match.homeTeam}</td>
-                                    <td className="px-3 py-2.5">{match.awayTeam}</td>
-                                    <td className="px-3 py-2.5 text-slate-500">
-                                      <p className="text-slate-700">{match.location}</p>
-                                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.tournamentName}</p>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[760px]">
+                      <thead>
+                        <tr className="text-[11px] uppercase tracking-[0.12em] text-slate-500 bg-white">
+                          <th className="text-left px-3 py-2 font-black">Data</th>
+                          <th className="text-left px-3 py-2 font-black">Horário</th>
+                          <th className="text-left px-3 py-2 font-black">Categoria</th>
+                          <th className="text-left px-3 py-2 font-black">Equipe A</th>
+                          <th className="text-left px-3 py-2 font-black">Equipe B</th>
+                          <th className="text-left px-3 py-2 font-black">Endereço</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {scheduleRows.map((match) => (
+                          <tr
+                            key={`schedule-${match.matchId}`}
+                            onClick={() => navigate(`/torneio/${match.tournamentId}`)}
+                            className="border-t border-slate-100 text-sm text-slate-700 cursor-pointer hover:bg-blue-50/55 transition-colors"
+                          >
+                            <td className="px-3 py-2.5 font-bold">{match.formattedDate}</td>
+                            <td className="px-3 py-2.5 font-bold">{match.time}</td>
+                            <td className="px-3 py-2.5">
+                              <p className="font-semibold text-slate-700">{match.category}</p>
+                              <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.division}</p>
+                            </td>
+                            <td className="px-3 py-2.5">{match.homeTeam}</td>
+                            <td className="px-3 py-2.5">{match.awayTeam}</td>
+                            <td className="px-3 py-2.5 text-slate-500">
+                              <p className="text-slate-700">{match.location}</p>
+                              <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.tournamentName}</p>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))
+                </div>
               )}
             </div>
           </section>
