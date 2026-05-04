@@ -147,7 +147,8 @@ function wrapLine(line: string, maxChars: number): string[] {
 }
 
 type CompactRow = {
-  confrontation: string;
+  teamA: string;
+  teamB: string;
   date: string;
   time: string;
 };
@@ -200,7 +201,8 @@ function buildCompactRows(input: BuildTournamentMatchesPdfInput): CompactRow[] {
     const awayName = awayTeam?.name || `Equipe ${match.awayTeamId}`;
 
     return {
-      confrontation: `${homeName} x ${awayName}`,
+      teamA: homeName,
+      teamB: awayName,
       date: formatShortDate(match.date),
       time: (match.time || "").trim() || "-",
     };
@@ -228,8 +230,8 @@ function buildTournamentTablePdf(input: BuildTournamentMatchesPdfInput): Buffer 
   const topMargin = 28;
   const bottomMargin = 28;
   const tableWidth = pageWidth - marginX * 2;
-  const columnWidths = [380, 75, 80];
-  const columns = ["Confronto", "Data", "Horario"];
+  const columnWidths = [195, 195, 70, 75];
+  const columns = ["Equipe A", "Equipe B", "Data", "Horario"];
 
   const pages: string[][] = [];
   let commands: string[] = [];
@@ -306,7 +308,8 @@ function buildTournamentTablePdf(input: BuildTournamentMatchesPdfInput): Buffer 
       }
 
       const cells = [
-        fitCellText(row.confrontation, 68),
+        fitCellText(row.teamA, 36),
+        fitCellText(row.teamB, 36),
         fitCellText(row.date, 10),
         fitCellText(row.time, 10),
       ];
