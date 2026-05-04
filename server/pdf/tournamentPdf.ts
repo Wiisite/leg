@@ -150,10 +150,10 @@ type TableRow = {
   date: string;
   time: string;
   category: string;
+  court: string;
   location: string;
   homeTeam: string;
   awayTeam: string;
-  status: string;
 };
 
 type RoundBlock = {
@@ -167,6 +167,29 @@ function formatShortDate(value?: string | null): string {
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return raw;
   return `${match[3]}/${match[2]}`;
+}
+
+function splitCourtAndLocation(value?: string | null): { court: string; location: string } {
+  const raw = (value || "").trim();
+  if (!raw) return { court: "-", location: "-" };
+
+  const parts = raw.split(/\s*-\s*/).filter(Boolean);
+  if (parts.length <= 1) {
+    return { court: parts[0] || "-", location: "-" };
+  }
+
+  const [court, ...locationParts] = parts;
+  return {
+    court: court || "-",
+    location: locationParts.join(" - ").trim() || "-",
+  };
+}
+
+function fitCellText(value: string, maxChars: number): string {
+  const text = normalizeForPdfText((value || "-").trim() || "-");
+  if (text.length <= maxChars) return text;
+  const cut = Math.max(1, maxChars - 3);
+  return `${text.slice(0, cut).trimEnd()}...`;
 }
 
 function buildRoundBlocks(input: BuildTournamentMatchesPdfInput): RoundBlock[] {
@@ -184,15 +207,17 @@ function buildRoundBlocks(input: BuildTournamentMatchesPdfInput): RoundBlock[] {
     return phaseMatches.map((match) => {
       const homeTeam = teamById.get(match.homeTeamId);
       const awayTeam = teamById.get(match.awayTeamId);
+      const courtAndLocation = splitCourtAndLocation(match.location);
       const statusKey = (match.status || "").trim().toLowerCase();
+      const statusText = (MATCH_STATUS_LABELS[statusKey] ?? (match.status || "").trim()) || "-";
       return {
         date: formatShortDate(match.date),
         time: (match.time || "").trim() || "-",
         category: tournament.category,
-        location: (match.location || "").trim() || "-",
+        court: courtAndLocation.court,
+        location: statusText !== "-" ? `${courtAndLocation.location} (${statusText})` : courtAndLocation.location,
         homeTeam: homeTeam?.name || `Equipe ${match.homeTeamId}`,
         awayTeam: awayTeam?.name || `Equipe ${match.awayTeamId}`,
-        status: (MATCH_STATUS_LABELS[statusKey] ?? (match.status || "").trim()) || "-",
       };
     });
   };
@@ -233,7 +258,7 @@ function buildRoundBlocks(input: BuildTournamentMatchesPdfInput): RoundBlock[] {
         for (const round of rounds) {
           const roundMatches = groupMatches.filter((item) => item.round === round);
           blocks.push({
-            title: `Grupo ${groupName} - ${round}a Rodada`,
+            title: `GRUPO ${groupName} - ${round}a RODADA`,
             rows: mapRows(roundMatches),
           });
         }
@@ -250,7 +275,7 @@ function buildRoundBlocks(input: BuildTournamentMatchesPdfInput): RoundBlock[] {
     for (const round of rounds) {
       const roundMatches = phaseMatches.filter((item) => item.round === round);
       blocks.push({
-        title: `${PHASE_LABELS[phase]} - ${round}a Rodada`,
+        title: `${PHASE_LABELS[phase].toUpperCase()} - ${round}a RODADA`,
         rows: mapRows(roundMatches),
       });
     }
@@ -280,8 +305,8 @@ function buildTournamentTablePdf(input: BuildTournamentMatchesPdfInput): Buffer 
   const topMargin = 28;
   const bottomMargin = 28;
   const tableWidth = pageWidth - marginX * 2;
-  const columnWidths = [48, 50, 78, 90, 108, 20, 108, 33];
-  const columns = ["Dia", "Horario", "Categoria", "Local", "Equipe A", "x", "Equipe B", "Status"];
+  const columnWidths = [45, 46, 70, 62, 110, 18, 110, 74];
+  const columns = ["Dia", "Horario", "Categoria", "Quadra", "Equipe A", "vs", "Equipe B", "Local"];
 
   const pages: string[][] = [];
   let commands: string[] = [];
@@ -335,31 +360,28 @@ function buildTournamentTablePdf(input: BuildTournamentMatchesPdfInput): Buffer 
           row.date,
           row.time,
           row.category,
-          row.location,
+          row.court,
           row.homeTeam,
-          "x",
+          "vs",
           row.awayTeam,
-          row.status,
+          row.location,
         ];
 
-        const wrappedCells = cellValues.map((value, index) => {
+        const cells = cellValues.map((value, index) => {
           const width = columnWidths[index];
-          const approxMaxChars = Math.max(4, Math.floor((width - 6) / 4.5));
-          return wrapLine(value, approxMaxChars);
+          const approxMaxChars = Math.max(4, Math.floor((width - 6) / 4.6));
+          return fitCellText(value, approxMaxChars);
         });
 
-        const maxLines = wrappedCells.reduce((max, lines) => Math.max(max, lines.length), 1);
-        return {
-          wrappedCells,
-          rowHeight: maxLines * 10 + 6,
-        };
+        return { cells };
       });
 
-      const blockHeight = 20 + 18 + wrappedRows.reduce((sum, item) => sum + item.rowHeight, 0) + 12;
+      const rowHeight = 20;
+      const blockHeight = 20 + 18 + wrappedRows.length * rowHeight + 12;
       ensureSpace(blockHeight);
 
       const titleBottom = cursorY - 20;
-      commands.push("0.96 0.92 0.35 rg");
+      commands.push("0.98 0.88 0.10 rg");
       commands.push(`${marginX} ${titleBottom.toFixed(2)} ${tableWidth} 20 re B`);
       commands.push("0 0 0 rg");
       pushText(block.title, marginX + 6, cursorY - 14, "F2", 10);
@@ -367,7 +389,7 @@ function buildTournamentTablePdf(input: BuildTournamentMatchesPdfInput): Buffer 
 
       const headerBottom = cursorY - 18;
       let x = marginX;
-      commands.push("0.9 0.9 0.9 rg");
+      commands.push("0.88 0.88 0.88 rg");
       for (let i = 0; i < columns.length; i++) {
         const width = columnWidths[i];
         commands.push(`${x} ${headerBottom.toFixed(2)} ${width} 18 re B`);
@@ -378,17 +400,13 @@ function buildTournamentTablePdf(input: BuildTournamentMatchesPdfInput): Buffer 
       cursorY = headerBottom;
 
       for (const row of wrappedRows) {
-        const rowBottom = cursorY - row.rowHeight;
+        const rowBottom = cursorY - rowHeight;
         let colX = marginX;
 
-        for (let i = 0; i < row.wrappedCells.length; i++) {
+        for (let i = 0; i < row.cells.length; i++) {
           const width = columnWidths[i];
-          commands.push(`${colX} ${rowBottom.toFixed(2)} ${width} ${row.rowHeight.toFixed(2)} re S`);
-
-          row.wrappedCells[i].forEach((line, lineIndex) => {
-            const textY = cursorY - 10 - lineIndex * 10;
-            pushText(line, colX + 3, textY, "F1", 8);
-          });
+          commands.push(`${colX} ${rowBottom.toFixed(2)} ${width} ${rowHeight.toFixed(2)} re S`);
+          pushText(row.cells[i], colX + 3, cursorY - 13, "F1", 8);
 
           colX += width;
         }
