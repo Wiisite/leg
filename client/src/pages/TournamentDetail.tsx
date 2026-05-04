@@ -12,6 +12,7 @@ import {
   Medal,
   Flag,
   Star,
+  FileDown,
   CheckCircle2,
   Clock,
   CalendarDays,
@@ -952,6 +953,15 @@ export default function TournamentDetail() {
     }
   });
 
+  const handleExportPdf = () => {
+    const pdfUrl = `/api/tournaments/${tournamentId}/pdf`;
+    const anchor = document.createElement("a");
+    anchor.href = pdfUrl;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.click();
+  };
+
   const fixDb = trpc.seed.fixDatabase.useMutation();
 
   if (isLoading) {
@@ -1133,6 +1143,15 @@ export default function TournamentDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 border-border hover:border-red/50 hover:text-red text-xs px-2.5"
+              onClick={handleExportPdf}
+            >
+              <FileDown className="w-3.5 h-3.5 mr-1" />
+              PDF
+            </Button>
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}>
               {status.label}
             </span>

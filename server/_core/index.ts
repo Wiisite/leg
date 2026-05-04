@@ -9,6 +9,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { buildTournamentMatchesPdf } from "../pdf/tournamentPdf";
 
 const REGULATION_FILE_CANDIDATES_BY_MODALITY: Record<string, string[]> = {
   futsal: [
@@ -156,6 +157,47 @@ async function startServer() {
       console.error("[Regulamentos] Erro ao servir PDF:", error);
       if (!res.headersSent) {
         res.status(500).json({ message: "Erro interno ao carregar regulamento" });
+      }
+    }
+  });
+
+  app.get("/api/tournaments/:id/pdf", async (req, res) => {
+    try {
+      const tournamentId = Number(req.params.id);
+      if (!Number.isFinite(tournamentId) || tournamentId <= 0) {
+        res.status(400).json({ message: "ID de torneio inválido" });
+        return;
+      }
+
+      const { getTournamentById, getTeamsByTournament, getMatchesByTournament } = await import("../db");
+      const tournament = await getTournamentById(tournamentId);
+      if (!tournament) {
+        res.status(404).json({ message: "Torneio não encontrado" });
+        return;
+      }
+
+      const teams = await getTeamsByTournament(tournamentId);
+      const matches = await getMatchesByTournament(tournamentId);
+      const pdfBuffer = buildTournamentMatchesPdf({ tournament, teams, matches });
+
+      const safeName = String(tournament.name || `torneio-${tournamentId}`)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9-_]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase();
+
+      const fileName = `${safeName || `torneio-${tournamentId}`}-jogos.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Length", String(pdfBuffer.length));
+      res.status(200).send(pdfBuffer);
+    } catch (error) {
+      console.error("[Tournament PDF] Erro ao gerar PDF:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Erro interno ao gerar PDF do torneio" });
       }
     }
   });
