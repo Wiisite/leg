@@ -494,6 +494,7 @@ const tournamentRouter = router({
         date: string;
         formattedDate: string;
         time: string;
+        location: string;
         homeTeam: string;
         awayTeam: string;
       }> = [];
@@ -521,6 +522,7 @@ const tournamentRouter = router({
             date: match.date || "",
             formattedDate: `${String(parsedDate.day).padStart(2, "0")}/${String(parsedDate.month).padStart(2, "0")}`,
             time: String(match.time || "").trim() || "-",
+            location: String(match.location || "").trim() || "-",
             homeTeam,
             awayTeam,
           });

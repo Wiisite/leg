@@ -350,6 +350,106 @@ export default function ModalityPage() {
         <div className="absolute inset-0 bg-[#051327]/60" />
 
         <main id="modality-list" className="container relative py-12">
+          <section className="mb-10 rounded-3xl border border-white/25 bg-white/90 text-slate-900 shadow-xl overflow-hidden">
+            <div className="px-5 md:px-6 py-5 border-b border-slate-200 bg-white">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#D50000]">Agenda da modalidade</p>
+                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-slate-900">Tabelão de jogos</h3>
+                  <p className="text-sm text-slate-600 mt-1">Jogos organizados por divisão e categoria, com data e horário.</p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={selectedMonth}
+                    onChange={(event) => setSelectedMonth(Number(event.target.value))}
+                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-bold"
+                  >
+                    {MONTH_OPTIONS.map((monthOption) => (
+                      <option key={`month-${monthOption.value}`} value={monthOption.value}>
+                        {monthOption.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedYear}
+                    onChange={(event) => setSelectedYear(Number(event.target.value))}
+                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-bold"
+                  >
+                    {[currentYear - 1, currentYear, currentYear + 1].map((yearOption) => (
+                      <option key={`year-${yearOption}`} value={yearOption}>
+                        {yearOption}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-4 md:px-6 py-5 space-y-5 bg-slate-50">
+              {scheduleLoading ? (
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm font-bold text-slate-500">
+                  Carregando tabelão de jogos...
+                </div>
+              ) : groupedSchedule.length === 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm font-bold text-slate-500">
+                  Não há jogos cadastrados para este mês na modalidade {config.label}.
+                </div>
+              ) : (
+                groupedSchedule.map((divisionGroup) => (
+                  <div key={`division-${divisionGroup.division}`} className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                    <div className="bg-[#05206F] px-4 py-3 text-white text-xs md:text-sm font-black uppercase tracking-[0.12em]">
+                      {divisionGroup.division}
+                    </div>
+
+                    <div className="divide-y divide-slate-200">
+                      {divisionGroup.categories.map((categoryGroup) => (
+                        <div key={`category-${divisionGroup.division}-${categoryGroup.category}`}>
+                          <div className="px-4 py-2.5 bg-slate-100 text-[11px] font-black uppercase tracking-[0.12em] text-slate-700">
+                            {categoryGroup.category}
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[680px]">
+                              <thead>
+                                <tr className="text-[11px] uppercase tracking-[0.12em] text-slate-500 bg-white">
+                                  <th className="text-left px-3 py-2 font-black">Data</th>
+                                  <th className="text-left px-3 py-2 font-black">Horário</th>
+                                  <th className="text-left px-3 py-2 font-black">Equipe A</th>
+                                  <th className="text-left px-3 py-2 font-black">Equipe B</th>
+                                  <th className="text-left px-3 py-2 font-black">Endereço</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {categoryGroup.matches.map((match) => (
+                                  <tr
+                                    key={`schedule-${match.matchId}`}
+                                    onClick={() => navigate(`/torneio/${match.tournamentId}`)}
+                                    className="border-t border-slate-100 text-sm text-slate-700 cursor-pointer hover:bg-blue-50/55 transition-colors"
+                                  >
+                                    <td className="px-3 py-2.5 font-bold">{match.formattedDate}</td>
+                                    <td className="px-3 py-2.5 font-bold">{match.time}</td>
+                                    <td className="px-3 py-2.5">{match.homeTeam}</td>
+                                    <td className="px-3 py-2.5">{match.awayTeam}</td>
+                                    <td className="px-3 py-2.5 text-slate-500">
+                                      <p className="text-slate-700">{match.location}</p>
+                                      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.tournamentName}</p>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
           <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr] items-start">
           <section>
             <div className="flex items-center justify-between mb-4">
@@ -435,99 +535,6 @@ export default function ModalityPage() {
             )}
           </aside>
           </div>
-
-          <section className="mt-10 rounded-3xl border border-white/25 bg-white/90 text-slate-900 shadow-xl overflow-hidden">
-            <div className="px-5 md:px-6 py-5 border-b border-slate-200 bg-white">
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#D50000]">Agenda da modalidade</p>
-                  <h3 className="text-2xl md:text-3xl font-black uppercase tracking-wide text-slate-900">Tabelão de jogos</h3>
-                  <p className="text-sm text-slate-600 mt-1">Jogos organizados por divisão e categoria, com data e horário.</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={selectedMonth}
-                    onChange={(event) => setSelectedMonth(Number(event.target.value))}
-                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-bold"
-                  >
-                    {MONTH_OPTIONS.map((monthOption) => (
-                      <option key={`month-${monthOption.value}`} value={monthOption.value}>
-                        {monthOption.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedYear}
-                    onChange={(event) => setSelectedYear(Number(event.target.value))}
-                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-bold"
-                  >
-                    {[currentYear - 1, currentYear, currentYear + 1].map((yearOption) => (
-                      <option key={`year-${yearOption}`} value={yearOption}>
-                        {yearOption}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="px-4 md:px-6 py-5 space-y-5 bg-slate-50">
-              {scheduleLoading ? (
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm font-bold text-slate-500">
-                  Carregando tabelão de jogos...
-                </div>
-              ) : groupedSchedule.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm font-bold text-slate-500">
-                  Não há jogos cadastrados para este mês na modalidade {config.label}.
-                </div>
-              ) : (
-                groupedSchedule.map((divisionGroup) => (
-                  <div key={`division-${divisionGroup.division}`} className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                    <div className="bg-[#05206F] px-4 py-3 text-white text-xs md:text-sm font-black uppercase tracking-[0.12em]">
-                      {divisionGroup.division}
-                    </div>
-
-                    <div className="divide-y divide-slate-200">
-                      {divisionGroup.categories.map((categoryGroup) => (
-                        <div key={`category-${divisionGroup.division}-${categoryGroup.category}`}>
-                          <div className="px-4 py-2.5 bg-slate-100 text-[11px] font-black uppercase tracking-[0.12em] text-slate-700">
-                            {categoryGroup.category}
-                          </div>
-
-                          <div className="overflow-x-auto">
-                            <table className="w-full min-w-[680px]">
-                              <thead>
-                                <tr className="text-[11px] uppercase tracking-[0.12em] text-slate-500 bg-white">
-                                  <th className="text-left px-3 py-2 font-black">Data</th>
-                                  <th className="text-left px-3 py-2 font-black">Horário</th>
-                                  <th className="text-left px-3 py-2 font-black">Equipe A</th>
-                                  <th className="text-left px-3 py-2 font-black">Equipe B</th>
-                                  <th className="text-left px-3 py-2 font-black">Torneio</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {categoryGroup.matches.map((match) => (
-                                  <tr key={`schedule-${match.matchId}`} className="border-t border-slate-100 text-sm text-slate-700">
-                                    <td className="px-3 py-2.5 font-bold">{match.formattedDate}</td>
-                                    <td className="px-3 py-2.5 font-bold">{match.time}</td>
-                                    <td className="px-3 py-2.5">{match.homeTeam}</td>
-                                    <td className="px-3 py-2.5">{match.awayTeam}</td>
-                                    <td className="px-3 py-2.5 text-slate-500">{match.tournamentName}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
         </main>
       </section>
 
