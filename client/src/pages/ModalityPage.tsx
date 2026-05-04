@@ -328,7 +328,7 @@ export default function ModalityPage() {
                   return (
                     <article
                       key={t.id}
-                      onClick={() => navigate(`/tournament/${t.id}`)}
+                      onClick={() => navigate(`/torneio/${t.id}`)}
                       className="group cursor-pointer rounded-2xl p-5 bg-white/82 backdrop-blur-[2px] border border-white/65 shadow-[0_8px_20px_rgba(2,6,23,0.2)] hover:shadow-[0_14px_30px_rgba(2,6,23,0.3)] hover:bg-white/88 hover:-translate-y-0.5 transition-all"
                     >
                       <div className="flex items-center justify-between mb-6">
@@ -378,7 +378,7 @@ export default function ModalityPage() {
                     <h4 className="text-sm font-black text-white leading-tight mb-1">{news.headline}</h4>
                     <p className="text-xs text-blue-100/90 mb-3 leading-relaxed line-clamp-2">{news.summary}</p>
                     <button
-                      onClick={() => navigate(`/tournament/${news.tournamentId}`)}
+                      onClick={() => navigate(`/torneio/${news.tournamentId}`)}
                       className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.14em] text-red-100 hover:text-white"
                     >
                       Ver campeonato

@@ -685,7 +685,7 @@ export default function Home() {
                   <h4 className="text-lg font-black text-slate-900 leading-tight mb-2">{news.headline}</h4>
                   <p className="text-sm text-slate-600 mb-4 leading-relaxed">{news.summary}</p>
                   <button
-                    onClick={() => navigate(`/tournament/${news.tournamentId}`)}
+                    onClick={() => navigate(`/torneio/${news.tournamentId}`)}
                     className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.14em] text-[#D50000] hover:text-[#05206F]"
                   >
                     Acessar página
@@ -762,7 +762,7 @@ export default function Home() {
                       return (
                         <div
                           key={t.id}
-                          onClick={() => navigate(`/tournament/${t.id}`)}
+                          onClick={() => navigate(`/torneio/${t.id}`)}
                           className="group cursor-pointer rounded-2xl p-5 bg-white border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all"
                         >
                           <div className="flex items-center justify-between mb-6">

@@ -275,7 +275,7 @@ function TournamentsSection({ tournaments, navigate }: { tournaments: any[], nav
             <h3 className="text-xl font-black text-slate-900 mb-1">{t.name}</h3>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{t.category}</p>
             <p className="text-[11px] font-black text-red uppercase tracking-wider mb-6">{modalityLabels[normalizedModality(t.modality)] || "Modalidade"}</p>
-            <div className="flex gap-3"><Button className="flex-1 h-12 bg-slate-900 text-white font-black uppercase tracking-widest rounded-xl hover:bg-slate-800" onClick={() => navigate(`/tournament/${t.id}`)}>Gerenciar</Button></div>
+            <div className="flex gap-3"><Button className="flex-1 h-12 bg-slate-900 text-white font-black uppercase tracking-widest rounded-xl hover:bg-slate-800" onClick={() => navigate(`/torneio/${t.id}`)}>Gerenciar</Button></div>
           </div>
         ))}
       </div>

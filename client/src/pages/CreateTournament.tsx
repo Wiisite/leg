@@ -41,7 +41,7 @@ export default function CreateTournament() {
   const createMutation = trpc.tournament.create.useMutation({
     onSuccess: (t) => {
       toast.success("Torneio criado com sucesso!");
-      navigate(`/tournament/${t.id}`);
+      navigate(`/torneio/${t.id}`);
     },
     onError: (e) => toast.error(e.message),
   });
