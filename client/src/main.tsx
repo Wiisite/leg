@@ -16,6 +16,20 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
   });
 }
 
+if (import.meta.env.PROD) {
+  const endpoint = String(import.meta.env.VITE_ANALYTICS_ENDPOINT || "").trim();
+  const websiteId = String(import.meta.env.VITE_ANALYTICS_WEBSITE_ID || "").trim();
+
+  if (endpoint && websiteId) {
+    const normalizedEndpoint = endpoint.replace(/\/$/, "");
+    const script = document.createElement("script");
+    script.defer = true;
+    script.src = `${normalizedEndpoint}/umami`;
+    script.setAttribute("data-website-id", websiteId);
+    document.head.appendChild(script);
+  }
+}
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
