@@ -433,12 +433,112 @@ const DEFAULT_TEAMS = [
   { name: "Colégio Canada", shortName: "CDA", color: "#0e7490" },
 ];
 
+function normalizeForGrouping(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function detectDivisionLabel(tournamentName: string, category: string): string {
+  const source = normalizeForGrouping(`${tournamentName} ${category}`);
+
+  if (/(1a|1o|primeira|1\.)\s*divis/.test(source)) return "1ª Divisão";
+  if (/(2a|2o|segunda|2\.)\s*divis/.test(source)) return "2ª Divisão";
+  if (/(3a|3o|terceira|3\.)\s*divis/.test(source)) return "3ª Divisão";
+  if (/ouro/.test(source)) return "Série Ouro";
+  if (/prata/.test(source)) return "Série Prata";
+  return "Geral";
+}
+
+function parseIsoDate(value?: string | null): { year: number; month: number; day: number } | null {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return { year, month, day };
+}
+
 // ─── Tournament Router ─────────────────────────────────────────────────────────
 
 const tournamentRouter = router({
   list: publicProcedure.query(async () => {
     return getAllTournaments();
   }),
+
+  getModalitySchedule: publicProcedure
+    .input(
+      z.object({
+        modality: z.enum(["futsal", "basquete", "volei", "handebol"]),
+        month: z.number().int().min(1).max(12),
+        year: z.number().int().min(2000).max(2100),
+      })
+    )
+    .query(async ({ input }) => {
+      const tournaments = (await getAllTournaments()).filter(
+        (item) => String(item.modality || "").toLowerCase() === input.modality
+      );
+
+      const scheduleRows: Array<{
+        matchId: number;
+        tournamentId: number;
+        tournamentName: string;
+        division: string;
+        category: string;
+        date: string;
+        formattedDate: string;
+        time: string;
+        homeTeam: string;
+        awayTeam: string;
+      }> = [];
+
+      for (const tournament of tournaments) {
+        const teams = await getTeamsByTournament(tournament.id);
+        const teamById = new Map(teams.map((team) => [team.id, team]));
+        const matchesList = await getMatchesByTournament(tournament.id);
+        const division = detectDivisionLabel(tournament.name, tournament.category);
+
+        for (const match of matchesList) {
+          const parsedDate = parseIsoDate(match.date);
+          if (!parsedDate) continue;
+          if (parsedDate.year !== input.year || parsedDate.month !== input.month) continue;
+
+          const homeTeam = teamById.get(match.homeTeamId)?.name || `Equipe ${match.homeTeamId}`;
+          const awayTeam = teamById.get(match.awayTeamId)?.name || `Equipe ${match.awayTeamId}`;
+
+          scheduleRows.push({
+            matchId: match.id,
+            tournamentId: tournament.id,
+            tournamentName: tournament.name,
+            division,
+            category: tournament.category,
+            date: match.date || "",
+            formattedDate: `${String(parsedDate.day).padStart(2, "0")}/${String(parsedDate.month).padStart(2, "0")}`,
+            time: String(match.time || "").trim() || "-",
+            homeTeam,
+            awayTeam,
+          });
+        }
+      }
+
+      return scheduleRows.sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        if (a.time !== b.time) {
+          if (a.time === "-") return 1;
+          if (b.time === "-") return -1;
+          return a.time.localeCompare(b.time);
+        }
+        if (a.division !== b.division) return a.division.localeCompare(b.division);
+        if (a.category !== b.category) return a.category.localeCompare(b.category);
+        return a.matchId - b.matchId;
+      });
+    }),
 
   getHomeNews: publicProcedure.query(async () => {
     const modalityLabelByKey: Record<string, string> = {
