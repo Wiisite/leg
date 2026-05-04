@@ -1432,12 +1432,12 @@ export default function TournamentDetail() {
       {/* Tabs */}
       <div className="border-b border-border/40 sticky top-16 z-30 glass">
         <div className="container">
-          <div className="flex gap-0 overflow-x-auto">
+          <div className="flex gap-1 overflow-x-auto no-scrollbar">
             {tabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+                className={`shrink-0 flex items-center gap-1.5 px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === id
                     ? "border-red text-red"
                     : "border-transparent text-slate-500 hover:text-primary"
@@ -1517,7 +1517,7 @@ export default function TournamentDetail() {
                 return (
                   <div className="space-y-6 max-w-6xl mx-auto">
                     {/* Group Headers */}
-                    <div className="grid grid-cols-2 gap-4 max-w-3xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
                       {groupData.map(({ gName }) => (
                         <div key={gName} className={`text-center py-2 rounded-xl border font-black text-xs uppercase tracking-[0.2em] ${
                           gName === "A" ? "bg-red/5 border-red/20 text-red" : "bg-blue-500/5 border-blue-500/20 text-blue-600"
@@ -1535,7 +1535,7 @@ export default function TournamentDetail() {
                           <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-full border border-slate-300">{roundNum}ª Rodada</span>
                           <div className="h-px flex-1 bg-slate-300" />
                         </div>
-                        <div className="grid grid-cols-2 gap-4 max-w-5xl mx-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
                           {groupData.map(({ gName, gMatches }) => (
                             <div key={gName} className="space-y-3">
                               {gMatches.filter(m => m.round === roundNum).map((m) => (
