@@ -44,6 +44,26 @@ const PHASE_LABELS: Record<MatchLike["phase"], string> = {
 
 const PHASE_ORDER: MatchLike["phase"][] = ["group", "quarterfinal", "semifinal", "third_place", "final"];
 
+const MODALITY_LABELS: Record<string, string> = {
+  futsal: "Futsal",
+  basquete: "Basquete",
+  volei: "Voleibol",
+  handebol: "Handebol",
+};
+
+const TOURNAMENT_STATUS_LABELS: Record<string, string> = {
+  pending: "Aguardando",
+  group_stage: "Fase de Grupos",
+  semifinals: "Semifinais",
+  final: "Final",
+  finished: "Encerrado",
+};
+
+const MATCH_STATUS_LABELS: Record<string, string> = {
+  scheduled: "Agendada",
+  finished: "Finalizada",
+};
+
 function formatDateTime(value?: string | null, time?: string | null): string {
   const dateText = (value || "").trim();
   const timeText = (time || "").trim();
@@ -59,11 +79,25 @@ function formatScore(homeScore: number | null, awayScore: number | null): string
   return `${homeScore} x ${awayScore}`;
 }
 
+function normalizeForPdfText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[º°]/g, "o")
+    .replace(/[ª]/g, "a")
+    .replace(/[–—]/g, "-")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function toAsciiSafe(value: string): string {
+  const normalizedValue = normalizeForPdfText(value);
   let result = "";
-  for (const char of value) {
+  for (const char of normalizedValue) {
     const code = char.charCodeAt(0);
-    result += code <= 255 ? char : "?";
+    result += code >= 32 && code <= 126 ? char : "?";
   }
   return result;
 }
@@ -205,10 +239,13 @@ function buildSectionLines(input: BuildTournamentMatchesPdfInput): string[] {
     minute: "2-digit",
   });
 
+  const modalityLabel = MODALITY_LABELS[String(tournament.modality || "").toLowerCase()] ?? tournament.modality;
+  const tournamentStatusLabel = TOURNAMENT_STATUS_LABELS[String(tournament.status || "").toLowerCase()] ?? tournament.status ?? "-";
+
   lines.push("LEG - Tabela Oficial de Jogos");
   lines.push(`Campeonato: ${tournament.name}`);
-  lines.push(`Categoria: ${tournament.category} | Modalidade: ${tournament.modality}`);
-  lines.push(`Status: ${tournament.status || "-"}`);
+  lines.push(`Categoria: ${tournament.category} | Modalidade: ${modalityLabel}`);
+  lines.push(`Status: ${tournamentStatusLabel}`);
   lines.push(`Gerado em: ${generatedLabel}`);
   lines.push("");
 
@@ -269,7 +306,8 @@ function buildSectionLines(input: BuildTournamentMatchesPdfInput): string[] {
             const score = formatScore(match.homeScore, match.awayScore);
             const dateAndTime = formatDateTime(match.date, match.time);
             const location = (match.location || "").trim();
-            const status = (match.status || "").trim();
+            const statusKey = (match.status || "").trim().toLowerCase();
+            const status = MATCH_STATUS_LABELS[statusKey] ?? (match.status || "").trim();
 
             const details: string[] = [];
             if (dateAndTime) details.push(dateAndTime);
@@ -299,7 +337,8 @@ function buildSectionLines(input: BuildTournamentMatchesPdfInput): string[] {
           const score = formatScore(match.homeScore, match.awayScore);
           const dateAndTime = formatDateTime(match.date, match.time);
           const location = (match.location || "").trim();
-          const status = (match.status || "").trim();
+          const statusKey = (match.status || "").trim().toLowerCase();
+          const status = MATCH_STATUS_LABELS[statusKey] ?? (match.status || "").trim();
 
           const details: string[] = [];
           if (dateAndTime) details.push(dateAndTime);
