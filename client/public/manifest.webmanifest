@@ -1,0 +1,19 @@
+{
+  "name": "LEG 2026 - Liga Escolar Guarulhense",
+  "short_name": "LEG 2026",
+  "description": "Acompanhe campeonatos, tabelas de jogos, resultados e classificacao das modalidades escolares.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#05206F",
+  "theme_color": "#05206F",
+  "icons": [
+    {
+      "src": "/leg-favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -44,6 +44,21 @@ function normalizeText(value: string): string {
     .toLowerCase();
 }
 
+function getBaseUrl(req: express.Request): string {
+  const explicitUrl = (process.env.PUBLIC_APP_URL || "").trim();
+  if (explicitUrl) {
+    return explicitUrl.replace(/\/$/, "");
+  }
+
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const protocol =
+    typeof forwardedProto === "string" && forwardedProto.length > 0
+      ? forwardedProto.split(",")[0].trim()
+      : req.protocol;
+
+  return `${protocol}://${req.get("host")}`;
+}
+
 function resolveRegulationFilePath(modality: string): string | null {
   const fileNames = REGULATION_FILE_CANDIDATES_BY_MODALITY[modality] ?? [];
   const modalityKeyword = REGULATION_KEYWORD_BY_MODALITY[modality] ?? modality;
@@ -123,6 +138,74 @@ async function startServer() {
   // Health check endpoint — FIRST, before everything else
   app.get("/api/health", (_req, res) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  app.get("/robots.txt", (req, res) => {
+    const baseUrl = getBaseUrl(req);
+    const robots = [
+      "User-agent: *",
+      "Allow: /",
+      `Sitemap: ${baseUrl}/sitemap.xml`,
+      "",
+    ].join("\n");
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.status(200).send(robots);
+  });
+
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const baseUrl = getBaseUrl(req);
+      const nowIso = new Date().toISOString();
+
+      const staticPaths = [
+        "/",
+        "/ao-vivo",
+        "/regulamentos",
+        "/quem-somos",
+        "/clinicas",
+        "/contato",
+        "/classificacao-geral",
+        "/modalidade/futsal",
+        "/modalidade/basquete",
+        "/modalidade/volei",
+        "/modalidade/handebol",
+      ];
+
+      const { getAllTournaments } = await import("../db");
+      const tournaments = await getAllTournaments();
+      const tournamentPaths = tournaments.map((item) => `/torneio/${item.id}`);
+
+      const allPaths = Array.from(new Set(staticPaths.concat(tournamentPaths)));
+
+      const urls = allPaths
+        .map((pathItem) => {
+          return [
+            "  <url>",
+            `    <loc>${baseUrl}${pathItem}</loc>`,
+            `    <lastmod>${nowIso}</lastmod>`,
+            "    <changefreq>daily</changefreq>",
+            "    <priority>0.7</priority>",
+            "  </url>",
+          ].join("\n");
+        })
+        .join("\n");
+
+      const sitemap = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        urls,
+        "</urlset>",
+      ].join("\n");
+
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.status(200).send(sitemap);
+    } catch (error) {
+      console.error("[SEO] Erro ao gerar sitemap.xml:", error);
+      if (!res.headersSent) {
+        res.status(500).send("Erro ao gerar sitemap.xml");
+      }
+    }
   });
 
   // Configure body parser with larger size limit for file uploads
