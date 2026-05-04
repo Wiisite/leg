@@ -146,113 +146,32 @@ function wrapLine(line: string, maxChars: number): string[] {
   return wrapped.length > 0 ? wrapped : [line];
 }
 
-function paginateLines(lines: string[], linesPerPage: number): string[][] {
-  const pages: string[][] = [];
-  for (let i = 0; i < lines.length; i += linesPerPage) {
-    pages.push(lines.slice(i, i + linesPerPage));
-  }
-  return pages.length > 0 ? pages : [["Sem dados para exportar."]];
+type TableRow = {
+  date: string;
+  time: string;
+  category: string;
+  location: string;
+  homeTeam: string;
+  awayTeam: string;
+  status: string;
+};
+
+type RoundBlock = {
+  title: string;
+  rows: TableRow[];
+};
+
+function formatShortDate(value?: string | null): string {
+  const raw = (value || "").trim();
+  if (!raw) return "-";
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return raw;
+  return `${match[3]}/${match[2]}`;
 }
 
-function buildPdfBufferFromLines(lines: string[]): Buffer {
-  const maxCharsPerLine = 94;
-  const expandedLines = lines.flatMap((line) => wrapLine(line, maxCharsPerLine));
-  const pages = paginateLines(expandedLines, 52);
-
-  const catalogId = 1;
-  const pagesId = 2;
-  const fontId = 3;
-
-  const objects: Record<number, string> = {};
-  const pageObjectIds: number[] = [];
-
-  let nextId = 4;
-
-  for (const pageLines of pages) {
-    const pageId = nextId++;
-    const contentId = nextId++;
-
-    pageObjectIds.push(pageId);
-
-    const contentCommands: string[] = [
-      "BT",
-      "/F1 11 Tf",
-      "40 800 Td",
-      "14 TL",
-    ];
-
-    pageLines.forEach((rawLine, index) => {
-      const normalized = rawLine.replace(/\s+/g, " ").trim();
-      const escaped = escapePdfString(normalized.length > 0 ? normalized : " ");
-      if (index === 0) {
-        contentCommands.push(`(${escaped}) Tj`);
-      } else {
-        contentCommands.push(`T* (${escaped}) Tj`);
-      }
-    });
-
-    contentCommands.push("ET");
-
-    const streamContent = contentCommands.join("\n");
-    const streamLength = Buffer.byteLength(streamContent, "latin1");
-
-    objects[contentId] = `<< /Length ${streamLength} >>\nstream\n${streamContent}\nendstream`;
-    objects[pageId] = `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`;
-  }
-
-  objects[catalogId] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
-  objects[pagesId] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageObjectIds.length} >>`;
-  objects[fontId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
-
-  const maxId = Math.max(...Object.keys(objects).map(Number));
-  let pdf = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
-  const offsets = new Array<number>(maxId + 1).fill(0);
-
-  for (let id = 1; id <= maxId; id++) {
-    offsets[id] = Buffer.byteLength(pdf, "latin1");
-    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
-  }
-
-  const xrefOffset = Buffer.byteLength(pdf, "latin1");
-  pdf += `xref\n0 ${maxId + 1}\n`;
-  pdf += "0000000000 65535 f \n";
-
-  for (let id = 1; id <= maxId; id++) {
-    pdf += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
-  }
-
-  pdf += `trailer\n<< /Size ${maxId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-  return Buffer.from(pdf, "latin1");
-}
-
-function buildSectionLines(input: BuildTournamentMatchesPdfInput): string[] {
-  const { tournament, teams, matches, generatedAt = new Date() } = input;
-
-  const lines: string[] = [];
+function buildRoundBlocks(input: BuildTournamentMatchesPdfInput): RoundBlock[] {
+  const { tournament, teams, matches } = input;
   const teamById = new Map(teams.map((team) => [team.id, team]));
-
-  const generatedLabel = generatedAt.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const modalityLabel = MODALITY_LABELS[String(tournament.modality || "").toLowerCase()] ?? tournament.modality;
-  const tournamentStatusLabel = TOURNAMENT_STATUS_LABELS[String(tournament.status || "").toLowerCase()] ?? tournament.status ?? "-";
-
-  lines.push("LEG - Tabela Oficial de Jogos");
-  lines.push(`Campeonato: ${tournament.name}`);
-  lines.push(`Categoria: ${tournament.category} | Modalidade: ${modalityLabel}`);
-  lines.push(`Status: ${tournamentStatusLabel}`);
-  lines.push(`Gerado em: ${generatedLabel}`);
-  lines.push("");
-
-  if (matches.length === 0) {
-    lines.push("Nenhuma partida cadastrada neste campeonato.");
-    return lines;
-  }
 
   const sortedMatches = [...matches].sort((a, b) => {
     const phaseDiff = PHASE_ORDER.indexOf(a.phase) - PHASE_ORDER.indexOf(b.phase);
@@ -261,11 +180,28 @@ function buildSectionLines(input: BuildTournamentMatchesPdfInput): string[] {
     return a.id - b.id;
   });
 
+  const mapRows = (phaseMatches: MatchLike[]): TableRow[] => {
+    return phaseMatches.map((match) => {
+      const homeTeam = teamById.get(match.homeTeamId);
+      const awayTeam = teamById.get(match.awayTeamId);
+      const statusKey = (match.status || "").trim().toLowerCase();
+      return {
+        date: formatShortDate(match.date),
+        time: (match.time || "").trim() || "-",
+        category: tournament.category,
+        location: (match.location || "").trim() || "-",
+        homeTeam: homeTeam?.name || `Equipe ${match.homeTeamId}`,
+        awayTeam: awayTeam?.name || `Equipe ${match.awayTeamId}`,
+        status: (MATCH_STATUS_LABELS[statusKey] ?? (match.status || "").trim()) || "-",
+      };
+    });
+  };
+
+  const blocks: RoundBlock[] = [];
+
   for (const phase of PHASE_ORDER) {
     const phaseMatches = sortedMatches.filter((match) => match.phase === phase);
     if (phaseMatches.length === 0) continue;
-
-    lines.push(`=== ${PHASE_LABELS[phase]} ===`);
 
     if (phase === "group") {
       const groupNames = teams
@@ -289,75 +225,230 @@ function buildSectionLines(input: BuildTournamentMatchesPdfInput): string[] {
 
         if (groupMatches.length === 0) continue;
 
-        lines.push(`Grupo ${groupName}`);
-
         const rounds = groupMatches
           .map((match) => match.round)
           .filter((round, index, arr) => arr.indexOf(round) === index)
           .sort((a, b) => a - b);
 
         for (const round of rounds) {
-          lines.push(`  Rodada ${round}`);
-          for (const match of groupMatches.filter((item) => item.round === round)) {
-            const homeTeam = teamById.get(match.homeTeamId);
-            const awayTeam = teamById.get(match.awayTeamId);
-            const homeName = homeTeam?.shortName || homeTeam?.name || `Equipe ${match.homeTeamId}`;
-            const awayName = awayTeam?.shortName || awayTeam?.name || `Equipe ${match.awayTeamId}`;
-            const score = formatScore(match.homeScore, match.awayScore);
-            const dateAndTime = formatDateTime(match.date, match.time);
-            const location = (match.location || "").trim();
-            const statusKey = (match.status || "").trim().toLowerCase();
-            const status = MATCH_STATUS_LABELS[statusKey] ?? (match.status || "").trim();
-
-            const details: string[] = [];
-            if (dateAndTime) details.push(dateAndTime);
-            if (location) details.push(location);
-            if (status) details.push(status);
-
-            const suffix = details.length > 0 ? ` [${details.join(" | ")}]` : "";
-            lines.push(`    - ${homeName} ${score} ${awayName}${suffix}`);
-          }
-        }
-
-        lines.push("");
-      }
-    } else {
-      const rounds = phaseMatches
-        .map((match) => match.round)
-        .filter((round, index, arr) => arr.indexOf(round) === index)
-        .sort((a, b) => a - b);
-
-      for (const round of rounds) {
-        lines.push(`Rodada ${round}`);
-        for (const match of phaseMatches.filter((item) => item.round === round)) {
-          const homeTeam = teamById.get(match.homeTeamId);
-          const awayTeam = teamById.get(match.awayTeamId);
-          const homeName = homeTeam?.shortName || homeTeam?.name || `Equipe ${match.homeTeamId}`;
-          const awayName = awayTeam?.shortName || awayTeam?.name || `Equipe ${match.awayTeamId}`;
-          const score = formatScore(match.homeScore, match.awayScore);
-          const dateAndTime = formatDateTime(match.date, match.time);
-          const location = (match.location || "").trim();
-          const statusKey = (match.status || "").trim().toLowerCase();
-          const status = MATCH_STATUS_LABELS[statusKey] ?? (match.status || "").trim();
-
-          const details: string[] = [];
-          if (dateAndTime) details.push(dateAndTime);
-          if (location) details.push(location);
-          if (status) details.push(status);
-
-          const suffix = details.length > 0 ? ` [${details.join(" | ")}]` : "";
-          lines.push(`  - ${homeName} ${score} ${awayName}${suffix}`);
+          const roundMatches = groupMatches.filter((item) => item.round === round);
+          blocks.push({
+            title: `Grupo ${groupName} - ${round}a Rodada`,
+            rows: mapRows(roundMatches),
+          });
         }
       }
 
-      lines.push("");
+      continue;
+    }
+
+    const rounds = phaseMatches
+      .map((match) => match.round)
+      .filter((round, index, arr) => arr.indexOf(round) === index)
+      .sort((a, b) => a - b);
+
+    for (const round of rounds) {
+      const roundMatches = phaseMatches.filter((item) => item.round === round);
+      blocks.push({
+        title: `${PHASE_LABELS[phase]} - ${round}a Rodada`,
+        rows: mapRows(roundMatches),
+      });
     }
   }
 
-  return lines;
+  return blocks;
+}
+
+function buildTournamentTablePdf(input: BuildTournamentMatchesPdfInput): Buffer {
+  const { tournament, matches, generatedAt = new Date() } = input;
+
+  const generatedLabel = generatedAt.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const modalityLabel = MODALITY_LABELS[String(tournament.modality || "").toLowerCase()] ?? tournament.modality;
+  const tournamentStatusLabel = TOURNAMENT_STATUS_LABELS[String(tournament.status || "").toLowerCase()] ?? tournament.status ?? "-";
+  const roundBlocks = buildRoundBlocks(input);
+
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const marginX = 30;
+  const topMargin = 28;
+  const bottomMargin = 28;
+  const tableWidth = pageWidth - marginX * 2;
+  const columnWidths = [48, 50, 78, 90, 108, 20, 108, 33];
+  const columns = ["Dia", "Horario", "Categoria", "Local", "Equipe A", "x", "Equipe B", "Status"];
+
+  const pages: string[][] = [];
+  let commands: string[] = [];
+  let cursorY = pageHeight - topMargin;
+
+  const newPage = () => {
+    if (commands.length > 0) pages.push(commands);
+    commands = ["0.6 w", "0 0 0 RG", "0 0 0 rg"];
+    cursorY = pageHeight - topMargin;
+  };
+
+  const pushText = (text: string, x: number, y: number, font: "F1" | "F2", size: number) => {
+    commands.push("BT");
+    commands.push(`/${font} ${size} Tf`);
+    commands.push(`1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm`);
+    commands.push(`(${escapePdfString(text)}) Tj`);
+    commands.push("ET");
+  };
+
+  const ensureSpace = (requiredHeight: number) => {
+    if (cursorY - requiredHeight < bottomMargin) {
+      newPage();
+    }
+  };
+
+  newPage();
+
+  const metadataLines = [
+    { text: "LEG - Tabela Oficial de Jogos", font: "F2" as const, size: 13 },
+    { text: `Campeonato: ${tournament.name}`, font: "F2" as const, size: 10 },
+    { text: `Categoria: ${tournament.category} | Modalidade: ${modalityLabel}`, font: "F1" as const, size: 10 },
+    { text: `Status: ${tournamentStatusLabel}`, font: "F1" as const, size: 10 },
+    { text: `Gerado em: ${generatedLabel}`, font: "F1" as const, size: 10 },
+  ];
+
+  for (const line of metadataLines) {
+    ensureSpace(14);
+    pushText(line.text, marginX, cursorY - 10, line.font, line.size);
+    cursorY -= 14;
+  }
+
+  cursorY -= 8;
+
+  if (matches.length === 0 || roundBlocks.length === 0) {
+    ensureSpace(16);
+    pushText("Nenhuma partida cadastrada neste campeonato.", marginX, cursorY - 10, "F1", 10);
+  } else {
+    for (const block of roundBlocks) {
+      const wrappedRows = block.rows.map((row) => {
+        const cellValues = [
+          row.date,
+          row.time,
+          row.category,
+          row.location,
+          row.homeTeam,
+          "x",
+          row.awayTeam,
+          row.status,
+        ];
+
+        const wrappedCells = cellValues.map((value, index) => {
+          const width = columnWidths[index];
+          const approxMaxChars = Math.max(4, Math.floor((width - 6) / 4.5));
+          return wrapLine(value, approxMaxChars);
+        });
+
+        const maxLines = wrappedCells.reduce((max, lines) => Math.max(max, lines.length), 1);
+        return {
+          wrappedCells,
+          rowHeight: maxLines * 10 + 6,
+        };
+      });
+
+      const blockHeight = 20 + 18 + wrappedRows.reduce((sum, item) => sum + item.rowHeight, 0) + 12;
+      ensureSpace(blockHeight);
+
+      const titleBottom = cursorY - 20;
+      commands.push("0.96 0.92 0.35 rg");
+      commands.push(`${marginX} ${titleBottom.toFixed(2)} ${tableWidth} 20 re B`);
+      commands.push("0 0 0 rg");
+      pushText(block.title, marginX + 6, cursorY - 14, "F2", 10);
+      cursorY = titleBottom;
+
+      const headerBottom = cursorY - 18;
+      let x = marginX;
+      commands.push("0.9 0.9 0.9 rg");
+      for (let i = 0; i < columns.length; i++) {
+        const width = columnWidths[i];
+        commands.push(`${x} ${headerBottom.toFixed(2)} ${width} 18 re B`);
+        commands.push("0 0 0 rg");
+        pushText(columns[i], x + 3, cursorY - 12, "F2", 8);
+        x += width;
+      }
+      cursorY = headerBottom;
+
+      for (const row of wrappedRows) {
+        const rowBottom = cursorY - row.rowHeight;
+        let colX = marginX;
+
+        for (let i = 0; i < row.wrappedCells.length; i++) {
+          const width = columnWidths[i];
+          commands.push(`${colX} ${rowBottom.toFixed(2)} ${width} ${row.rowHeight.toFixed(2)} re S`);
+
+          row.wrappedCells[i].forEach((line, lineIndex) => {
+            const textY = cursorY - 10 - lineIndex * 10;
+            pushText(line, colX + 3, textY, "F1", 8);
+          });
+
+          colX += width;
+        }
+
+        cursorY = rowBottom;
+      }
+
+      cursorY -= 12;
+    }
+  }
+
+  if (commands.length > 0) pages.push(commands);
+
+  const catalogId = 1;
+  const pagesId = 2;
+  const regularFontId = 3;
+  const boldFontId = 4;
+
+  const objects: Record<number, string> = {};
+  const pageObjectIds: number[] = [];
+  let nextId = 5;
+
+  for (const pageCommands of pages) {
+    const pageId = nextId++;
+    const contentId = nextId++;
+    pageObjectIds.push(pageId);
+
+    const streamContent = pageCommands.join("\n");
+    const streamLength = Buffer.byteLength(streamContent, "latin1");
+
+    objects[contentId] = `<< /Length ${streamLength} >>\nstream\n${streamContent}\nendstream`;
+    objects[pageId] = `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${regularFontId} 0 R /F2 ${boldFontId} 0 R >> >> /Contents ${contentId} 0 R >>`;
+  }
+
+  objects[catalogId] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  objects[pagesId] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageObjectIds.length} >>`;
+  objects[regularFontId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+  objects[boldFontId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
+
+  const maxId = Math.max(...Object.keys(objects).map(Number));
+  let pdf = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+  const offsets = new Array<number>(maxId + 1).fill(0);
+
+  for (let id = 1; id <= maxId; id++) {
+    offsets[id] = Buffer.byteLength(pdf, "latin1");
+    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
+  }
+
+  const xrefOffset = Buffer.byteLength(pdf, "latin1");
+  pdf += `xref\n0 ${maxId + 1}\n`;
+  pdf += "0000000000 65535 f \n";
+
+  for (let id = 1; id <= maxId; id++) {
+    pdf += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
+  }
+
+  pdf += `trailer\n<< /Size ${maxId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return Buffer.from(pdf, "latin1");
 }
 
 export function buildTournamentMatchesPdf(input: BuildTournamentMatchesPdfInput): Buffer {
-  const lines = buildSectionLines(input);
-  return buildPdfBufferFromLines(lines);
+  return buildTournamentTablePdf(input);
 }
