@@ -52,6 +52,45 @@ function fitCellText(value: string, maxChars: number): string {
   return `${text.slice(0, cut).trimEnd()}...`;
 }
 
+function wrapCellText(value: string, maxCharsPerLine: number): string[] {
+  const text = normalizeForPdfText((value || "-").trim() || "-");
+  if (text.length <= maxCharsPerLine) return [text];
+
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+
+  const pushLine = () => {
+    if (currentLine.trim().length > 0) {
+      lines.push(currentLine.trim());
+      currentLine = "";
+    }
+  };
+
+  for (const word of words) {
+    if (!word) continue;
+
+    if (word.length > maxCharsPerLine) {
+      pushLine();
+      for (let i = 0; i < word.length; i += maxCharsPerLine) {
+        lines.push(word.slice(i, i + maxCharsPerLine));
+      }
+      continue;
+    }
+
+    const candidate = currentLine.length === 0 ? word : `${currentLine} ${word}`;
+    if (candidate.length <= maxCharsPerLine) {
+      currentLine = candidate;
+    } else {
+      pushLine();
+      currentLine = word;
+    }
+  }
+
+  pushLine();
+  return lines.length > 0 ? lines : ["-"];
+}
+
 export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): Buffer {
   const { modalityLabel, monthLabel, year, rows, generatedAt = new Date() } = input;
 
@@ -131,9 +170,13 @@ export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): 
   } else {
     drawHeader();
 
-    const rowHeight = 16;
-
     for (const row of rows) {
+      const locationLines = wrapCellText(row.location, 26);
+      const lineHeight = 9;
+      const topPadding = 3;
+      const bottomPadding = 4;
+      const rowHeight = Math.max(16, topPadding + bottomPadding + locationLines.length * lineHeight);
+
       if (cursorY - rowHeight < bottomMargin) {
         newPage();
         drawHeader();
@@ -145,7 +188,7 @@ export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): 
         fitCellText(row.category, 18),
         fitCellText(row.homeTeam, 24),
         fitCellText(row.awayTeam, 24),
-        fitCellText(row.location, 22),
+        "",
       ];
 
       const rowBottom = cursorY - rowHeight;
@@ -153,7 +196,14 @@ export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): 
       for (let i = 0; i < cells.length; i++) {
         const width = columnWidths[i];
         commands.push(`${x} ${rowBottom.toFixed(2)} ${width} ${rowHeight} re S`);
-        pushText(cells[i], x + 3, cursorY - 11, "F1", 8);
+        if (i === 5) {
+          for (let lineIndex = 0; lineIndex < locationLines.length; lineIndex++) {
+            const textY = cursorY - 11 - lineIndex * lineHeight;
+            pushText(locationLines[lineIndex], x + 3, textY, "F1", 8);
+          }
+        } else {
+          pushText(cells[i], x + 3, cursorY - 11, "F1", 8);
+        }
         x += width;
       }
 
