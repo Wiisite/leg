@@ -109,8 +109,8 @@ function ScoreModal({
     away: number | undefined,
     time: string,
     location: string,
-    voleiSets?: { home: number; away: number }[],
-    date?: string
+    date: string,
+    voleiSets?: { home: number; away: number }[]
   ) => void;
 }) {
   const isVolei = modality === "volei";
@@ -377,8 +377,8 @@ function ScoreModal({
                 shouldSubmitRegularScore ? effectiveAway : undefined,
                 time,
                 location,
-                shouldSubmitVoleiScore ? parsedVoleiSets : undefined,
-                date || undefined
+                date,
+                shouldSubmitVoleiScore ? parsedVoleiSets : undefined
               )
             }
           >
@@ -1093,9 +1093,9 @@ export default function TournamentDetail() {
             home: number | undefined,
             away: number | undefined,
             time: string,
-             location: string,
-             voleiSets?: { home: number; away: number }[],
-             date?: string
+            location: string,
+            date: string,
+            voleiSets?: { home: number; away: number }[]
            ) =>
              updateScore.mutate({
                matchId,
