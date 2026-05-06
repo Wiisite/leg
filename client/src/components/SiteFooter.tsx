@@ -21,6 +21,7 @@ export function SiteFooter({
   onModalityClick,
 }: SiteFooterProps) {
   const [, navigate] = useLocation();
+  const rightsHolderLogoUrl = "/rw-sports-logo.png";
 
   const handleHomeClick = () => {
     if (onHomeClick) return onHomeClick();
@@ -105,9 +106,31 @@ export function SiteFooter({
           </div>
         </div>
 
-        <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-blue-100/80">
-          <p>© Liga Escolar Guarulhense 2026. Todos os direitos reservados.</p>
-          <p className="font-semibold">Facebook • Youtube • Instagram</p>
+        <div className="pt-6 space-y-4 text-xs text-blue-100/80">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+            <p>© Liga Escolar Guarulhense 2026. Todos os direitos reservados.</p>
+            <p className="font-semibold">Facebook • Youtube • Instagram</p>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-t border-white/10 pt-4">
+            <div className="flex items-center gap-3">
+              <img
+                src={rightsHolderLogoUrl}
+                alt="Logo RW Sports"
+                className="h-14 w-auto rounded-md bg-white/5 p-1 object-contain"
+              />
+              <p className="text-sm font-bold text-white">Empresa detentora dos direitos LEG</p>
+            </div>
+
+            <a
+              href="https://wiisite.com.br/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-base font-semibold text-blue-100 hover:text-white transition-colors"
+            >
+              Projetado e desenvolvido por WeSite
+            </a>
+          </div>
         </div>
       </div>
     </footer>
