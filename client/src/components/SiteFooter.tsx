@@ -28,6 +28,7 @@ export function SiteFooter({
     "/images/rw-sports-logo.jpeg",
     "/rw-sports-logo.png",
     "/rw-sports-logo.jpg",
+    footerLogoUrl,
   ];
   const [rightsLogoCandidateIndex, setRightsLogoCandidateIndex] = useState(0);
   const hasRightsLogo = rightsLogoCandidateIndex < rightsHolderLogoCandidates.length;
@@ -134,21 +135,18 @@ export function SiteFooter({
           </div>
         </div>
 
-        <div className="pt-6 space-y-4 text-xs text-blue-100/80">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-            <p>© Liga Escolar Guarulhense 2026. Todos os direitos reservados.</p>
+        <div className="pt-6 text-xs text-blue-100/80">
+          <div className="grid gap-3 md:grid-cols-3 md:items-center">
+            <p className="text-center md:text-left">© Liga Escolar Guarulhense 2026. Todos os direitos reservados.</p>
             <a
               href="https://wiisite.com.br/"
               target="_blank"
               rel="noreferrer"
-              className="font-semibold text-blue-100 hover:text-white transition-colors"
+              className="font-semibold text-blue-100 hover:text-white transition-colors text-center"
             >
-              Projetado e desenvolvido por Insight Designer e Insight Digital
+              Projetado e desenvolvido por Wiisite Digital
             </a>
-          </div>
-
-          <div className="flex justify-center md:justify-end">
-            <p className="font-semibold">Facebook • Youtube • Instagram</p>
+            <p className="font-semibold text-center md:text-right">Facebook • Youtube • Instagram</p>
           </div>
         </div>
       </div>
