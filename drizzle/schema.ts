@@ -108,6 +108,7 @@ export const siteSettings = mysqlTable("site_settings", {
   aboutHeroImageUrl: longtext("aboutHeroImageUrl"),
   aboutMissionImageUrl: longtext("aboutMissionImageUrl"),
   contactHeroImageUrl: longtext("contactHeroImageUrl"),
+  contactConfigJson: longtext("contactConfigJson"),
   clinicsJson: longtext("clinicsJson"),
   aboutClinicsJson: longtext("aboutClinicsJson"),
   overallStandingsConfigJson: longtext("overallStandingsConfigJson"),

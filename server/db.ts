@@ -20,6 +20,25 @@ export type SiteLiveStream = {
 
 export type SiteChampionshipAddress = string;
 
+export type SiteContactChannel = {
+  label: string;
+  value: string;
+  href?: string;
+};
+
+export type SiteSocialLink = {
+  platform: string;
+  url: string;
+};
+
+export type SiteContactConfig = {
+  officialEmail: string;
+  phone: string;
+  address: string;
+  socialLinks: SiteSocialLink[];
+  extraChannels: SiteContactChannel[];
+};
+
 export type OverallStandingsConfig = {
   season: number;
   promotionSlots: number;
@@ -133,6 +152,7 @@ async function ensureLegacySchemaCompatibility(db: ReturnType<typeof drizzle>) {
 
   // site_settings
   await ensureColumn(db, "site_settings", "overallStandingsConfigJson", "LONGTEXT NULL");
+  await ensureColumn(db, "site_settings", "contactConfigJson", "LONGTEXT NULL");
 
   // keep enum/defaults compatible with current code
   await db.execute(
@@ -422,6 +442,17 @@ export async function getMatchById(matchId: number) {
 // ─── Site Settings ─────────────────────────────────────────────────────────────
 
 export async function getSiteSettings() {
+  const defaultContactConfig: SiteContactConfig = {
+    officialEmail: "contato@ligaescolarguarulhense.com.br",
+    phone: "(11) 99999-9999",
+    address: "Guarulhos, São Paulo - Brasil",
+    socialLinks: [
+      { platform: "Instagram", url: "https://instagram.com" },
+      { platform: "YouTube", url: "https://youtube.com" },
+    ],
+    extraChannels: [],
+  };
+
   const defaultOverallStandingsConfig: OverallStandingsConfig = {
     season: new Date().getFullYear(),
     promotionSlots: 3,
@@ -464,6 +495,76 @@ export async function getSiteSettings() {
       };
     } catch {
       return defaultOverallStandingsConfig;
+    }
+  };
+
+  const parseContactConfig = (value: string | null | undefined): SiteContactConfig => {
+    if (!value) return defaultContactConfig;
+
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== "object") return defaultContactConfig;
+
+      const officialEmailRaw = (parsed as Record<string, unknown>).officialEmail;
+      const phoneRaw = (parsed as Record<string, unknown>).phone;
+      const addressRaw = (parsed as Record<string, unknown>).address;
+      const socialRaw = (parsed as Record<string, unknown>).socialLinks;
+      const extraRaw = (parsed as Record<string, unknown>).extraChannels;
+
+      const socialLinks: SiteSocialLink[] = Array.isArray(socialRaw)
+        ? socialRaw
+            .map((item) => {
+              if (!item || typeof item !== "object") return null;
+              const platform = typeof (item as Record<string, unknown>).platform === "string"
+                ? ((item as Record<string, string>).platform || "").trim()
+                : "";
+              const url = typeof (item as Record<string, unknown>).url === "string"
+                ? ((item as Record<string, string>).url || "").trim()
+                : "";
+              if (!platform || !url) return null;
+              return { platform, url };
+            })
+            .filter((entry): entry is SiteSocialLink => !!entry)
+        : defaultContactConfig.socialLinks;
+
+      const extraChannels: SiteContactChannel[] = Array.isArray(extraRaw)
+        ? extraRaw
+            .map((item) => {
+              if (!item || typeof item !== "object") return null;
+              const label = typeof (item as Record<string, unknown>).label === "string"
+                ? ((item as Record<string, string>).label || "").trim()
+                : "";
+              const value = typeof (item as Record<string, unknown>).value === "string"
+                ? ((item as Record<string, string>).value || "").trim()
+                : "";
+              const href = typeof (item as Record<string, unknown>).href === "string"
+                ? ((item as Record<string, string>).href || "").trim()
+                : "";
+              if (!label || !value) return null;
+              return {
+                label,
+                value,
+                ...(href ? { href } : {}),
+              };
+            })
+            .filter((entry): entry is SiteContactChannel => !!entry)
+        : [];
+
+      return {
+        officialEmail: typeof officialEmailRaw === "string" && officialEmailRaw.trim().length > 0
+          ? officialEmailRaw.trim()
+          : defaultContactConfig.officialEmail,
+        phone: typeof phoneRaw === "string" && phoneRaw.trim().length > 0
+          ? phoneRaw.trim()
+          : defaultContactConfig.phone,
+        address: typeof addressRaw === "string" && addressRaw.trim().length > 0
+          ? addressRaw.trim()
+          : defaultContactConfig.address,
+        socialLinks,
+        extraChannels,
+      };
+    } catch {
+      return defaultContactConfig;
     }
   };
 
@@ -554,6 +655,7 @@ export async function getSiteSettings() {
       aboutHeroImageUrl: null,
       aboutMissionImageUrl: null,
       contactHeroImageUrl: null,
+      contactConfig: defaultContactConfig,
       clinics: [] as any[],
       aboutClinics: [] as any[],
       overallStandingsConfig: defaultOverallStandingsConfig,
@@ -578,6 +680,7 @@ export async function getSiteSettings() {
       aboutHeroImageUrl: null,
       aboutMissionImageUrl: null,
       contactHeroImageUrl: null,
+      contactConfig: defaultContactConfig,
       clinics: [] as any[],
       aboutClinics: [] as any[],
       overallStandingsConfig: defaultOverallStandingsConfig,
@@ -621,6 +724,7 @@ export async function getSiteSettings() {
     aboutHeroImageUrl: sanitize(row.aboutHeroImageUrl),
     aboutMissionImageUrl: sanitize(row.aboutMissionImageUrl),
     contactHeroImageUrl: sanitize(row.contactHeroImageUrl),
+    contactConfig: parseContactConfig((row as any).contactConfigJson),
     clinics: (row.clinicsJson ? JSON.parse(row.clinicsJson) : []).map((c: any) => ({ ...c, imageUrl: sanitize(c.imageUrl) })),
     aboutClinics: (row.aboutClinicsJson ? JSON.parse(row.aboutClinicsJson) : []).map((ac: any) => ({ ...ac, imageUrl: sanitize(ac.imageUrl) })),
     overallStandingsConfig: parseOverallStandingsConfig((row as any).overallStandingsConfigJson),
@@ -641,6 +745,7 @@ export async function upsertSiteSettings(data: {
   aboutHeroImageUrl?: string | null;
   aboutMissionImageUrl?: string | null;
   contactHeroImageUrl?: string | null;
+  contactConfig?: SiteContactConfig;
   clinicsJson?: string | null;
   aboutClinicsJson?: string | null;
   overallStandingsConfig?: OverallStandingsConfig;
@@ -665,6 +770,7 @@ export async function upsertSiteSettings(data: {
     aboutHeroImageUrl?: string | null;
     aboutMissionImageUrl?: string | null;
     contactHeroImageUrl?: string | null;
+    contactConfigJson?: string | null;
     clinicsJson?: string | null;
     aboutClinicsJson?: string | null;
     overallStandingsConfigJson?: string | null;
@@ -683,6 +789,7 @@ export async function upsertSiteSettings(data: {
   if (data.aboutHeroImageUrl !== undefined) patch.aboutHeroImageUrl = data.aboutHeroImageUrl;
   if (data.aboutMissionImageUrl !== undefined) patch.aboutMissionImageUrl = data.aboutMissionImageUrl;
   if (data.contactHeroImageUrl !== undefined) patch.contactHeroImageUrl = data.contactHeroImageUrl;
+  if (data.contactConfig !== undefined) patch.contactConfigJson = JSON.stringify(data.contactConfig);
   if (data.clinicsJson !== undefined) patch.clinicsJson = data.clinicsJson;
   if (data.aboutClinicsJson !== undefined) patch.aboutClinicsJson = data.aboutClinicsJson;
   if (data.overallStandingsConfig !== undefined) patch.overallStandingsConfigJson = JSON.stringify(data.overallStandingsConfig);
@@ -730,6 +837,16 @@ export async function upsertSiteSettings(data: {
         aboutHeroImageUrl: data.aboutHeroImageUrl ?? null,
         aboutMissionImageUrl: data.aboutMissionImageUrl ?? null,
         contactHeroImageUrl: data.contactHeroImageUrl ?? null,
+        contactConfigJson: JSON.stringify(data.contactConfig ?? {
+          officialEmail: "contato@ligaescolarguarulhense.com.br",
+          phone: "(11) 99999-9999",
+          address: "Guarulhos, São Paulo - Brasil",
+          socialLinks: [
+            { platform: "Instagram", url: "https://instagram.com" },
+            { platform: "YouTube", url: "https://youtube.com" },
+          ],
+          extraChannels: [],
+        }),
         clinicsJson: data.clinicsJson ?? null,
         aboutClinicsJson: data.aboutClinicsJson ?? null,
         overallStandingsConfigJson: JSON.stringify(data.overallStandingsConfig ?? {

@@ -1768,6 +1768,32 @@ const siteRouter = router({
         aboutMissionImageFileDataUrl: z.string().max(50_000_000).optional().nullable(),
         contactHeroImageUrl: z.string().trim().max(50_000_000).optional().nullable(),
         contactHeroImageFileDataUrl: z.string().max(50_000_000).optional().nullable(),
+        contactConfig: z
+          .object({
+            officialEmail: z.string().trim().min(1).max(320),
+            phone: z.string().trim().min(1).max(80),
+            address: z.string().trim().min(1).max(300),
+            socialLinks: z
+              .array(
+                z.object({
+                  platform: z.string().trim().min(1).max(80),
+                  url: z.string().trim().url().max(2_000),
+                })
+              )
+              .max(20)
+              .optional(),
+            extraChannels: z
+              .array(
+                z.object({
+                  label: z.string().trim().min(1).max(80),
+                  value: z.string().trim().min(1).max(300),
+                  href: z.string().trim().url().max(2_000).optional(),
+                })
+              )
+              .max(20)
+              .optional(),
+          })
+          .optional(),
         clinics: z.array(z.object({
           title: z.string().trim().max(200).optional(),
           description: z.string().trim().max(1000).optional(),
@@ -1991,6 +2017,32 @@ const siteRouter = router({
             ? { contactHeroImageUrl: resolvedContactHeroImageUrl }
             : input.contactHeroImageUrl !== undefined
               ? { contactHeroImageUrl: sanitizeUrl(input.contactHeroImageUrl) }
+            : {}),
+          ...(input.contactConfig !== undefined
+            ? {
+                contactConfig: {
+                  officialEmail: input.contactConfig.officialEmail.trim(),
+                  phone: input.contactConfig.phone.trim(),
+                  address: input.contactConfig.address.trim(),
+                  socialLinks: (input.contactConfig.socialLinks || [])
+                    .map((social) => ({
+                      platform: social.platform.trim(),
+                      url: social.url.trim(),
+                    }))
+                    .filter((social, index, arr) =>
+                      social.platform.length > 0 &&
+                      social.url.length > 0 &&
+                      arr.findIndex((item) => item.platform.toLowerCase() === social.platform.toLowerCase() && item.url === social.url) === index
+                    ),
+                  extraChannels: (input.contactConfig.extraChannels || [])
+                    .map((channel) => ({
+                      label: channel.label.trim(),
+                      value: channel.value.trim(),
+                      ...(channel.href?.trim() ? { href: channel.href.trim() } : {}),
+                    }))
+                    .filter((channel) => channel.label.length > 0 && channel.value.length > 0),
+                },
+              }
             : {}),
           ...(resolvedClinics !== undefined
             ? { clinicsJson: JSON.stringify(resolvedClinics) }

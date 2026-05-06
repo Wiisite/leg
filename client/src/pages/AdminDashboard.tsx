@@ -378,6 +378,17 @@ function SiteSettingsSection() {
   const [files, setFiles] = useState<any>({});
   const [activeTab, setActiveTab] = useState("general");
 
+  const defaultContactConfig = {
+    officialEmail: "contato@ligaescolarguarulhense.com.br",
+    phone: "(11) 99999-9999",
+    address: "Guarulhos, São Paulo - Brasil",
+    socialLinks: [
+      { platform: "Instagram", url: "https://instagram.com" },
+      { platform: "YouTube", url: "https://youtube.com" },
+    ],
+    extraChannels: [],
+  };
+
   useEffect(() => {
     if (settings) {
       const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
@@ -397,6 +408,7 @@ function SiteSettingsSection() {
         aboutClinics: (settings.aboutClinics || []).map((ac: any) => ({ ...ac, imageUrl: sanitize(ac.imageUrl) })),
         liveStreams: settings.liveStreams || [],
         championshipAddresses: settings.championshipAddresses || [],
+        contactConfig: settings.contactConfig || defaultContactConfig,
       });
     }
   }, [settings]);
@@ -502,6 +514,231 @@ function SiteSettingsSection() {
                 <Button variant="outline" className="w-full h-12 border-dashed border-slate-200 rounded-xl text-slate-400 hover:text-red font-bold" onClick={() => setFormData({ ...formData, championshipAddresses: [...(formData.championshipAddresses || []), ""] })}>
                   <Plus className="w-4 h-4 mr-2" /> Adicionar Endereço
                 </Button>
+              </div>
+            </AdminCard>
+
+            <AdminCard title="Contato & Redes Sociais">
+              <div className="space-y-4">
+                <AdminInput
+                  label="E-mail Oficial"
+                  value={formData.contactConfig?.officialEmail || ""}
+                  onChange={(e: any) =>
+                    setFormData({
+                      ...formData,
+                      contactConfig: {
+                        ...(formData.contactConfig || defaultContactConfig),
+                        officialEmail: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="contato@ligaescolarguarulhense.com.br"
+                />
+                <AdminInput
+                  label="Telefone / WhatsApp"
+                  value={formData.contactConfig?.phone || ""}
+                  onChange={(e: any) =>
+                    setFormData({
+                      ...formData,
+                      contactConfig: {
+                        ...(formData.contactConfig || defaultContactConfig),
+                        phone: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="(11) 99999-9999"
+                />
+                <AdminInput
+                  label="Endereço"
+                  value={formData.contactConfig?.address || ""}
+                  onChange={(e: any) =>
+                    setFormData({
+                      ...formData,
+                      contactConfig: {
+                        ...(formData.contactConfig || defaultContactConfig),
+                        address: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Endereço completo"
+                />
+
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500">Redes Sociais</h4>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red font-bold"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          contactConfig: {
+                            ...(formData.contactConfig || defaultContactConfig),
+                            socialLinks: [
+                              ...(formData.contactConfig?.socialLinks || []),
+                              { platform: "", url: "" },
+                            ],
+                          },
+                        })
+                      }
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Adicionar
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {(formData.contactConfig?.socialLinks || []).map((social: any, idx: number) => (
+                      <div key={`social-${idx}`} className="grid grid-cols-[1fr_1.4fr_auto] gap-2 items-center">
+                        <AdminInput
+                          value={social.platform || ""}
+                          onChange={(e: any) => {
+                            const next = [...(formData.contactConfig?.socialLinks || [])];
+                            next[idx] = { ...next[idx], platform: e.target.value };
+                            setFormData({
+                              ...formData,
+                              contactConfig: {
+                                ...(formData.contactConfig || defaultContactConfig),
+                                socialLinks: next,
+                              },
+                            });
+                          }}
+                          placeholder="Instagram"
+                          className="h-10"
+                        />
+                        <AdminInput
+                          value={social.url || ""}
+                          onChange={(e: any) => {
+                            const next = [...(formData.contactConfig?.socialLinks || [])];
+                            next[idx] = { ...next[idx], url: e.target.value };
+                            setFormData({
+                              ...formData,
+                              contactConfig: {
+                                ...(formData.contactConfig || defaultContactConfig),
+                                socialLinks: next,
+                              },
+                            });
+                          }}
+                          placeholder="https://..."
+                          className="h-10"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-10"
+                          onClick={() => {
+                            const next = (formData.contactConfig?.socialLinks || []).filter((_: any, i: number) => i !== idx);
+                            setFormData({
+                              ...formData,
+                              contactConfig: {
+                                ...(formData.contactConfig || defaultContactConfig),
+                                socialLinks: next,
+                              },
+                            });
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-slate-300 hover:text-red" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500">Canais Extras</h4>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red font-bold"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          contactConfig: {
+                            ...(formData.contactConfig || defaultContactConfig),
+                            extraChannels: [
+                              ...(formData.contactConfig?.extraChannels || []),
+                              { label: "", value: "", href: "" },
+                            ],
+                          },
+                        })
+                      }
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Adicionar
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {(formData.contactConfig?.extraChannels || []).map((channel: any, idx: number) => (
+                      <div key={`extra-channel-${idx}`} className="rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-2">
+                        <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                          <AdminInput
+                            value={channel.label || ""}
+                            onChange={(e: any) => {
+                              const next = [...(formData.contactConfig?.extraChannels || [])];
+                              next[idx] = { ...next[idx], label: e.target.value };
+                              setFormData({
+                                ...formData,
+                                contactConfig: {
+                                  ...(formData.contactConfig || defaultContactConfig),
+                                  extraChannels: next,
+                                },
+                              });
+                            }}
+                            placeholder="Nome do canal (ex: Telegram)"
+                            className="h-10"
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-10"
+                            onClick={() => {
+                              const next = (formData.contactConfig?.extraChannels || []).filter((_: any, i: number) => i !== idx);
+                              setFormData({
+                                ...formData,
+                                contactConfig: {
+                                  ...(formData.contactConfig || defaultContactConfig),
+                                  extraChannels: next,
+                                },
+                              });
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 text-slate-300 hover:text-red" />
+                          </Button>
+                        </div>
+                        <AdminInput
+                          value={channel.value || ""}
+                          onChange={(e: any) => {
+                            const next = [...(formData.contactConfig?.extraChannels || [])];
+                            next[idx] = { ...next[idx], value: e.target.value };
+                            setFormData({
+                              ...formData,
+                              contactConfig: {
+                                ...(formData.contactConfig || defaultContactConfig),
+                                extraChannels: next,
+                              },
+                            });
+                          }}
+                          placeholder="Valor exibido (ex: @legaovivo)"
+                          className="h-10"
+                        />
+                        <AdminInput
+                          value={channel.href || ""}
+                          onChange={(e: any) => {
+                            const next = [...(formData.contactConfig?.extraChannels || [])];
+                            next[idx] = { ...next[idx], href: e.target.value };
+                            setFormData({
+                              ...formData,
+                              contactConfig: {
+                                ...(formData.contactConfig || defaultContactConfig),
+                                extraChannels: next,
+                              },
+                            });
+                          }}
+                          placeholder="Link opcional (https://...)"
+                          className="h-10"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </AdminCard>
           </div>

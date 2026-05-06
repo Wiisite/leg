@@ -13,6 +13,22 @@ export default function Contato() {
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
   const sanitize = (url: any) => (typeof url === 'string' && url.includes('localhost')) ? null : url;
   const contactHeroImageUrl = sanitize(siteSettings?.contactHeroImageUrl);
+  const contactConfig = siteSettings?.contactConfig;
+  const officialEmail = contactConfig?.officialEmail || "contato@ligaescolarguarulhense.com.br";
+  const officialPhone = contactConfig?.phone || "(11) 99999-9999";
+  const officialAddress = contactConfig?.address || "Guarulhos, São Paulo - Brasil";
+  const socialLinks = contactConfig?.socialLinks || [
+    { platform: "Instagram", url: "https://instagram.com" },
+    { platform: "YouTube", url: "https://youtube.com" },
+  ];
+  const extraChannels = contactConfig?.extraChannels || [];
+
+  const getSocialIcon = (platform: string) => {
+    const normalized = String(platform || "").trim().toLowerCase();
+    if (normalized.includes("insta")) return Instagram;
+    if (normalized.includes("you")) return Youtube;
+    return MessageSquare;
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -83,7 +99,7 @@ export default function Contato() {
                   </div>
                   <div>
                     <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-1">E-mail Oficial</h4>
-                    <p className="font-bold text-primary">contato@ligaescolarguarulhense.com.br</p>
+                    <p className="font-bold text-primary break-all">{officialEmail}</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -92,7 +108,7 @@ export default function Contato() {
                   </div>
                   <div>
                     <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-1">Telefone / WhatsApp</h4>
-                    <p className="font-bold text-primary">(11) 99999-9999</p>
+                    <p className="font-bold text-primary">{officialPhone}</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -101,31 +117,53 @@ export default function Contato() {
                   </div>
                   <div>
                     <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-1">Endereço</h4>
-                    <p className="font-bold text-primary">Guarulhos, São Paulo - Brasil</p>
+                    <p className="font-bold text-primary">{officialAddress}</p>
                   </div>
                 </div>
+                {extraChannels.map((channel, index) => (
+                  <div key={`extra-channel-${index}`} className="flex gap-4">
+                    <div className="w-12 h-12 bg-red/5 rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <MessageSquare className="w-6 h-6 text-red" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-1">{channel.label}</h4>
+                      {channel.href ? (
+                        <a
+                          href={channel.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-bold text-primary hover:text-red transition-colors break-all"
+                        >
+                          {channel.value}
+                        </a>
+                      ) : (
+                        <p className="font-bold text-primary break-all">{channel.value}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div>
               <h2 className="text-2xl font-black text-primary uppercase tracking-widest mb-8">Siga a LEG</h2>
               <div className="flex gap-4">
-                <a 
-                  href="https://instagram.com" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center hover:bg-red hover:text-white hover:border-red transition-all shadow-sm group"
-                >
-                  <Instagram className="w-6 h-6" />
-                </a>
-                <a 
-                  href="https://youtube.com" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center hover:bg-red hover:text-white hover:border-red transition-all shadow-sm group"
-                >
-                  <Youtube className="w-6 h-6" />
-                </a>
+                {socialLinks.map((social, index) => {
+                  const Icon = getSocialIcon(social.platform);
+                  return (
+                    <a
+                      key={`social-${index}-${social.platform}`}
+                      href={social.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={social.platform}
+                      aria-label={social.platform}
+                      className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center hover:bg-red hover:text-white hover:border-red transition-all shadow-sm group"
+                    >
+                      <Icon className="w-6 h-6" />
+                    </a>
+                  );
+                })}
               </div>
             </div>
 
