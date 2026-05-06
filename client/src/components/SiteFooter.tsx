@@ -23,12 +23,16 @@ export function SiteFooter({
 }: SiteFooterProps) {
   const [, navigate] = useLocation();
   const rightsHolderLogoCandidates = [
+    "/images/rm-sports-logo.png",
+    "/images/rm-sports-logo.jpg",
+    "/images/rm-sports-logo.jpeg",
+    "/rm-sports-logo.png",
+    "/rm-sports-logo.jpg",
     "/images/rw-sports-logo.png",
     "/images/rw-sports-logo.jpg",
     "/images/rw-sports-logo.jpeg",
     "/rw-sports-logo.png",
     "/rw-sports-logo.jpg",
-    footerLogoUrl,
   ];
   const [rightsLogoCandidateIndex, setRightsLogoCandidateIndex] = useState(0);
   const hasRightsLogo = rightsLogoCandidateIndex < rightsHolderLogoCandidates.length;
@@ -122,12 +126,12 @@ export function SiteFooter({
                 {hasRightsLogo ? (
                   <img
                     src={rightsHolderLogoUrl}
-                    alt="Logo RW Sports"
+                    alt="Logo RM Sports"
                     className="h-14 w-auto max-w-full object-contain"
                     onError={() => setRightsLogoCandidateIndex((prev) => prev + 1)}
                   />
                 ) : (
-                  <span className="text-[10px] uppercase tracking-wider text-blue-100/70">Logo RW Sports</span>
+                  <span className="text-[10px] uppercase tracking-wider text-blue-100/70">Logo RM Sports</span>
                 )}
               </div>
               <p className="text-xs font-bold text-white leading-tight">Empresa detentora dos direitos da LEG</p>
