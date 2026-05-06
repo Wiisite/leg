@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { useLocation } from "wouter";
 
 type SiteFooterProps = {
@@ -21,7 +22,18 @@ export function SiteFooter({
   onModalityClick,
 }: SiteFooterProps) {
   const [, navigate] = useLocation();
-  const rightsHolderLogoUrl = "/images/rw-sports-logo.png";
+  const rightsHolderLogoCandidates = [
+    "/images/rw-sports-logo.png",
+    "/images/rw-sports-logo.jpg",
+    "/images/rw-sports-logo.jpeg",
+    "/rw-sports-logo.png",
+    "/rw-sports-logo.jpg",
+  ];
+  const [rightsLogoCandidateIndex, setRightsLogoCandidateIndex] = useState(0);
+  const hasRightsLogo = rightsLogoCandidateIndex < rightsHolderLogoCandidates.length;
+  const rightsHolderLogoUrl = hasRightsLogo
+    ? rightsHolderLogoCandidates[rightsLogoCandidateIndex]
+    : "";
 
   const handleHomeClick = () => {
     if (onHomeClick) return onHomeClick();
@@ -103,33 +115,40 @@ export function SiteFooter({
               <li><button onClick={handleContactClick}>Fale conosco</button></li>
               <li><button onClick={handleContactClick}>Contato comercial</button></li>
             </ul>
+
+            <div className="mt-5 space-y-2">
+              <div className="w-full max-w-[180px] min-h-[76px] rounded-md bg-white/5 border border-white/10 p-2 flex items-center justify-center">
+                {hasRightsLogo ? (
+                  <img
+                    src={rightsHolderLogoUrl}
+                    alt="Logo RW Sports"
+                    className="h-14 w-auto max-w-full object-contain"
+                    onError={() => setRightsLogoCandidateIndex((prev) => prev + 1)}
+                  />
+                ) : (
+                  <span className="text-[10px] uppercase tracking-wider text-blue-100/70">Logo RW Sports</span>
+                )}
+              </div>
+              <p className="text-xs font-bold text-white leading-tight">Empresa detentora dos direitos da LEG</p>
+            </div>
           </div>
         </div>
 
         <div className="pt-6 space-y-4 text-xs text-blue-100/80">
           <div className="flex flex-col md:flex-row items-center justify-between gap-3">
             <p>© Liga Escolar Guarulhense 2026. Todos os direitos reservados.</p>
-            <p className="font-semibold">Facebook • Youtube • Instagram</p>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-t border-white/10 pt-4">
-            <div className="flex items-center gap-3">
-              <img
-                src={rightsHolderLogoUrl}
-                alt="Logo RW Sports"
-                className="h-14 w-auto rounded-md bg-white/5 p-1 object-contain"
-              />
-              <p className="text-sm font-bold text-white">Empresa detentora dos direitos LEG</p>
-            </div>
-
             <a
               href="https://wiisite.com.br/"
               target="_blank"
               rel="noreferrer"
-              className="text-base font-semibold text-blue-100 hover:text-white transition-colors"
+              className="font-semibold text-blue-100 hover:text-white transition-colors"
             >
-              Projetado e desenvolvido por Wiiste Digital
+              Projetado e desenvolvido por Insight Designer e Insight Digital
             </a>
+          </div>
+
+          <div className="flex justify-center md:justify-end">
+            <p className="font-semibold">Facebook • Youtube • Instagram</p>
           </div>
         </div>
       </div>
