@@ -23,6 +23,10 @@ export function SiteFooter({
 }: SiteFooterProps) {
   const [, navigate] = useLocation();
   const rightsHolderLogoCandidates = [
+    "/images/Ativo-5.webp",
+    "/images/ativo-5.webp",
+    "/Ativo-5.webp",
+    "/ativo-5.webp",
     "/images/rm-sports-logo.png",
     "/images/rm-sports-logo.jpg",
     "/images/rm-sports-logo.jpeg",
@@ -122,12 +126,12 @@ export function SiteFooter({
             </ul>
 
             <div className="mt-5 space-y-2">
-              <div className="w-full max-w-[180px] min-h-[76px] rounded-md bg-white/5 border border-white/10 p-2 flex items-center justify-center">
+              <div className="w-full max-w-[240px] min-h-[120px] rounded-md bg-white/5 border border-white/10 p-3 flex items-center justify-center">
                 {hasRightsLogo ? (
                   <img
                     src={rightsHolderLogoUrl}
                     alt="Logo RM Sports"
-                    className="h-14 w-auto max-w-full object-contain"
+                    className="h-24 w-auto max-w-full object-contain"
                     onError={() => setRightsLogoCandidateIndex((prev) => prev + 1)}
                   />
                 ) : (
