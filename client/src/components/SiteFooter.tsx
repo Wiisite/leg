@@ -21,7 +21,7 @@ export function SiteFooter({
   onModalityClick,
 }: SiteFooterProps) {
   const [, navigate] = useLocation();
-  const rightsHolderLogoUrl = "/rw-sports-logo.png";
+  const rightsHolderLogoUrl = "/images/rw-sports-logo.png";
 
   const handleHomeClick = () => {
     if (onHomeClick) return onHomeClick();
@@ -128,7 +128,7 @@ export function SiteFooter({
               rel="noreferrer"
               className="text-base font-semibold text-blue-100 hover:text-white transition-colors"
             >
-              Projetado e desenvolvido por WeSite
+              Projetado e desenvolvido por Wiiste Digital
             </a>
           </div>
         </div>
