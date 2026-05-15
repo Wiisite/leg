@@ -384,6 +384,8 @@ async function startServer() {
         const division = detectDivisionLabel(tournament.name, tournament.category);
 
         for (const match of matches) {
+          if (match.status === "finished" || match.homeScore !== null || match.awayScore !== null) continue;
+
           const parsedDate = parseIsoDate(match.date);
           if (!parsedDate) continue;
           if (parsedDate.year !== year || parsedDate.month !== month) continue;
@@ -404,6 +406,11 @@ async function startServer() {
 
       const sortedRows = rows.sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
+
+        const locA = a.location || "";
+        const locB = b.location || "";
+        if (locA !== locB) return locA.localeCompare(locB, "pt-BR");
+
         if (a.time !== b.time) {
           if (a.time === "-") return 1;
           if (b.time === "-") return -1;
