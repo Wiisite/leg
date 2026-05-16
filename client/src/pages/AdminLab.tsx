@@ -20,16 +20,22 @@ export default function AdminLab() {
   const [, navigate] = useLocation();
   const [dbResult, setDbResult] = useState<any>(null);
 
-  const { data: dbDiag, refetch: checkDb, isLoading: checkingDb } = trpc.system.checkDatabase.useQuery(undefined, {
+  const diagQuery = trpc.system.checkDatabase.useQuery(undefined, {
     enabled: false,
-    onSuccess: (data) => {
-      setDbResult(data);
-      toast.success("Diagnóstico concluído");
-    },
-    onError: (err) => {
+  });
+
+  const checkDb = async () => {
+    try {
+      const result = await diagQuery.refetch();
+      if (result.data) {
+        setDbResult(result.data);
+        toast.success("Diagnóstico concluído");
+      }
+    } catch (err: any) {
       toast.error(`Erro ao verificar banco: ${err.message}`);
     }
-  });
+  };
+
   const { data: settings } = trpc.site.getSettings.useQuery();
 
   if (loadingAuth) return null;
@@ -82,10 +88,10 @@ export default function AdminLab() {
               </div>
               <Button 
                 onClick={() => checkDb()} 
-                disabled={checkingDb}
+                disabled={diagQuery.isFetching}
                 className="bg-red hover:bg-red/90 text-white font-black px-8 h-14 rounded-2xl shadow-lg shadow-red/20 transition-all flex items-center gap-2"
               >
-                {checkingDb ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                {diagQuery.isFetching ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
                 Executar Verificação
               </Button>
             </div>
