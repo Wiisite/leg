@@ -28,7 +28,7 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
-type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final";
+type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final" | "athletes";
 
 type MatchForModal = {
   id: number; 
@@ -390,6 +390,209 @@ function ScoreModal({
   );
 }
 
+function MatchSheetModal({
+  match,
+  teams,
+  modality,
+  onClose,
+}: {
+  match: MatchForModal;
+  teams: any[];
+  modality: string;
+  onClose: () => void;
+}) {
+  const homeTeam = teams.find(t => t.id === match.homeTeamId);
+  const awayTeam = teams.find(t => t.id === match.awayTeamId);
+  
+  const { data: homeAthletes } = trpc.athlete.list.useQuery({ teamId: match.homeTeamId });
+  const { data: awayAthletes } = trpc.athlete.list.useQuery({ teamId: match.awayTeamId });
+  const { data: events, refetch: refetchEvents } = trpc.matchSheet.getEvents.useQuery({ matchId: match.id });
+
+  const utils = trpc.useUtils();
+  const addEvent = trpc.matchSheet.addEvent.useMutation({
+    onSuccess: () => { 
+      refetchEvents(); 
+      utils.tournament.getById.invalidate();
+      toast.success("Evento registrado!"); 
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const removeEvent = trpc.matchSheet.removeEvent.useMutation({
+    onSuccess: () => { 
+      refetchEvents(); 
+      utils.tournament.getById.invalidate();
+      toast.success("Evento removido."); 
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const EventList = ({ teamId }: { teamId: number }) => {
+    const teamEvents = events?.filter(e => e.teamId === teamId) || [];
+    return (
+      <div className="space-y-1.5">
+        {teamEvents.map(e => {
+          const athlete = [...(homeAthletes || []), ...(awayAthletes || [])].find(a => a.id === e.athleteId);
+          return (
+            <div key={e.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-[10px] font-bold border border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className={`w-8 h-5 flex items-center justify-center rounded text-[8px] font-black ${
+                  ['goal', 'point_1', 'point_2', 'point_3'].includes(e.type) ? 'bg-green-500 text-white' : 
+                  e.type === 'yellow_card' ? 'bg-amber-400 text-amber-900' : 
+                  e.type === 'red_card' ? 'bg-red text-white' : 
+                  e.type === 'suspension_2min' ? 'bg-blue-600 text-white' :
+                  e.type === 'foul' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {e.type === 'goal' ? 'GOL' : 
+                   e.type === 'point_1' ? '+1' :
+                   e.type === 'point_2' ? '+2' :
+                   e.type === 'point_3' ? '+3' :
+                   e.type === 'yellow_card' ? 'Y' : 
+                   e.type === 'red_card' ? 'R' : 
+                   e.type === 'suspension_2min' ? '2M' :
+                   e.type === 'foul' ? 'FT' : 'E'}
+                </span>
+                <span className="uppercase text-slate-700 truncate max-w-[100px]">{athlete?.name || "Equipe"}</span>
+              </div>
+              <button onClick={() => removeEvent.mutate({ id: e.id, matchId: match.id })} className="text-slate-300 hover:text-red transition-colors">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative bg-white rounded-[40px] p-8 w-full max-w-4xl shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-500 h-[85vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-red/5 flex items-center justify-center border border-red/10">
+              <Trophy className="w-6 h-6 text-red" />
+            </div>
+            <div>
+              <h3 className="font-display font-black text-2xl text-slate-800 uppercase tracking-tight">Súmula Online</h3>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Controle de Partida</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="flex-1 grid grid-cols-2 gap-8 overflow-hidden">
+          {/* Home Team */}
+          <div className="flex flex-col overflow-hidden bg-slate-50/50 rounded-[32px] border border-slate-100 p-6">
+            <div className="flex flex-col items-center gap-2 mb-8">
+              <TeamBadge team={homeTeam} size="md" />
+              <div className="text-center">
+                <h4 className="font-black text-xs text-slate-800 uppercase tracking-widest truncate max-w-[150px]">{homeTeam?.shortName}</h4>
+                <div className="text-6xl font-black text-slate-900 mt-2">
+                  {events?.filter(e => e.teamId === match.homeTeamId && ['goal', 'point_1', 'point_2', 'point_3'].includes(e.type)).length}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-slate-50/50 backdrop-blur-sm py-2">Registrar Ação</p>
+              {homeAthletes?.map(a => (
+                <div key={a.id} className="bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm hover:border-red/10 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black">{a.number || "?"}</div>
+                    <span className="text-xs font-black text-slate-700 uppercase truncate max-w-[120px]">{a.name}</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {modality === "basquete" ? (
+                      <>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_1" })} className="h-8 w-8 bg-green-500 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-500/20 active:scale-95 transition-transform">+1</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_2" })} className="h-8 w-8 bg-green-600 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-600/20 active:scale-95 transition-transform">+2</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_3" })} className="h-8 w-8 bg-green-700 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-700/20 active:scale-95 transition-transform">+3</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "foul" })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
+                      </>
+                    ) : modality === "volei" ? (
+                      <>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_1" })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">PONTO</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "foul" })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "goal" })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">GOL</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "yellow_card" })} className="h-8 w-8 bg-amber-400 text-amber-900 rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-amber-400/20"><Shield className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "red_card" })} className="h-8 w-8 bg-red text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-red/20"><Shield className="w-4 h-4" /></button>
+                        {modality === "handebol" && (
+                          <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "suspension_2min" })} className="h-8 w-8 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-blue-600/20 font-black text-[8px]">2M</button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 border-t border-slate-200 pt-4 overflow-y-auto max-h-32">
+               <EventList teamId={match.homeTeamId} />
+            </div>
+          </div>
+
+          {/* Away Team */}
+          <div className="flex flex-col overflow-hidden bg-slate-50/50 rounded-[32px] border border-slate-100 p-6">
+            <div className="flex flex-col items-center gap-2 mb-8">
+              <TeamBadge team={awayTeam} size="md" />
+              <div className="text-center">
+                <h4 className="font-black text-xs text-slate-800 uppercase tracking-widest truncate max-w-[150px]">{awayTeam?.shortName}</h4>
+                <div className="text-6xl font-black text-slate-900 mt-2">
+                  {events?.filter(e => e.teamId === match.awayTeamId && ['goal', 'point_1', 'point_2', 'point_3'].includes(e.type)).length}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-slate-50/50 backdrop-blur-sm py-2">Registrar Ação</p>
+              {awayAthletes?.map(a => (
+                <div key={a.id} className="bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm hover:border-red/10 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black">{a.number || "?"}</div>
+                    <span className="text-xs font-black text-slate-700 uppercase truncate max-w-[120px]">{a.name}</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {modality === "basquete" ? (
+                      <>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_1" })} className="h-8 w-8 bg-green-500 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-500/20 active:scale-95 transition-transform">+1</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_2" })} className="h-8 w-8 bg-green-600 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-600/20 active:scale-95 transition-transform">+2</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_3" })} className="h-8 w-8 bg-green-700 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-700/20 active:scale-95 transition-transform">+3</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "foul" })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
+                      </>
+                    ) : modality === "volei" ? (
+                      <>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_1" })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">PONTO</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "foul" })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "goal" })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">GOL</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "yellow_card" })} className="h-8 w-8 bg-amber-400 text-amber-900 rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-amber-400/20"><Shield className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "red_card" })} className="h-8 w-8 bg-red text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-red/20"><Shield className="w-4 h-4" /></button>
+                        {modality === "handebol" && (
+                          <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "suspension_2min" })} className="h-8 w-8 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-blue-600/20 font-black text-[8px]">2M</button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+             <div className="mt-4 border-t border-slate-200 pt-4 overflow-y-auto max-h-32">
+               <EventList teamId={match.awayTeamId} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MatchCard({
   match,
   teams,
@@ -400,6 +603,7 @@ function MatchCard({
   teams: any[];
   isAdmin: boolean;
   onEdit?: (m: MatchForModal) => void;
+  onShowSheet?: (m: MatchForModal) => void;
 }) {
   const home = teams.find((t) => t.id === match.homeTeamId);
   const away = teams.find((t) => t.id === match.awayTeamId);
@@ -451,14 +655,26 @@ function MatchCard({
           </div>
         </div>
 
-        {isAdmin && onEdit && (
-          <Button
-            size="sm"
-            onClick={() => onEdit(match)}
-            className="bg-slate-100 hover:bg-slate-700 hover:text-white text-slate-600 text-[10px] font-black uppercase px-6 rounded-2xl transition-all shadow-sm active:scale-95"
-          >
-            {finished ? "Editar" : "Registrar"}
-          </Button>
+        {isAdmin && (
+          <div className="flex gap-2">
+             <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onShowSheet?.(match)}
+              className="border-slate-200 hover:border-red/30 hover:text-red text-slate-500 text-[10px] font-black uppercase px-4 rounded-2xl transition-all shadow-sm active:scale-95"
+            >
+              Súmula
+            </Button>
+            {onEdit && (
+              <Button
+                size="sm"
+                onClick={() => onEdit(match)}
+                className="bg-slate-100 hover:bg-slate-700 hover:text-white text-slate-600 text-[10px] font-black uppercase px-4 rounded-2xl transition-all shadow-sm active:scale-95"
+              >
+                {finished ? "Editar" : "Registrar"}
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -475,8 +691,9 @@ function MatchCardCompact({
   teams: any[];
   isAdmin: boolean;
   onEdit?: (m: MatchForModal) => void;
+  onShowSheet?: (m: MatchForModal) => void;
 }) {
-  return <MatchCard match={match} teams={teams} isAdmin={isAdmin} onEdit={onEdit} />;
+  return <MatchCard match={match} teams={teams} isAdmin={isAdmin} onEdit={onEdit} onShowSheet={onShowSheet} />;
 }
 
 function StandingsTable({ standings, modality }: { standings: any[]; modality?: string }) {
@@ -882,6 +1099,176 @@ function EditTournamentModal({
   );
 }
 
+function AthleteManagerModal({ 
+  team, 
+  onClose 
+}: { 
+  team: { id: number; name: string; shortName: string; color: string; logo?: string | null }; 
+  onClose: () => void;
+}) {
+  const [newAthleteName, setNewAthleteName] = useState("");
+  const [newAthleteNumber, setNewAthleteNumber] = useState("");
+  const [newAthleteDocument, setNewAthleteDocument] = useState("");
+  const [newAthleteBirthDate, setNewAthleteBirthDate] = useState("");
+  const [newAthletePosition, setNewAthletePosition] = useState("");
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+
+  const { data: athletes, refetch } = trpc.athlete.list.useQuery({ teamId: team.id });
+  const upsertAthlete = trpc.athlete.upsert.useMutation({
+    onSuccess: () => {
+      setNewAthleteName("");
+      setNewAthleteNumber("");
+      setNewAthleteDocument("");
+      setNewAthleteBirthDate("");
+      setNewAthletePosition("");
+      setPhotoBase64(null);
+      refetch();
+      toast.success("Atleta cadastrado!");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteAthlete = trpc.athlete.delete.useMutation({
+    onSuccess: () => { refetch(); toast.success("Atleta removido."); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handlePhotoUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => setPhotoBase64(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddAthlete = () => {
+    if (!newAthleteName.trim()) return toast.error("Nome é obrigatório");
+    upsertAthlete.mutate({
+      teamId: team.id,
+      name: newAthleteName.trim(),
+      number: newAthleteNumber ? parseInt(newAthleteNumber) : null,
+      document: newAthleteDocument.trim() || null,
+      birthDate: newAthleteBirthDate || null,
+      position: newAthletePosition.trim() || null,
+      photo: photoBase64,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
+      <div className="relative bg-white rounded-[28px] p-8 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-300 max-h-[90vh] flex flex-col">
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-4 mb-8">
+          <TeamBadge team={team} size="md" />
+          <div>
+            <h3 className="font-black text-xl text-slate-800 uppercase tracking-tight">Elenco</h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{team.name}</p>
+          </div>
+        </div>
+
+        {/* Form */}
+        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Novo Atleta</p>
+          <div className="flex gap-3">
+            <div className="relative w-12 h-12 bg-white border border-slate-200 rounded-xl flex items-center justify-center shrink-0 overflow-hidden group cursor-pointer">
+              {photoBase64 ? (
+                <img src={photoBase64} className="w-full h-full object-cover" />
+              ) : (
+                <Users className="w-5 h-5 text-slate-300" />
+              )}
+              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
+                <Edit2 className="w-4 h-4 text-white" />
+              </label>
+            </div>
+            <div className="flex-1 space-y-2">
+              <input 
+                placeholder="Nome Completo" 
+                value={newAthleteName} 
+                onChange={(e) => setNewAthleteName(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-red/20 outline-none"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input 
+                  placeholder="Doc (CPF/RG)" 
+                  value={newAthleteDocument} 
+                  onChange={(e) => setNewAthleteDocument(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none"
+                />
+                <input 
+                  placeholder="Nascimento" 
+                  type="date"
+                  value={newAthleteBirthDate} 
+                  onChange={(e) => setNewAthleteBirthDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  placeholder="Posição (ex: Goleiro)" 
+                  value={newAthletePosition} 
+                  onChange={(e) => setNewAthletePosition(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none"
+                />
+                <input 
+                  placeholder="Nº" 
+                  type="number"
+                  value={newAthleteNumber} 
+                  onChange={(e) => setNewAthleteNumber(e.target.value)}
+                  className="w-16 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-center outline-none"
+                />
+              </div>
+              <Button 
+                className="w-full bg-red text-white font-black text-[10px] uppercase tracking-widest rounded-lg h-9 mt-1"
+                onClick={handleAddAthlete}
+                disabled={upsertAthlete.isPending}
+              >
+                {upsertAthlete.isPending ? "..." : "Adicionar Atleta"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+          {!athletes || athletes.length === 0 ? (
+            <div className="text-center py-10 opacity-40">
+              <Users className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-xs font-bold uppercase tracking-widest">Nenhum atleta cadastrado</p>
+            </div>
+          ) : (
+            athletes.map((a) => (
+              <div key={a.id} className="flex items-center gap-3 bg-white border border-slate-100 p-2.5 rounded-xl shadow-sm hover:border-red/10 transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0">
+                  {a.photo ? <img src={a.photo} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300 font-black text-xs">{a.number || "?"}</div>}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-black text-slate-700 uppercase leading-none">{a.name}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase tracking-wider">#{a.number || "00"}</span>
+                    {a.position && <span className="text-[9px] font-black bg-red/5 text-red px-1.5 py-0.5 rounded uppercase tracking-wider">{a.position}</span>}
+                    {a.birthDate && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(a.birthDate).toLocaleDateString('pt-BR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</span>}
+                  </div>
+                </div>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-8 w-8 text-slate-300 hover:text-red hover:bg-red/5"
+                  onClick={() => confirm(`Excluir ${a.name}?`) && deleteAthlete.mutate({ id: a.id })}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
   const tournamentId = parseInt(id ?? "0");
@@ -890,6 +1277,8 @@ export default function TournamentDetail() {
   const [activeTab, setActiveTab] = useState<Tab>("groups");
   const [isEditingTournament, setIsEditingTournament] = useState(false);
   const [editingMatch, setEditingMatch] = useState<null | MatchForModal>(null);
+  const [managingTeam, setManagingTeam] = useState<any>(null);
+  const [showingMatchSheet, setShowingMatchSheet] = useState<null | MatchForModal>(null);
   const [showGroupSetup, setShowGroupSetup] = useState(false);
   const [groupMode, setGroupMode] = useState<"auto" | "manual">("auto");
   const [manualAssignment, setManualAssignment] = useState<Record<number, "A" | "B">>({});
@@ -1068,6 +1457,7 @@ export default function TournamentDetail() {
     { id: "bracket", label: "Chaveamento", icon: GitBranch },
     { id: "semifinals", label: "Semifinais", icon: Medal },
     { id: "final", label: "Final", icon: Star },
+    { id: "athletes", label: "Atletas", icon: Users },
   ];
 
   return (
@@ -1515,7 +1905,7 @@ export default function TournamentDetail() {
                           </div>
                           <div className="grid gap-3 sm:grid-cols-2 max-w-3xl mx-auto">
                             {groupMatches.filter(m => m.round === roundNum).map((m) => (
-                              <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                              <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                             ))}
                           </div>
                         </div>
@@ -1558,7 +1948,7 @@ export default function TournamentDetail() {
                           {groupData.map(({ gName, gMatches }) => (
                             <div key={gName} className="space-y-3">
                               {gMatches.filter(m => m.round === roundNum).map((m) => (
-                                <MatchCardCompact key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                                <MatchCardCompact key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                               ))}
                             </div>
                           ))}
@@ -1686,7 +2076,7 @@ export default function TournamentDetail() {
                         {handebolOuroSemi
                           .sort((a, b) => a.round - b.round)
                           .map((m) => (
-                            <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                            <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                           ))}
                       </div>
                     </section>
@@ -1780,10 +2170,10 @@ export default function TournamentDetail() {
                       <h3 className="text-sm font-black uppercase tracking-wider text-red mb-3">Série Liga (Ouro)</h3>
                       <div className="space-y-3">
                         {handebolOuroThird.map((m) => (
-                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                         ))}
                         {handebolOuroFinal.map((m) => (
-                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                         ))}
                       </div>
                     </section>
@@ -1792,10 +2182,10 @@ export default function TournamentDetail() {
                       <h3 className="text-sm font-black uppercase tracking-wider text-blue-600 mb-3">Série Paulista (Prata)</h3>
                       <div className="space-y-3">
                         {handebolPrataThird.map((m) => (
-                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                         ))}
                         {handebolPrataFinal.map((m) => (
-                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                          <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                         ))}
                       </div>
                     </section>
@@ -1803,7 +2193,7 @@ export default function TournamentDetail() {
                 ) : (
                   <div className="max-w-md">
                     {finalMatches.map((m) => (
-                      <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} />
+                      <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                     ))}
                   </div>
                 )}
@@ -1826,6 +2216,62 @@ export default function TournamentDetail() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Athletes Tab */}
+        {activeTab === "athletes" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                Gestão de Atletas por Equipe
+              </h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {teams.map((team) => (
+                <div key={team.id} className="bg-slate-50 border border-slate-100 rounded-[24px] p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                  <div 
+                    className="absolute top-0 left-0 w-full h-1.5 opacity-40"
+                    style={{ backgroundColor: team.color }}
+                  />
+                  <TeamBadge team={team} size="lg" />
+                  <h3 className="mt-4 font-black text-slate-800 uppercase tracking-tight truncate w-full">{team.name}</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 mb-2">{team.shortName}</p>
+                  
+                  <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-200/50 rounded-full mb-6">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">
+                      {(team as any).athleteCount || 0} Atletas
+                    </span>
+                  </div>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full rounded-xl font-bold text-xs border-slate-200 hover:border-red/30 hover:text-red transition-all"
+                    onClick={() => setManagingTeam(team)}
+                  >
+                    <Users className="w-4 h-4 mr-1.5" />
+                    Gerenciar Elenco
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {managingTeam && (
+              <AthleteManagerModal 
+                team={managingTeam} 
+                onClose={() => setManagingTeam(null)} 
+              />
+            )}
+          </div>
+        )}
+
+        {showingMatchSheet && (
+          <MatchSheetModal 
+            match={showingMatchSheet} 
+            teams={teams} 
+            modality={tournament.modality}
+            onClose={() => setShowingMatchSheet(null)} 
+          />
         )}
       </main>
 

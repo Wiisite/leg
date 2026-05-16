@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { contactMessages, InsertContactMessage, InsertUser, matches, siteSettings, teams, tournaments, users } from "../drizzle/schema";
+import { athletes, contactMessages, InsertAthlete, InsertContactMessage, InsertMatchEvent, InsertUser, matches, matchEvents, siteSettings, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import fs from "fs";
 import path from "path";
@@ -888,6 +888,55 @@ export async function updateMessageStatus(id: number, status: "new" | "read" | "
 
 export async function deleteMessage(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("DB not available");
+  if (!db) return;
   await db.delete(contactMessages).where(eq(contactMessages.id, id));
+}
+
+// ─── Athletes ────────────────────────────────────────────────────────────────
+
+export async function getAthletesByTeam(teamId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(athletes).where(eq(athletes.teamId, teamId)).orderBy(athletes.name);
+}
+
+export async function upsertAthlete(athlete: InsertAthlete) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+
+  if (athlete.id) {
+    await db.update(athletes).set(athlete).where(eq(athletes.id, athlete.id));
+    return athlete.id;
+  } else {
+    const result = await db.insert(athletes).values(athlete);
+    const insertResult = Array.isArray(result) ? result[0] : result;
+    const rawInsertId = (insertResult as any)?.insertId;
+    return typeof rawInsertId === "number" ? rawInsertId : Number(rawInsertId);
+  }
+}
+
+export async function deleteAthlete(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(athletes).where(eq(athletes.id, id));
+}
+
+// ─── Match Events (Súmula) ───────────────────────────────────────────────────
+
+export async function getMatchEvents(matchId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(matchEvents).where(eq(matchEvents.matchId, matchId)).orderBy(matchEvents.createdAt);
+}
+
+export async function addMatchEvent(event: InsertMatchEvent) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.insert(matchEvents).values(event);
+}
+
+export async function removeMatchEvent(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(matchEvents).where(eq(matchEvents.id, id));
 }

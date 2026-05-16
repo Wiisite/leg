@@ -709,7 +709,28 @@ const tournamentRouter = router({
     if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
     const teamList = await getTeamsByTournament(input.id);
     const matchList = await getMatchesByTournament(input.id);
-    return { tournament, teams: teamList, matches: matchList };
+
+    // Buscar contagem de atletas por equipe
+    const { getDb } = await import("./db");
+    const db = await getDb();
+    if (!db || teamList.length === 0) {
+      return { tournament, teams: teamList, matches: matchList };
+    }
+
+    const teamIds = teamList.map((t) => t.id);
+    const athleteCounts = await db
+      .select({ teamId: athletes.teamId, count: sql<number>`count(*)` })
+      .from(athletes)
+      .where(sql`${athletes.teamId} IN (${sql.join(teamIds, sql`,`)})`)
+      .groupBy(athletes.teamId);
+
+    const countMap = new Map(athleteCounts.map((c) => [c.teamId, Number(c.count)]));
+
+    return {
+      tournament,
+      teams: teamList.map((t) => ({ ...t, athleteCount: countMap.get(t.id) || 0 })),
+      matches: matchList,
+    };
   }),
 
   create: protectedProcedure
@@ -2109,7 +2130,132 @@ const siteRouter = router({
     }),
 });
 
-// ─── App Router ────────────────────────────────────────────────────────────────
+// ─── Team Router ───────────────────────────────────────────────────────────────
+ 
+ const teamRouter = router({
+   getProfile: publicProcedure
+     .input(z.object({ id: z.number() }))
+     .query(async ({ input }) => {
+       const { getDb } = await import("./db");
+       const db = await getDb();
+       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+ 
+       const teamRows = await db.select().from(teams).where(eq(teams.id, input.id)).limit(1);
+       const team = teamRows[0];
+       if (!team) throw new TRPCError({ code: "NOT_FOUND" });
+ 
+       const athletesRows = await db.select().from(athletes).where(eq(athletes.teamId, input.id));
+       const matchesRows = await db.select().from(matches).where(
+         sql`${matches.homeTeamId} = ${input.id} OR ${matches.awayTeamId} = ${input.id}`
+       );
+ 
+       return {
+         team,
+         athletes: athletesRows,
+         matches: matchesRows,
+       };
+     }),
+ });
+ 
+ // ─── Athlete Router ────────────────────────────────────────────────────────────
+ 
+ const athleteRouter = router({
+   list: publicProcedure
+     .input(z.object({ teamId: z.number() }))
+     .query(async ({ input }) => {
+       const { getAthletesByTeam } = await import("./db");
+       return getAthletesByTeam(input.teamId);
+     }),
+   upsert: protectedProcedure
+     .input(z.object({
+       id: z.number().optional(),
+       teamId: z.number(),
+       name: z.string().min(1),
+       number: z.number().optional().nullable(),
+       photo: z.string().optional().nullable(),
+       document: z.string().optional().nullable(),
+       birthDate: z.string().optional().nullable(),
+       position: z.string().optional().nullable(),
+       status: z.enum(["active", "suspended"]).default("active"),
+     }))
+     .mutation(async ({ input }) => {
+       const { upsertAthlete } = await import("./db");
+       return upsertAthlete(input);
+     }),
+   delete: protectedProcedure
+     .input(z.object({ id: z.number() }))
+     .mutation(async ({ input }) => {
+       const { deleteAthlete } = await import("./db");
+       await deleteAthlete(input.id);
+       return { success: true };
+     }),
+ });
+ 
+ // ─── Match Sheet Router (Events) ───────────────────────────────────────────────
+ 
+ const matchSheetRouter = router({
+   getEvents: publicProcedure
+     .input(z.object({ matchId: z.number() }))
+     .query(async ({ input }) => {
+       const { getMatchEvents } = await import("./db");
+       return getMatchEvents(input.matchId);
+     }),
+   addEvent: protectedProcedure
+     .input(z.object({
+       matchId: z.number(),
+       teamId: z.number(),
+       athleteId: z.number().optional().nullable(),
+       type: z.enum(["goal", "yellow_card", "red_card", "suspension_2min", "point_1", "point_2", "point_3", "foul"]),
+       period: z.number().default(1),
+       minute: z.number().optional().nullable(),
+     }))
+     .mutation(async ({ input }) => {
+       const { addMatchEvent, getMatchById, updateMatchScore, getTournamentById } = await import("./db");
+       await addMatchEvent(input);
+ 
+       // Se for um evento de pontuação, atualizamos o placar geral da partida
+       if (["goal", "point_1", "point_2", "point_3"].includes(input.type)) {
+         const match = await getMatchById(input.matchId);
+         if (match) {
+            const tournament = await getTournamentById(match.tournamentId);
+            if (tournament?.modality === "volei") return { success: true };
+           const points = input.type === "point_2" ? 2 : input.type === "point_3" ? 3 : 1;
+           const isHome = match.homeTeamId === input.teamId;
+           const homeScore = (match.homeScore || 0) + (isHome ? points : 0);
+           const awayScore = (match.awayScore || 0) + (!isHome ? points : 0);
+           await updateMatchScore(input.matchId, homeScore, awayScore);
+         }
+       }
+       return { success: true };
+     }),
+   removeEvent: protectedProcedure
+     .input(z.object({ id: z.number(), matchId: z.number() }))
+     .mutation(async ({ input }) => {
+       const { removeMatchEvent, getMatchEvents, getMatchById, updateMatchScore, getTournamentById } = await import("./db");
+       
+       // Antes de remover, precisamos saber se era um evento de pontuação para subtrair do placar
+       const events = await getMatchEvents(input.matchId);
+       const eventToRemove = events.find(e => e.id === input.id);
+       
+       await removeMatchEvent(input.id);
+ 
+       if (eventToRemove && ["goal", "point_1", "point_2", "point_3"].includes(eventToRemove.type)) {
+         const match = await getMatchById(input.matchId);
+         if (match) {
+            const tournament = await getTournamentById(match.tournamentId);
+            if (tournament?.modality === "volei") return { success: true };
+           const points = eventToRemove.type === "point_2" ? 2 : eventToRemove.type === "point_3" ? 3 : 1;
+           const isHome = match.homeTeamId === eventToRemove.teamId;
+           const homeScore = Math.max(0, (match.homeScore || 0) - (isHome ? points : 0));
+           const awayScore = Math.max(0, (match.awayScore || 0) - (!isHome ? points : 0));
+           await updateMatchScore(input.matchId, homeScore, awayScore);
+         }
+       }
+       return { success: true };
+     }),
+ });
+ 
+ // ─── App Router ────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
   system: systemRouter,
@@ -2272,10 +2418,12 @@ export const appRouter = router({
   }),
   tournament: tournamentRouter,
   match: matchRouter,
+  team: teamRouter,
+  athlete: athleteRouter,
+  matchSheet: matchSheetRouter,
   site: siteRouter,
   seed: seedRouter,
   contact: contactRouter,
 });
 
 export type AppRouter = typeof appRouter;
-

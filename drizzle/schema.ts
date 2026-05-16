@@ -132,3 +132,47 @@ export type InsertSiteSettings = typeof siteSettings.$inferInsert;
  
  export type ContactMessage = typeof contactMessages.$inferSelect;
  export type InsertContactMessage = typeof contactMessages.$inferInsert;
+
+// ─── Athletes ────────────────────────────────────────────────────────────────
+
+export const athletes = mysqlTable("athletes", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  number: int("number"),
+  photo: longtext("photo"),
+  document: varchar("document", { length: 50 }),
+  birthDate: varchar("birthDate", { length: 20 }),
+  position: varchar("position", { length: 50 }),
+  status: mysqlEnum("status", ["active", "suspended"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Athlete = typeof athletes.$inferSelect;
+export type InsertAthlete = typeof athletes.$inferInsert;
+
+// ─── Match Events (Súmula) ───────────────────────────────────────────────────
+
+export const matchEvents = mysqlTable("match_events", {
+  id: int("id").autoincrement().primaryKey(),
+  matchId: int("matchId").notNull(),
+  teamId: int("teamId").notNull(),
+  athleteId: int("athleteId"), // pode ser nulo para gols contra ou eventos de equipe
+  type: mysqlEnum("type", [
+    "goal", 
+    "yellow_card", 
+    "red_card", 
+    "suspension_2min", 
+    "point_1", 
+    "point_2", 
+    "point_3", 
+    "foul"
+  ]).notNull(),
+  period: int("period").default(1),
+  minute: int("minute"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MatchEvent = typeof matchEvents.$inferSelect;
+export type InsertMatchEvent = typeof matchEvents.$inferInsert;
