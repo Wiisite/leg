@@ -24,12 +24,15 @@ import {
   Edit2,
   Plus,
   X,
+  ClipboardList,
+  Search,
+  Filter,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
-type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final" | "athletes";
+type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final" | "athletes" | "roster";
 
 type MatchForModal = {
   id: number; 
@@ -1362,7 +1365,7 @@ export default function TournamentDetail() {
     );
   }
 
-  const { tournament, teams, matches } = data;
+  const { tournament, teams, matches, athletes: tournamentAthletes = [] } = data as any;
   const groupMatches = matches.filter((m) => m.phase === "group");
   const quarterMatches = matches.filter((m) => m.phase === "quarterfinal");
   const semiMatches = matches.filter((m) => m.phase === "semifinal");
@@ -1433,7 +1436,8 @@ export default function TournamentDetail() {
     { id: "bracket", label: "Chaveamento", icon: GitBranch },
     { id: "semifinals", label: "Semifinais", icon: Medal },
     { id: "final", label: "Final", icon: Star },
-    { id: "athletes", label: "Atletas", icon: Users },
+    { id: "roster", label: "Elenco Geral", icon: ClipboardList },
+    { id: "athletes", label: "Times", icon: Users },
   ];
 
   return (
@@ -2216,18 +2220,20 @@ export default function TournamentDetail() {
                   <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-200/50 rounded-full mb-6">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">
-                      {(team as any).athleteCount || 0} Atletas
+                      {tournamentAthletes.filter((a: any) => a.teamId === team.id).length} Atletas
                     </span>
                   </div>
 
-                  <Button 
-                    variant="outline" 
-                    className="w-full rounded-xl font-bold text-xs border-slate-200 hover:border-red/30 hover:text-red transition-all"
-                    onClick={() => setManagingTeam(team)}
-                  >
-                    <Users className="w-4 h-4 mr-1.5" />
-                    Gerenciar Elenco
-                  </Button>
+                  {isAuthenticated && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full rounded-xl font-bold text-xs border-slate-200 hover:border-red/30 hover:text-red transition-all"
+                      onClick={() => setManagingTeam(team)}
+                    >
+                      <Users className="w-4 h-4 mr-1.5" />
+                      Gerenciar Elenco
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -2238,6 +2244,101 @@ export default function TournamentDetail() {
                 onClose={() => setManagingTeam(null)} 
               />
             )}
+          </div>
+        )}
+
+        {activeTab === "roster" && (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-display text-xl font-semibold text-foreground">
+                  Elenco Geral do Torneio
+                </h2>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mt-1">
+                  {tournamentAthletes.length} atletas inscritos no total
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nº</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Atleta</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Equipe</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Posição</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Idade</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Documento</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {tournamentAthletes.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium italic">
+                          Nenhum atleta cadastrado neste torneio.
+                        </td>
+                      </tr>
+                    ) : (
+                      tournamentAthletes.sort((a: any, b: any) => {
+                        const teamA = teams.find(t => t.id === a.teamId)?.name || "";
+                        const teamB = teams.find(t => t.id === b.teamId)?.name || "";
+                        if (teamA !== teamB) return teamA.localeCompare(teamB);
+                        return a.name.localeCompare(b.name);
+                      }).map((a: any) => {
+                        const team = teams.find(t => t.id === a.teamId);
+                        const birthDate = a.birthDate ? new Date(a.birthDate) : null;
+                        const age = birthDate ? new Date().getFullYear() - birthDate.getFullYear() : null;
+
+                        return (
+                          <tr key={a.id} className="hover:bg-slate-50/30 transition-colors">
+                            <td className="px-6 py-4">
+                              <span className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 border border-slate-200/50">
+                                {a.number || "—"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
+                                  {a.photo ? (
+                                    <img src={a.photo} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <Users className="w-4 h-4 text-slate-300" />
+                                  )}
+                                </div>
+                                <span className="text-sm font-bold text-slate-700 uppercase truncate max-w-[200px]">{a.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: team?.color }} />
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tight">{team?.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-[10px] font-bold bg-red/5 text-red px-2 py-1 rounded-md uppercase tracking-wider">
+                                {a.position || "—"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-xs font-bold text-slate-500">
+                                {age ? `${age} anos` : "—"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-[10px] font-mono font-medium text-slate-400">
+                                {a.document || "—"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 

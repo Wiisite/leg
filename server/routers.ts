@@ -710,7 +710,24 @@ const tournamentRouter = router({
     const teamList = await getTeamsByTournament(input.id);
     const matchList = await getMatchesByTournament(input.id);
 
-    return { tournament, teams: teamList, matches: matchList };
+    // Buscar todos os atletas do torneio
+    const { getDb } = await import("./db");
+    const db = await getDb();
+    let tournamentAthletes: any[] = [];
+    if (db && teamList.length > 0) {
+      const teamIds = teamList.map((t) => t.id);
+      tournamentAthletes = await db
+        .select()
+        .from(athletes)
+        .where(inArray(athletes.teamId, teamIds));
+    }
+
+    return { 
+      tournament, 
+      teams: teamList, 
+      matches: matchList, 
+      athletes: tournamentAthletes 
+    };
   }),
 
   create: protectedProcedure
