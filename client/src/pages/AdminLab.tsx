@@ -30,6 +30,7 @@ export default function AdminLab() {
       toast.error(`Erro ao verificar banco: ${err.message}`);
     }
   });
+  const { data: settings } = trpc.site.getSettings.useQuery();
 
   if (loadingAuth) return null;
 
@@ -218,7 +219,10 @@ export default function AdminLab() {
         </div>
       </main>
 
-      <SiteFooter />
+      <SiteFooter 
+        footerLogoUrl={settings?.footerLogoUrl || ""} 
+        modalities={["futsal", "basquete", "volei", "handebol"]} 
+      />
     </div>
   );
 }
