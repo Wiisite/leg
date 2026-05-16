@@ -18,7 +18,7 @@ import {
   type OverallStandingsConfig,
   upsertSiteSettings,
 } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { matches, teams, tournaments, athletes } from "../drizzle/schema";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -721,7 +721,7 @@ const tournamentRouter = router({
     const athleteCounts = await db
       .select({ teamId: athletes.teamId, count: sql<number>`count(*)` })
       .from(athletes)
-      .where(sql`${athletes.teamId} IN (${sql.join(teamIds, sql`,`)})`)
+      .where(inArray(athletes.teamId, teamIds))
       .groupBy(athletes.teamId);
 
     const countMap = new Map(athleteCounts.map((c) => [c.teamId, Number(c.count)]));
