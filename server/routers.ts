@@ -19,7 +19,7 @@ import {
   upsertSiteSettings,
 } from "./db";
 import { eq, and, sql } from "drizzle-orm";
-import { matches, teams, tournaments } from "../drizzle/schema";
+import { matches, teams, tournaments, athletes } from "../drizzle/schema";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
