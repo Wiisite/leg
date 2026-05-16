@@ -133,6 +133,47 @@ export const systemRouter = router({
       }
     }),
 
+  listTestAthletes: adminProcedure
+    .query(async () => {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return [];
+
+      const { athletes } = await import("../../drizzle/schema");
+      const { like, desc } = await import("drizzle-orm");
+      
+      // Listar apenas atletas que tenham "Teste" no nome para não misturar
+      return await db.select()
+        .from(athletes)
+        .where(like(athletes.name, "%Teste%"))
+        .orderBy(desc(athletes.id))
+        .limit(10);
+    }),
+
+  testMatchEvent: adminProcedure
+    .input(z.object({ matchId: z.number(), teamId: z.number() }))
+    .mutation(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return { error: "DB not available" };
+
+      const { matchEvents } = await import("../../drizzle/schema");
+      
+      try {
+        await db.insert(matchEvents).values({
+          matchId: input.matchId,
+          teamId: input.teamId,
+          type: "goal",
+          period: 1,
+          minute: 10,
+        });
+
+        return { success: true };
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
+    }),
+
   notifyOwner: adminProcedure
     .input(
       z.object({

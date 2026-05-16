@@ -51,28 +51,42 @@ export default function AdminLab() {
     }
   });
 
+  const { data: testAthletes, refetch: refetchTestAthletes } = trpc.system.listTestAthletes.useQuery();
+
   const { data: tournaments } = trpc.tournament.list.useQuery();
   const testRegMutation = trpc.system.testAthleteRegistration.useMutation({
     onSuccess: (data) => {
       if (data.success) {
         toast.success(`Cadastro teste ok! ID: ${data.athlete?.id}`);
+        refetchTestAthletes();
       } else {
         toast.error(`Falha no cadastro: ${data.error}`);
       }
     }
   });
 
+  const testEventMutation = trpc.system.testMatchEvent.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success("Evento de súmula teste gravado!");
+      } else {
+        toast.error(`Falha na súmula: ${data.error}`);
+      }
+    }
+  });
+
   const runRegistrationTest = () => {
-    const firstTeamId = tournaments?.[0]?.id; // Apenas para teste, pegamos o ID de um torneio como teamId fake ou o primeiro time se houvesse lista de times
-    // Na verdade, precisamos de um teamId real. Vamos buscar os times do primeiro torneio.
     if (!tournaments || tournaments.length === 0) {
       toast.error("Crie um torneio primeiro para testar");
       return;
     }
-    // Para simplificar o teste, vamos usar o ID 1 se não tivermos certeza, mas o ideal é buscar um.
-    // Mas wait, getTeamsByTournament(tournaments[0].id)
-    toast.info("Iniciando teste de gravação...");
-    testRegMutation.mutate({ teamId: 1 }); // Usando ID 1 como chute para o teste inicial
+    toast.info("Iniciando teste de gravação de atleta...");
+    testRegMutation.mutate({ teamId: 1 });
+  };
+
+  const runEventTest = () => {
+    toast.info("Iniciando teste de súmula...");
+    testEventMutation.mutate({ matchId: 1, teamId: 1 });
   };
 
   const { data: settings } = trpc.site.getSettings.useQuery();
@@ -275,14 +289,32 @@ export default function AdminLab() {
                 <h4 className="font-bold mb-2">Cadastro Teste</h4>
                 <p className="text-slate-400 text-xs">Clique aqui para tentar cadastrar um atleta fictício e validar a gravação.</p>
               </button>
-              <div className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700/50 opacity-50">
-                <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center mb-4">
-                  <span className="font-black text-slate-400">03</span>
+              <button 
+                onClick={runEventTest}
+                disabled={testEventMutation.isPending}
+                className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700/50 hover:border-red/50 transition-all text-left"
+              >
+                <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center mb-4 text-white">
+                  {testEventMutation.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <span className="font-black text-slate-400">03</span>}
                 </div>
                 <h4 className="font-bold mb-2">Lançamento Súmula</h4>
-                <p className="text-slate-400 text-xs">Testar um evento de partida (ex: cartão amarelo).</p>
-              </div>
+                <p className="text-slate-400 text-xs">Testar um evento de partida (ex: gol) na nova tabela.</p>
+              </button>
             </div>
+
+            {testAthletes && testAthletes.length > 0 && (
+              <div className="mt-8 bg-slate-800/30 border border-slate-700/50 rounded-3xl p-6">
+                <h4 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Atletas de Teste Gravados no Banco:</h4>
+                <div className="flex flex-wrap gap-3">
+                  {testAthletes.map((ath) => (
+                    <div key={ath.id} className="bg-slate-900/50 px-4 py-2 rounded-xl border border-slate-700/50 flex items-center gap-3">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                      <span className="text-xs font-mono text-slate-300">ID {ath.id}: {ath.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
