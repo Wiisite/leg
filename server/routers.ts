@@ -710,27 +710,7 @@ const tournamentRouter = router({
     const teamList = await getTeamsByTournament(input.id);
     const matchList = await getMatchesByTournament(input.id);
 
-    // Buscar contagem de atletas por equipe
-    const { getDb } = await import("./db");
-    const db = await getDb();
-    if (!db || teamList.length === 0) {
-      return { tournament, teams: teamList, matches: matchList };
-    }
-
-    const teamIds = teamList.map((t) => t.id);
-    const athleteCounts = await db
-      .select({ teamId: athletes.teamId, count: sql<number>`count(*)` })
-      .from(athletes)
-      .where(inArray(athletes.teamId, teamIds))
-      .groupBy(athletes.teamId);
-
-    const countMap = new Map(athleteCounts.map((c) => [c.teamId, Number(c.count)]));
-
-    return {
-      tournament,
-      teams: teamList.map((t) => ({ ...t, athleteCount: countMap.get(t.id) || 0 })),
-      matches: matchList,
-    };
+    return { tournament, teams: teamList, matches: matchList };
   }),
 
   create: protectedProcedure
