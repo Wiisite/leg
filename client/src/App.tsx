@@ -18,6 +18,7 @@ import Clinicas from "./pages/Clinicas";
 import Contato from "./pages/Contato";
 import ClassificacaoGeral from "./pages/ClassificacaoGeral";
 import TeamPage from "./pages/TeamPage";
+import AdminLab from "./pages/AdminLab";
 
 const DEFAULT_DESCRIPTION = "Liga Escolar Guarulhense: acompanhe campeonatos, tabelas de jogos, resultados e classificacao das modalidades escolares.";
 
@@ -109,6 +110,7 @@ function Router() {
       <Route path="/contato" component={Contato} />
       <Route path="/classificacao-geral" component={ClassificacaoGeral} />
       <Route path="/equipe/:id" component={TeamPage} />
+      <Route path="/admin/lab" component={AdminLab} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

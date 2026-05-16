@@ -21,6 +21,7 @@ import {
   X,
   Upload,
   MinusCircle,
+  Database,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -145,6 +146,15 @@ export default function AdminDashboard() {
               ) : null}
             </button>
           ))}
+          {user?.openId === "admin-master" && (
+            <button
+              onClick={() => navigate("/admin/lab")}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red/10 hover:text-red transition-all group text-slate-400"
+            >
+              <Database className="w-5 h-5 shrink-0" />
+              {sidebarOpen && <span className="text-sm font-bold">Laboratório (Diagnóstico)</span>}
+            </button>
+          )}
         </nav>
 
         <div className="p-3 border-t border-white/5">

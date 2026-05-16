@@ -2,6 +2,8 @@ import { z } from "zod";
 import { notifyOwner } from "./notification";
 import { adminProcedure, publicProcedure, router } from "./trpc";
 
+import { sql } from "drizzle-orm";
+
 export const systemRouter = router({
   health: publicProcedure
     .input(
@@ -12,6 +14,30 @@ export const systemRouter = router({
     .query(() => ({
       ok: true,
     })),
+
+  checkDatabase: adminProcedure
+    .query(async () => {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return { error: "DB not available" };
+
+      const results: any = {};
+      try {
+        const [rows] = await db.execute(sql`DESCRIBE athletes`);
+        results.athletes = rows;
+      } catch (e: any) {
+        results.athletesError = e.message;
+      }
+
+      try {
+        const [rows] = await db.execute(sql`DESCRIBE match_events`);
+        results.match_events = rows;
+      } catch (e: any) {
+        results.match_eventsError = e.message;
+      }
+
+      return results;
+    }),
 
   notifyOwner: adminProcedure
     .input(
