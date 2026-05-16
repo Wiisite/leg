@@ -37,6 +37,20 @@ export default function AdminLab() {
     }
   };
 
+  const { mutate: forceSync, isPending: syncingDb } = trpc.system.forceSyncDatabase.useMutation({
+    onSuccess: (data: any) => {
+      if (data.athletesError || data.match_eventsError) {
+        toast.error("Erro em algumas tabelas. Veja os detalhes.");
+      } else {
+        toast.success("Tabelas criadas com sucesso!");
+      }
+      setDbResult(data);
+    },
+    onError: (err) => {
+      toast.error(`Falha crítica na sincronização: ${err.message}`);
+    }
+  });
+
   const { data: settings } = trpc.site.getSettings.useQuery();
 
   if (loadingAuth) return null;
@@ -87,14 +101,33 @@ export default function AdminLab() {
                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Diagnóstico de Banco de Dados</h2>
                 <p className="text-slate-500 text-sm mt-1">Verifique se as tabelas de atletas e súmula estão prontas para uso.</p>
               </div>
-              <Button 
-                onClick={() => checkDb()} 
-                disabled={diagQuery.isFetching}
-                className="bg-red hover:bg-red/90 text-white font-black px-8 h-14 rounded-2xl shadow-lg shadow-red/20 transition-all flex items-center gap-2"
-              >
-                {diagQuery.isFetching ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-                Executar Verificação
-              </Button>
+              <div className="flex gap-4">
+                <Button 
+                  onClick={() => checkDb()} 
+                  disabled={diagQuery.isFetching}
+                  variant="outline"
+                  className="border-slate-200 text-slate-600 font-bold px-6 h-14 rounded-2xl transition-all flex items-center gap-2"
+                >
+                  {diagQuery.isFetching ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                  Verificar
+                </Button>
+                <Button 
+                  onClick={() => forceSync()} 
+                  disabled={syncingDb}
+                  className="bg-red hover:bg-red/90 text-white font-black px-8 h-14 rounded-2xl shadow-lg shadow-red/20 transition-all flex items-center gap-2"
+                >
+                  {syncingDb ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                  Forçar Criação de Tabelas
+                </Button>
+              </div>
+            </div>
+
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-amber-800">Atenção</p>
+                <p className="text-xs text-amber-700">Se as tabelas acima mostrarem "Erro", clique no botão vermelho para tentar criá-las manualmente no banco de dados.</p>
+              </div>
             </div>
 
             {dbResult && (
