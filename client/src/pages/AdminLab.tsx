@@ -124,11 +124,11 @@ export default function AdminLab() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                          {dbResult.athletes?.map((col: any) => (
-                            <tr key={col.Field}>
-                              <td className="py-2 text-xs font-bold text-slate-700">{col.Field}</td>
-                              <td className="py-2 text-xs font-mono text-slate-400 uppercase">{col.Type}</td>
-                              <td className="py-2 text-xs text-slate-400">{col.Null}</td>
+                          {Array.isArray(dbResult.athletes) && dbResult.athletes.map((col: any) => (
+                            <tr key={col.Field || col.column_name}>
+                              <td className="py-2 text-xs font-bold text-slate-700">{col.Field || col.column_name}</td>
+                              <td className="py-2 text-xs font-mono text-slate-400 uppercase">{col.Type || col.column_type || col.data_type}</td>
+                              <td className="py-2 text-xs text-slate-400">{col.Null || col.is_nullable}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -144,7 +144,7 @@ export default function AdminLab() {
                       <TableIcon className="w-5 h-5 text-slate-400" />
                       Tabela: match_events
                     </h3>
-                    {dbResult.match_events ? (
+                    {dbResult.match_events && Array.isArray(dbResult.match_events) ? (
                       <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-3 py-1 flex items-center gap-1.5">
                         <CheckCircle2 className="w-3 h-3" /> Online
                       </Badge>
@@ -170,11 +170,11 @@ export default function AdminLab() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                          {dbResult.match_events?.map((col: any) => (
-                            <tr key={col.Field}>
-                              <td className="py-2 text-xs font-bold text-slate-700">{col.Field}</td>
-                              <td className="py-2 text-xs font-mono text-slate-400 uppercase">{col.Type}</td>
-                              <td className="py-2 text-xs text-slate-400">{col.Null}</td>
+                          {Array.isArray(dbResult.match_events) && dbResult.match_events.map((col: any) => (
+                            <tr key={col.Field || col.column_name}>
+                              <td className="py-2 text-xs font-bold text-slate-700">{col.Field || col.column_name}</td>
+                              <td className="py-2 text-xs font-mono text-slate-400 uppercase">{col.Type || col.column_type || col.data_type}</td>
+                              <td className="py-2 text-xs text-slate-400">{col.Null || col.is_nullable}</td>
                             </tr>
                           ))}
                         </tbody>
