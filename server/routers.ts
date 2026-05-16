@@ -714,12 +714,21 @@ const tournamentRouter = router({
     const { getDb } = await import("./db");
     const db = await getDb();
     let tournamentAthletes: any[] = [];
-    if (db && teamList.length > 0) {
-      const teamIds = teamList.map((t) => t.id);
-      tournamentAthletes = await db
-        .select()
-        .from(athletes)
-        .where(inArray(athletes.teamId, teamIds));
+
+    try {
+      if (db && teamList.length > 0) {
+        const teamIds = teamList.map((t) => t.id);
+        tournamentAthletes = await db
+          .select()
+          .from(athletes)
+          .where(inArray(athletes.teamId, teamIds));
+      }
+    } catch (err: any) {
+      console.error("[DB ERROR] Falha ao buscar atletas:", err);
+      throw new TRPCError({ 
+        code: "INTERNAL_SERVER_ERROR", 
+        message: `Erro na consulta de atletas: ${err.message}` 
+      });
     }
 
     return { 
