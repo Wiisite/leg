@@ -49,7 +49,7 @@ export const systemRouter = router({
       
       // Criar tabela athletes
       try {
-        await db.execute(sql`
+        await db.execute(sql.raw(`
           CREATE TABLE IF NOT EXISTS athletes (
             id int AUTO_INCREMENT PRIMARY KEY,
             teamId int NOT NULL,
@@ -63,7 +63,7 @@ export const systemRouter = router({
             createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
           )
-        `);
+        `));
         results.athletes = "Tabela athletes criada ou já existente";
       } catch (e: any) {
         results.athletesError = e.message;
@@ -71,7 +71,7 @@ export const systemRouter = router({
 
       // Criar tabela match_events
       try {
-        await db.execute(sql`
+        await db.execute(sql.raw(`
           CREATE TABLE IF NOT EXISTS match_events (
             id int AUTO_INCREMENT PRIMARY KEY,
             matchId int NOT NULL,
@@ -82,13 +82,41 @@ export const systemRouter = router({
             minute int,
             createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
           )
-        `);
+        `));
         results.match_events = "Tabela match_events criada ou já existente";
       } catch (e: any) {
         results.match_eventsError = e.message;
       }
 
       return results;
+    }),
+
+  testAthleteRegistration: adminProcedure
+    .input(z.object({ teamId: z.number() }))
+    .mutation(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return { error: "DB not available" };
+
+      const { athletes } = await import("../../drizzle/schema");
+      
+      try {
+        const testName = `Atleta Teste ${new Date().getTime()}`;
+        await db.insert(athletes).values({
+          teamId: input.teamId,
+          name: testName,
+          number: 99,
+          position: "Teste",
+        });
+
+        // Tentar ler de volta
+        const { eq } = await import("drizzle-orm");
+        const last = await db.select().from(athletes).where(eq(athletes.name, testName)).limit(1);
+        
+        return { success: true, athlete: last[0] };
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
     }),
 
   notifyOwner: adminProcedure

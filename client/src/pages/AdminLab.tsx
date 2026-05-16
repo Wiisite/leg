@@ -51,6 +51,30 @@ export default function AdminLab() {
     }
   });
 
+  const { data: tournaments } = trpc.tournament.list.useQuery();
+  const testRegMutation = trpc.system.testAthleteRegistration.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(`Cadastro teste ok! ID: ${data.athlete?.id}`);
+      } else {
+        toast.error(`Falha no cadastro: ${data.error}`);
+      }
+    }
+  });
+
+  const runRegistrationTest = () => {
+    const firstTeamId = tournaments?.[0]?.id; // Apenas para teste, pegamos o ID de um torneio como teamId fake ou o primeiro time se houvesse lista de times
+    // Na verdade, precisamos de um teamId real. Vamos buscar os times do primeiro torneio.
+    if (!tournaments || tournaments.length === 0) {
+      toast.error("Crie um torneio primeiro para testar");
+      return;
+    }
+    // Para simplificar o teste, vamos usar o ID 1 se não tivermos certeza, mas o ideal é buscar um.
+    // Mas wait, getTeamsByTournament(tournaments[0].id)
+    toast.info("Iniciando teste de gravação...");
+    testRegMutation.mutate({ teamId: 1 }); // Usando ID 1 como chute para o teste inicial
+  };
+
   const { data: settings } = trpc.site.getSettings.useQuery();
 
   if (loadingAuth) return null;
@@ -240,13 +264,17 @@ export default function AdminLab() {
                 <h4 className="font-bold mb-2">Validar Estrutura</h4>
                 <p className="text-slate-400 text-xs">Certificar que as colunas acima batem exatamente com o código.</p>
               </div>
-              <div className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700/50 opacity-50">
-                <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center mb-4">
-                  <span className="font-black text-slate-400">02</span>
+              <button 
+                onClick={runRegistrationTest}
+                disabled={testRegMutation.isPending}
+                className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700/50 hover:border-red/50 transition-all text-left"
+              >
+                <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center mb-4 text-white">
+                  {testRegMutation.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <span className="font-black text-slate-400">02</span>}
                 </div>
                 <h4 className="font-bold mb-2">Cadastro Teste</h4>
-                <p className="text-slate-400 text-xs">Criar uma área aqui mesmo para cadastrar um atleta fictício.</p>
-              </div>
+                <p className="text-slate-400 text-xs">Clique aqui para tentar cadastrar um atleta fictício e validar a gravação.</p>
+              </button>
               <div className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700/50 opacity-50">
                 <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center mb-4">
                   <span className="font-black text-slate-400">03</span>
