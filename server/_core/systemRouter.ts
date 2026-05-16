@@ -64,7 +64,14 @@ export const systemRouter = router({
             updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
           )
         `));
-        results.athletes = "Tabela athletes criada ou já existente";
+        
+        // Buscar colunas após criar
+        try {
+          const [rows] = await db.execute(sql.raw(`DESCRIBE athletes`));
+          results.athletes = rows;
+        } catch (e) {
+          results.athletes = "Tabela athletes criada";
+        }
       } catch (e: any) {
         results.athletesError = e.message;
       }
@@ -83,7 +90,14 @@ export const systemRouter = router({
             createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
           )
         `));
-        results.match_events = "Tabela match_events criada ou já existente";
+        
+        // Buscar colunas após criar
+        try {
+          const [rows] = await db.execute(sql.raw(`DESCRIBE match_events`));
+          results.match_events = rows;
+        } catch (e) {
+          results.match_events = "Tabela match_events criada";
+        }
       } catch (e: any) {
         results.match_eventsError = e.message;
       }
