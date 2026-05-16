@@ -174,6 +174,21 @@ export const systemRouter = router({
       }
     }),
 
+  listTestEvents: adminProcedure
+    .query(async () => {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return [];
+
+      const { matchEvents } = await import("../../drizzle/schema");
+      const { desc } = await import("drizzle-orm");
+      
+      return await db.select()
+        .from(matchEvents)
+        .orderBy(desc(matchEvents.id))
+        .limit(10);
+    }),
+
   notifyOwner: adminProcedure
     .input(
       z.object({

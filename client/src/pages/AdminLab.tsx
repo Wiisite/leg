@@ -53,11 +53,13 @@ export default function AdminLab() {
 
   const { data: testAthletes, refetch: refetchTestAthletes } = trpc.system.listTestAthletes.useQuery();
 
+  const { data: testEvents, refetch: refetchTestEvents } = trpc.system.listTestEvents.useQuery();
+
   const { data: tournaments } = trpc.tournament.list.useQuery();
   const testRegMutation = trpc.system.testAthleteRegistration.useMutation({
     onSuccess: (data) => {
       if (data.success) {
-        toast.success(`Cadastro teste ok! ID: ${data.athlete?.id}`);
+        toast.success(`Atleta cadastrado com sucesso! ID: ${data.athlete?.id}`);
         refetchTestAthletes();
       } else {
         toast.error(`Falha no cadastro: ${data.error}`);
@@ -68,7 +70,8 @@ export default function AdminLab() {
   const testEventMutation = trpc.system.testMatchEvent.useMutation({
     onSuccess: (data) => {
       if (data.success) {
-        toast.success("Evento de súmula teste gravado!");
+        toast.success("eventos sumula teste gravando");
+        refetchTestEvents();
       } else {
         toast.error(`Falha na súmula: ${data.error}`);
       }
@@ -302,17 +305,43 @@ export default function AdminLab() {
               </button>
             </div>
 
-            {testAthletes && testAthletes.length > 0 && (
-              <div className="mt-8 bg-slate-800/30 border border-slate-700/50 rounded-3xl p-6">
-                <h4 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Atletas de Teste Gravados no Banco:</h4>
-                <div className="flex flex-wrap gap-3">
-                  {testAthletes.map((ath) => (
-                    <div key={ath.id} className="bg-slate-900/50 px-4 py-2 rounded-xl border border-slate-700/50 flex items-center gap-3">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                      <span className="text-xs font-mono text-slate-300">ID {ath.id}: {ath.name}</span>
+            {(testAthletes?.length > 0 || testEvents?.length > 0) && (
+              <div className="mt-8 space-y-6">
+                {testAthletes && testAthletes.length > 0 && (
+                  <div className="bg-slate-800/30 border border-slate-700/50 rounded-3xl p-6">
+                    <h4 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Atletas de Teste Gravados:</h4>
+                    <div className="flex flex-wrap gap-3">
+                      {testAthletes.map((ath) => (
+                        <div key={ath.id} className="bg-slate-900/50 px-4 py-2 rounded-xl border border-slate-700/50 flex items-center gap-3">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                          <span className="text-xs font-mono text-slate-300">ID {ath.id}: {ath.name}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {testEvents && testEvents.length > 0 && (
+                  <div className="bg-slate-800/30 border border-slate-700/50 rounded-3xl p-6">
+                    <h4 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider text-amber-400">Eventos de Súmula Gravados:</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                      {testEvents.map((evt) => (
+                        <div key={evt.id} className="bg-slate-900/50 px-4 py-3 rounded-xl border border-slate-700/50 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                              <Trophy className="w-4 h-4 text-emerald-500" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{evt.type}</p>
+                              <p className="text-[10px] text-slate-400">Match ID: {evt.matchId} • Team ID: {evt.teamId}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-500">#{evt.id}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
