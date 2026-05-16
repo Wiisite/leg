@@ -24,7 +24,7 @@ import {
   Edit2,
   Plus,
   X,
-  X,
+  ShieldAlert,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
