@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminLab() {
   const { user, isAuthenticated, isLoading: loadingAuth } = useAuth();
