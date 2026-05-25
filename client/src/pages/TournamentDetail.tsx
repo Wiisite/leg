@@ -575,6 +575,7 @@ function MatchCard({
   teams,
   isAdmin,
   onEdit,
+  onShowSheet,
 }: {
   match: MatchForModal;
   teams: any[];
@@ -663,6 +664,7 @@ function MatchCardCompact({
   teams,
   isAdmin,
   onEdit,
+  onShowSheet,
 }: {
   match: MatchForModal;
   teams: any[];
