@@ -3,6 +3,7 @@ import { getLoginUrl, getRegisterUrl } from "@/const";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { sortTournamentsByCategoryGenderDivision } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Contact, Dribbble, Dumbbell, FileDown, LogOut, Menu, Target, Trophy, Volleyball, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
@@ -78,7 +79,9 @@ export default function ModalityPage() {
       : "") || DEFAULT_MODALITY_BANNER_IMAGE[modality] || DEFAULT_MODALITY_BANNER_IMAGE.futsal;
 
   const list = useMemo(
-    () => (tournaments || []).filter((t) => String(t.modality || "").toLowerCase() === modality),
+    () => sortTournamentsByCategoryGenderDivision(
+      (tournaments || []).filter((t) => String(t.modality || "").toLowerCase() === modality)
+    ),
     [tournaments, modality]
   );
 

@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { sortTournamentsByCategoryGenderDivision } from "@/lib/utils";
 import { getLoginUrl, getRegisterUrl } from "@/const";
 import { useLocation } from "wouter";
 import {
@@ -162,12 +163,16 @@ export default function Home() {
   };
 
   const groupedTournaments = useMemo(() => {
-    return tournaments?.reduce((acc, t) => {
+    const grouped = tournaments?.reduce((acc, t) => {
       const mod = t.modality || "outros";
       if (!acc[mod]) acc[mod] = [];
       acc[mod].push(t);
       return acc;
-    }, {} as Record<string, typeof tournaments>);
+    }, {} as Record<string, typeof tournaments>) ?? {};
+    Object.keys(grouped).forEach((mod) => {
+      grouped[mod] = sortTournamentsByCategoryGenderDivision(grouped[mod]) as typeof grouped[typeof mod];
+    });
+    return grouped;
   }, [tournaments]);
 
   const modalitiesInOrder = ["futsal", "basquete", "volei", "handebol"];

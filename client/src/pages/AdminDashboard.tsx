@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { sortTournamentsByCategoryGenderDivision } from "@/lib/utils";
 import { useLocation } from "wouter";
 import {
   Trophy,
@@ -240,9 +241,11 @@ function TournamentsSection({ tournaments, navigate }: { tournaments: any[], nav
     return acc;
   }, {} as Record<string, number>);
 
-  const filteredTournaments = activeModalityTab === "all"
-    ? tournaments
-    : tournaments.filter((tournament) => normalizedModality(tournament.modality) === activeModalityTab);
+  const filteredTournaments = sortTournamentsByCategoryGenderDivision(
+    activeModalityTab === "all"
+      ? tournaments
+      : tournaments.filter((tournament) => normalizedModality(tournament.modality) === activeModalityTab)
+  );
 
   return (
     <div className="space-y-8">
