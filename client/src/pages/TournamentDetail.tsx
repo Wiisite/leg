@@ -29,6 +29,7 @@ import {
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import * as XLSX from "xlsx";
 
 type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final" | "athletes";
 
@@ -45,6 +46,62 @@ type MatchForModal = {
   round?: number;
   date?: string | null;
 };
+
+type ImportedAthlete = {
+  name: string;
+  number: number | null;
+  document: string | null;
+  birthDate: string | null;
+  position: string | null;
+};
+
+const normalizeSpreadsheetKey = (value: string): string =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const getSpreadsheetValue = (row: Record<string, unknown>, keys: string[]): unknown => {
+  const normalized = new Map(Object.entries(row).map(([key, value]) => [normalizeSpreadsheetKey(key), value]));
+  for (const key of keys) {
+    const value = normalized.get(normalizeSpreadsheetKey(key));
+    if (value !== undefined && String(value).trim() !== "") return value;
+  }
+  return "";
+};
+
+const parseSpreadsheetDate = (value: unknown): string | null => {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  if (typeof value === "number") {
+    const parsed = XLSX.SSF.parse_date_code(value);
+    if (parsed) return `${String(parsed.y).padStart(4, "0")}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}`;
+  }
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const brDate = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (brDate) {
+    const year = brDate[3].length === 2 ? `20${brDate[3]}` : brDate[3];
+    return `${year}-${brDate[2].padStart(2, "0")}-${brDate[1].padStart(2, "0")}`;
+  }
+  return null;
+};
+
+const parseImportedAthleteRows = (rows: Record<string, unknown>[]): ImportedAthlete[] =>
+  rows
+    .map((row) => {
+      const name = String(getSpreadsheetValue(row, ["nome", "name", "atleta", "aluno", "jogador"])).trim();
+      const numberRaw = String(getSpreadsheetValue(row, ["numero", "número", "n", "nº", "camisa"])).trim();
+      const number = numberRaw ? Number.parseInt(numberRaw, 10) : null;
+      return {
+        name,
+        number: Number.isFinite(number) ? number : null,
+        document: String(getSpreadsheetValue(row, ["documento", "doc", "cpf", "rg", "cpf rg"])).trim() || null,
+        birthDate: parseSpreadsheetDate(getSpreadsheetValue(row, ["nascimento", "data nascimento", "data de nascimento", "birthdate"])),
+        position: String(getSpreadsheetValue(row, ["posicao", "posição", "position", "funcao", "função"])).trim() || null,
+      };
+    })
+    .filter((athlete) => athlete.name.length > 0);
 
 const normalizeDateForInput = (value?: string | null): string => {
   if (!value) return "";
@@ -1112,10 +1169,33 @@ function AthleteManagerModal({
     onError: (e) => toast.error(e.message),
   });
 
+  const importAthletes = trpc.athlete.importMany.useMutation({
+    onSuccess: (data) => {
+      refetch();
+      toast.success(`${data.count} atleta(s) importado(s) com sucesso!`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const handlePhotoUpload = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => setPhotoBase64(e.target?.result as string);
     reader.readAsDataURL(file);
+  };
+
+  const handleSpreadsheetImport = async (file: File) => {
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      if (!sheet) return toast.error("A planilha está vazia.");
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+      const parsedAthletes = parseImportedAthleteRows(rows);
+      if (parsedAthletes.length === 0) return toast.error("Nenhum atleta válido encontrado. Verifique se existe uma coluna Nome.");
+      importAthletes.mutate({ teamId: team.id, athletes: parsedAthletes });
+    } catch {
+      toast.error("Não foi possível ler a planilha.");
+    }
   };
 
   const handleAddAthlete = () => {
@@ -1145,6 +1225,27 @@ function AthleteManagerModal({
             <h3 className="font-black text-xl text-slate-800 uppercase tracking-tight">Elenco</h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{team.name}</p>
           </div>
+        </div>
+
+        <div className="mb-4">
+          <label className={`flex items-center justify-center gap-2 w-full h-11 rounded-2xl border border-dashed border-red/30 bg-red/5 text-red font-black text-[10px] uppercase tracking-widest transition-all ${importAthletes.isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red/10"}`}>
+            <FileDown className="w-4 h-4" />
+            {importAthletes.isPending ? "Importando..." : "Importar Excel / CSV"}
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              disabled={importAthletes.isPending}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.currentTarget.value = "";
+                if (file) handleSpreadsheetImport(file);
+              }}
+            />
+          </label>
+          <p className="mt-2 text-[10px] font-semibold text-slate-400 text-center">
+            Colunas aceitas: Nome, Número, Documento, Data de Nascimento e Posição.
+          </p>
         </div>
 
         {/* Form */}

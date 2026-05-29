@@ -2162,6 +2162,33 @@ const siteRouter = router({
        const { upsertAthlete } = await import("./db");
        return upsertAthlete(input);
      }),
+   importMany: protectedProcedure
+     .input(z.object({
+       teamId: z.number(),
+       athletes: z.array(z.object({
+         name: z.string().min(1),
+         number: z.number().optional().nullable(),
+         document: z.string().optional().nullable(),
+         birthDate: z.string().optional().nullable(),
+         position: z.string().optional().nullable(),
+       })).min(1),
+     }))
+     .mutation(async ({ input }) => {
+       const { upsertAthlete } = await import("./db");
+       for (const athlete of input.athletes) {
+         await upsertAthlete({
+           teamId: input.teamId,
+           name: athlete.name,
+           number: athlete.number ?? null,
+           document: athlete.document ?? null,
+           birthDate: athlete.birthDate ?? null,
+           position: athlete.position ?? null,
+           photo: null,
+           status: "active",
+         });
+       }
+       return { success: true, count: input.athletes.length };
+     }),
    delete: protectedProcedure
      .input(z.object({ id: z.number() }))
      .mutation(async ({ input }) => {
