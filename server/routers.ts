@@ -2281,7 +2281,7 @@ export const appRouter = router({
         console.log(`[Auth] Tentativa de login para usuário: ${input.username}`);
         
         const { getAdminByUsername, upsertUser } = await import("./db");
-        const MASTER_CODE = process.env.AUTH_SECRET || "LEG2026";
+        const MASTER_CODE = process.env.AUTH_SECRET;
         let authenticatedUser: any = null;
 
         // 1. Tenta buscar no Banco de Dados primeiro (permite troca de senha do admin)
@@ -2299,7 +2299,7 @@ export const appRouter = router({
           };
         } 
         // 2. Fallback para Login Mestre (caso a senha do banco falhe ou não exista)
-        else if (input.username === "admin" && input.password === MASTER_CODE) {
+        else if (MASTER_CODE && input.username === "admin" && input.password === MASTER_CODE) {
           console.log(`[Auth] Login via chave mestra autorizado para: admin`);
           authenticatedUser = {
             openId: "admin-master",

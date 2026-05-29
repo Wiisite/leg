@@ -55,7 +55,11 @@ export function registerOAuthRoutes(app: Express) {
   // Para entrar, basta acessar: /api/auth/master?code=SUA_SENHA
   app.get("/api/auth/master", async (req: Request, res: Response) => {
     const code = req.query.code;
-    const MASTER_CODE = process.env.AUTH_SECRET || "LEG2026"; 
+    const MASTER_CODE = process.env.AUTH_SECRET;
+
+    if (!MASTER_CODE) {
+      return res.status(503).send("Login administrativo indisponível. Configure AUTH_SECRET.");
+    }
 
     if (code !== MASTER_CODE) {
       return res.status(401).send("Código Administrativo Inválido. Use /api/auth/master?code=SENHA");

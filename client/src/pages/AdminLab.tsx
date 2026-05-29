@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminLab() {
-  const { user, isAuthenticated, isLoading: loadingAuth } = useAuth();
+  const { user, isAuthenticated, loading: loadingAuth } = useAuth();
   const [, navigate] = useLocation();
   const [dbResult, setDbResult] = useState<any>(null);
 
@@ -305,7 +305,7 @@ export default function AdminLab() {
               </button>
             </div>
 
-            {(testAthletes?.length > 0 || testEvents?.length > 0) && (
+            {((testAthletes?.length ?? 0) > 0 || (testEvents?.length ?? 0) > 0) && (
               <div className="mt-8 space-y-6">
                 {testAthletes && testAthletes.length > 0 && (
                   <div className="bg-slate-800/30 border border-slate-700/50 rounded-3xl p-6">

@@ -1,4 +1,3 @@
-import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
 import { useParams, useLocation } from "wouter";
 import { 
@@ -34,10 +33,10 @@ export default function TeamPage() {
   if (!profile) return null;
 
   const { team, athletes, matches } = profile;
-  const finishedMatches = matches.filter(m => m.status === 'finished').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const finishedMatches = matches.filter(m => m.status === 'finished').sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
   
   const stats = {
-    goals: athletes.reduce((acc, a) => acc + (a.goals || 0), 0),
+    goals: 0,
     matches: matches.length,
     athletes: athletes.length
   };
@@ -142,9 +141,9 @@ export default function TeamPage() {
                       <div className="flex gap-4">
                         <div className="flex items-center gap-1">
                            <Target className="w-3 h-3 text-slate-300" />
-                           <span className="text-[10px] font-black text-slate-400 uppercase">{a.goals || 0} GOLS</span>
+                           <span className="text-[10px] font-black text-slate-400 uppercase">0 GOLS</span>
                         </div>
-                        {a.isSuspended && (
+                        {a.status === "suspended" && (
                           <Badge className="bg-red text-white text-[8px] font-black uppercase">Suspenso</Badge>
                         )}
                       </div>

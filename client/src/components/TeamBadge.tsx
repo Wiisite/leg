@@ -1,7 +1,7 @@
 import React from "react";
 
 interface TeamBadgeProps {
-  team: {
+  team?: {
     name?: string;
     shortName?: string;
     logo?: string | null;

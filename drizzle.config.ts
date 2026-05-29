@@ -1,6 +1,10 @@
 import { defineConfig } from "drizzle-kit";
 
-const connectionString = process.env.DATABASE_URL || "mysql://user:pass@localhost:3306/db";
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL must be configured to run Drizzle");
+}
+
+const connectionString = process.env.DATABASE_URL;
 
 export default defineConfig({
   schema: "./drizzle/schema.ts",
