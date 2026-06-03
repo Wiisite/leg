@@ -2036,58 +2036,24 @@ export default function TournamentDetail() {
               </div>
             ) : (
               (() => {
-                const teamGroupMap = new Map(teams.map(t => [t.id, (t as any).groupName as string | null]));
-                const groupNamesSet = teams.map(t => (t as any).groupName).filter((g: any): g is string => g != null);
-                const uniqueGroups = groupNamesSet.filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).sort();
-                const hasMultipleGroups = uniqueGroups.length >= 2;
                 const sections = buildMatchScheduleSections(groupMatches);
 
                 return (
-                  <div className="space-y-12 max-w-6xl mx-auto">
+                  <div className="space-y-10 max-w-5xl mx-auto">
                     {sections.map((section) => (
                       <div key={section.key}>
-                        <div className="flex items-center gap-4 mb-3">
+                        <div className="flex items-center gap-3 mb-2">
                           <div className="h-px flex-1 bg-slate-300" />
-                          <h3 className="text-xs font-black text-slate-700 uppercase tracking-[0.2em] bg-slate-100 px-4 py-1.5 rounded-full border border-slate-300 shadow-sm">
+                          <h3 className="text-[11px] font-black text-slate-700 uppercase tracking-[0.18em] bg-white px-4 py-1.5 rounded-full border border-slate-200 shadow-sm">
                             {section.label}
                           </h3>
                           <div className="h-px flex-1 bg-slate-300" />
                         </div>
-                        <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-[0.12em] mb-6">
-                          {section.description}
-                        </p>
-                        {!hasMultipleGroups ? (
-                          <div className="grid gap-3 sm:grid-cols-2 max-w-3xl mx-auto">
-                            {section.matches.map((m) => (
-                              <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
-                            {uniqueGroups.map((gName: string) => {
-                              const groupTeamIds = new Set(teams.filter(t => (t as any).groupName === gName).map(t => t.id));
-                              const groupSectionMatches = section.matches.filter(m => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId));
-                              return (
-                                <div key={`${section.key}-${gName}`} className="space-y-3">
-                                  <div className={`text-center py-2 rounded-xl border font-black text-xs uppercase tracking-[0.2em] ${
-                                    gName === "A" ? "bg-red/5 border-red/20 text-red" : "bg-blue-500/5 border-blue-500/20 text-blue-600"
-                                  }`}>
-                                    Grupo {gName}
-                                  </div>
-                                  {groupSectionMatches.length === 0 ? (
-                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white/50 p-6 text-center text-xs font-bold uppercase tracking-widest text-slate-300">
-                                      Sem jogos nesta etapa
-                                    </div>
-                                  ) : (
-                                    groupSectionMatches.map((m) => (
-                                      <MatchCardCompact key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
-                                    ))
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                        <div className="grid gap-3 sm:grid-cols-2 max-w-5xl mx-auto">
+                          {section.matches.map((m) => (
+                            <MatchCardCompact key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>

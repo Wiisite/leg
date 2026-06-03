@@ -599,6 +599,7 @@ export default function Home() {
         </div>
       </section>
 
+      {false && (
       <section className="container mb-14">
         <div className="rounded-3xl border border-[#0A2D78]/15 bg-gradient-to-r from-[#05206F] via-[#10398B] to-[#D50000] text-white p-6 md:p-8 shadow-xl">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
@@ -643,6 +644,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       <section id="sobre" className="relative min-h-[420px] md:min-h-[520px] overflow-hidden">
         <div
