@@ -46,15 +46,26 @@ export default function ModalityPage() {
   const params = useParams<{ modality: string }>();
   const [, navigate] = useLocation();
   const modality = String(params?.modality || "").toLowerCase();
-  const currentYear = new Date().getFullYear();
-  const [selectedMonth, setSelectedMonth] = useState(5);
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [scheduleMonthAutoSelected, setScheduleMonthAutoSelected] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logoShrinkProgress, setLogoShrinkProgress] = useState(0);
 
   const { data: tournaments } = trpc.tournament.list.useQuery();
   const { data: homeNews } = trpc.tournament.getHomeNews.useQuery();
   const { data: siteSettings } = trpc.site.getSettings.useQuery();
+  const { data: scheduleMonths } = trpc.tournament.getModalityScheduleMonths.useQuery(
+    {
+      modality: modality as "futsal" | "basquete" | "volei" | "handebol",
+    },
+    {
+      enabled: Boolean(MODALITY_CONFIG[modality]),
+    }
+  );
   const { data: modalitySchedule, isLoading: scheduleLoading } = trpc.tournament.getModalitySchedule.useQuery(
     {
       modality: modality as "futsal" | "basquete" | "volei" | "handebol",
@@ -141,6 +152,23 @@ export default function ModalityPage() {
   }, [homeNews, modality, fallbackModalityNews]);
 
   const scheduleRows = modalitySchedule ?? [];
+
+  useEffect(() => {
+    setScheduleMonthAutoSelected(false);
+  }, [modality]);
+
+  useEffect(() => {
+    if (scheduleMonthAutoSelected || !scheduleMonths || scheduleMonths.length === 0) return;
+
+    const currentMonthStart = new Date(currentYear, currentMonth - 1, 1).getTime();
+    const futureOrCurrentMonth =
+      scheduleMonths.find((item) => new Date(item.year, item.month - 1, 1).getTime() >= currentMonthStart) ??
+      scheduleMonths[scheduleMonths.length - 1];
+
+    setSelectedMonth(futureOrCurrentMonth.month);
+    setSelectedYear(futureOrCurrentMonth.year);
+    setScheduleMonthAutoSelected(true);
+  }, [currentMonth, currentYear, scheduleMonthAutoSelected, scheduleMonths]);
 
   const handleDownloadSchedulePdf = () => {
     const url = `/api/modality/${modality}/schedule/pdf?month=${selectedMonth}&year=${selectedYear}`;

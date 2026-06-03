@@ -472,6 +472,44 @@ const tournamentRouter = router({
     return getAllTournaments();
   }),
 
+  getModalityScheduleMonths: publicProcedure
+    .input(
+      z.object({
+        modality: z.enum(["futsal", "basquete", "volei", "handebol"]),
+      })
+    )
+    .query(async ({ input }) => {
+      const tournaments = (await getAllTournaments()).filter(
+        (item) => String(item.modality || "").toLowerCase() === input.modality
+      );
+
+      const months = new Map<string, { month: number; year: number; firstDate: string }>();
+
+      for (const tournament of tournaments) {
+        const matchesList = await getMatchesByTournament(tournament.id);
+
+        for (const match of matchesList) {
+          if (match.status === "finished" || match.homeScore !== null || match.awayScore !== null) continue;
+
+          const parsedDate = parseIsoDate(match.date);
+          if (!parsedDate) continue;
+
+          const key = `${parsedDate.year}-${String(parsedDate.month).padStart(2, "0")}`;
+          const current = months.get(key);
+          const date = match.date || key;
+          if (!current || date < current.firstDate) {
+            months.set(key, {
+              month: parsedDate.month,
+              year: parsedDate.year,
+              firstDate: date,
+            });
+          }
+        }
+      }
+
+      return Array.from(months.values()).sort((a, b) => a.firstDate.localeCompare(b.firstDate));
+    }),
+
   getModalitySchedule: publicProcedure
     .input(
       z.object({
