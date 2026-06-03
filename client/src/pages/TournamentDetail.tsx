@@ -627,6 +627,78 @@ function MatchSheetModal({
   );
 }
 
+type MatchScheduleSection = {
+  key: string;
+  label: string;
+  description: string;
+  matches: MatchForModal[];
+};
+
+const hasMatchDate = (match: MatchForModal) => Boolean(formatMatchDate(match.date));
+const hasMatchTime = (match: MatchForModal) => Boolean(String(match.time || "").trim());
+const hasMatchLocation = (match: MatchForModal) => Boolean(String(match.location || "").trim());
+const isMatchFinished = (match: MatchForModal) =>
+  match.status === "finished" || match.homeScore !== null || match.awayScore !== null;
+const isMatchFullyScheduled = (match: MatchForModal) =>
+  hasMatchDate(match) && hasMatchTime(match) && hasMatchLocation(match);
+const isMatchPartiallyScheduled = (match: MatchForModal) =>
+  hasMatchDate(match) || hasMatchTime(match) || hasMatchLocation(match);
+
+const getMatchScheduleRank = (match: MatchForModal) => {
+  if (isMatchFinished(match)) return 0;
+  if (isMatchFullyScheduled(match)) return 1;
+  if (isMatchPartiallyScheduled(match)) return 2;
+  return 3;
+};
+
+const getMatchDateSortValue = (match: MatchForModal) => {
+  const raw = String(match.date || "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "9999-12-31";
+};
+
+const sortMatchesBySchedulingStatus = (matches: readonly MatchForModal[]) =>
+  [...matches].sort((a, b) => {
+    const rankDiff = getMatchScheduleRank(a) - getMatchScheduleRank(b);
+    if (rankDiff !== 0) return rankDiff;
+    const dateDiff = getMatchDateSortValue(a).localeCompare(getMatchDateSortValue(b));
+    if (dateDiff !== 0) return dateDiff;
+    const timeDiff = String(a.time || "99:99").localeCompare(String(b.time || "99:99"));
+    if (timeDiff !== 0) return timeDiff;
+    const roundDiff = Number(a.round ?? 0) - Number(b.round ?? 0);
+    if (roundDiff !== 0) return roundDiff;
+    return Number(a.id ?? 0) - Number(b.id ?? 0);
+  });
+
+const buildMatchScheduleSections = (matches: readonly MatchForModal[]): MatchScheduleSection[] => {
+  const sortedMatches = sortMatchesBySchedulingStatus(matches);
+  return [
+    {
+      key: "finished",
+      label: "Jogos realizados",
+      description: "Partidas com placar ou status finalizado.",
+      matches: sortedMatches.filter(isMatchFinished),
+    },
+    {
+      key: "scheduled",
+      label: "Jogos marcados",
+      description: "Partidas com data, horário e local confirmados.",
+      matches: sortedMatches.filter((match) => !isMatchFinished(match) && isMatchFullyScheduled(match)),
+    },
+    {
+      key: "partial",
+      label: "Em marcação",
+      description: "Partidas com alguma informação de agenda preenchida.",
+      matches: sortedMatches.filter((match) => !isMatchFinished(match) && !isMatchFullyScheduled(match) && isMatchPartiallyScheduled(match)),
+    },
+    {
+      key: "pending",
+      label: "A definir",
+      description: "Partidas ainda sem data, horário e local.",
+      matches: sortedMatches.filter((match) => !isMatchFinished(match) && !isMatchPartiallyScheduled(match)),
+    },
+  ].filter((section) => section.matches.length > 0);
+};
+
 function MatchCard({
   match,
   teams,
@@ -1964,75 +2036,58 @@ export default function TournamentDetail() {
               </div>
             ) : (
               (() => {
-                // Detecta se há múltiplos grupos pelas equipes
                 const teamGroupMap = new Map(teams.map(t => [t.id, (t as any).groupName as string | null]));
                 const groupNamesSet = teams.map(t => (t as any).groupName).filter((g: any): g is string => g != null);
                 const uniqueGroups = groupNamesSet.filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).sort();
                 const hasMultipleGroups = uniqueGroups.length >= 2;
+                const sections = buildMatchScheduleSections(groupMatches);
 
-                if (!hasMultipleGroups) {
-                  // Grupo único — exibe por rodada como antes
-                  return (
-                    <div className="space-y-12 max-w-5xl mx-auto">
-                      {groupMatches.map(m => m.round).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b).map(roundNum => (
-                        <div key={roundNum}>
-                          <div className="flex items-center gap-4 mb-6">
-                            <div className="h-px flex-1 bg-slate-300" />
-                            <h3 className="text-xs font-black text-slate-700 uppercase tracking-[0.2em] bg-slate-100 px-4 py-1.5 rounded-full border border-slate-300 shadow-sm">
-                              {roundNum}ª Rodada
-                            </h3>
-                            <div className="h-px flex-1 bg-slate-300" />
-                          </div>
+                return (
+                  <div className="space-y-12 max-w-6xl mx-auto">
+                    {sections.map((section) => (
+                      <div key={section.key}>
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="h-px flex-1 bg-slate-300" />
+                          <h3 className="text-xs font-black text-slate-700 uppercase tracking-[0.2em] bg-slate-100 px-4 py-1.5 rounded-full border border-slate-300 shadow-sm">
+                            {section.label}
+                          </h3>
+                          <div className="h-px flex-1 bg-slate-300" />
+                        </div>
+                        <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-[0.12em] mb-6">
+                          {section.description}
+                        </p>
+                        {!hasMultipleGroups ? (
                           <div className="grid gap-3 sm:grid-cols-2 max-w-3xl mx-auto">
-                            {groupMatches.filter(m => m.round === roundNum).map((m) => (
+                            {section.matches.map((m) => (
                               <MatchCard key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
                             ))}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }
-
-                // Múltiplos grupos — lado a lado, compacto por rodada
-                const groupData = uniqueGroups.map((gName: string) => {
-                  const groupTeamIds = new Set(teams.filter(t => (t as any).groupName === gName).map(t => t.id));
-                  const gMatches = groupMatches.filter(m => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId));
-                  const rounds = gMatches.map(m => m.round).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
-                  return { gName, gMatches, rounds };
-                });
-                const allRounds = groupData.flatMap(g => g.rounds).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
-
-                return (
-                  <div className="space-y-6 max-w-6xl mx-auto">
-                    {/* Group Headers */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-                      {groupData.map(({ gName }) => (
-                        <div key={gName} className={`text-center py-2 rounded-xl border font-black text-xs uppercase tracking-[0.2em] ${
-                          gName === "A" ? "bg-red/5 border-red/20 text-red" : "bg-blue-500/5 border-blue-500/20 text-blue-600"
-                        }`}>
-                          Grupo {gName}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Rounds side by side */}
-                    {allRounds.map(roundNum => (
-                      <div key={roundNum}>
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="h-px flex-1 bg-slate-300" />
-                          <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-full border border-slate-300">{roundNum}ª Rodada</span>
-                          <div className="h-px flex-1 bg-slate-300" />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
-                          {groupData.map(({ gName, gMatches }) => (
-                            <div key={gName} className="space-y-3">
-                              {gMatches.filter(m => m.round === roundNum).map((m) => (
-                                <MatchCardCompact key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
-                              ))}
-                            </div>
-                          ))}
-                        </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
+                            {uniqueGroups.map((gName: string) => {
+                              const groupTeamIds = new Set(teams.filter(t => (t as any).groupName === gName).map(t => t.id));
+                              const groupSectionMatches = section.matches.filter(m => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId));
+                              return (
+                                <div key={`${section.key}-${gName}`} className="space-y-3">
+                                  <div className={`text-center py-2 rounded-xl border font-black text-xs uppercase tracking-[0.2em] ${
+                                    gName === "A" ? "bg-red/5 border-red/20 text-red" : "bg-blue-500/5 border-blue-500/20 text-blue-600"
+                                  }`}>
+                                    Grupo {gName}
+                                  </div>
+                                  {groupSectionMatches.length === 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white/50 p-6 text-center text-xs font-bold uppercase tracking-widest text-slate-300">
+                                      Sem jogos nesta etapa
+                                    </div>
+                                  ) : (
+                                    groupSectionMatches.map((m) => (
+                                      <MatchCardCompact key={m.id} match={m} teams={teams} isAdmin={isAuthenticated} onEdit={setEditingMatch} onShowSheet={setShowingMatchSheet} />
+                                    ))
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
