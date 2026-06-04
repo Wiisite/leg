@@ -67,6 +67,17 @@ const getScheduleDivisionClasses = (division: string) => {
   };
 };
 
+const getScheduleDivisionRank = (division: string) => {
+  const normalized = division
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (/1|primeira|ouro/.test(normalized)) return 1;
+  if (/2|segunda|prata/.test(normalized)) return 2;
+  return 99;
+};
+
 export default function ModalityPage() {
   const { isAuthenticated, logout } = useAuth();
   const params = useParams<{ modality: string }>();
@@ -178,6 +189,25 @@ export default function ModalityPage() {
   }, [homeNews, modality, fallbackModalityNews]);
 
   const scheduleRows = modalitySchedule ?? [];
+  const scheduleSections = useMemo(() => {
+    const sectionMap = new Map<string, typeof scheduleRows>();
+
+    scheduleRows.forEach((match) => {
+      const division = match.division || "Sem divisão";
+      const current = sectionMap.get(division) ?? [];
+      current.push(match);
+      sectionMap.set(division, current);
+    });
+
+    return Array.from(sectionMap.entries())
+      .sort(([divisionA], [divisionB]) => {
+        const rankA = getScheduleDivisionRank(divisionA);
+        const rankB = getScheduleDivisionRank(divisionB);
+        if (rankA !== rankB) return rankA - rankB;
+        return divisionA.localeCompare(divisionB, "pt-BR");
+      })
+      .map(([division, matches]) => ({ division, matches }));
+  }, [scheduleRows]);
 
   useEffect(() => {
     setScheduleMonthAutoSelected(false);
@@ -447,48 +477,59 @@ export default function ModalityPage() {
                   Não há jogos cadastrados para este mês na modalidade {config.label}.
                 </div>
               ) : (
-                <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[760px]">
-                      <thead>
-                        <tr className="text-[11px] uppercase tracking-[0.12em] text-slate-500 bg-white">
-                          <th className="text-left px-3 py-2 font-black">Data</th>
-                          <th className="text-left px-3 py-2 font-black">Horário</th>
-                          <th className="text-left px-3 py-2 font-black">Categoria</th>
-                          <th className="text-left px-3 py-2 font-black">Equipe A</th>
-                          <th className="text-left px-3 py-2 font-black">Equipe B</th>
-                          <th className="text-left px-3 py-2 font-black">Endereço</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {scheduleRows.map((match) => {
-                          const divisionClasses = getScheduleDivisionClasses(match.division);
-                          return (
-                            <tr
-                              key={`schedule-${match.matchId}`}
-                              onClick={() => navigate(`/torneio/${match.tournamentId}`)}
-                              className={`border-t border-slate-100 text-sm text-slate-700 cursor-pointer transition-colors ${divisionClasses.row}`}
-                            >
-                              <td className="px-3 py-2.5 font-bold">{match.formattedDate}</td>
-                              <td className="px-3 py-2.5 font-bold">{match.time}</td>
-                              <td className="px-3 py-2.5">
-                                <p className="font-semibold text-slate-700">{match.category}</p>
-                                <span className={`inline-flex mt-1 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] ${divisionClasses.badge}`}>
-                                  {match.division}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2.5">{match.homeTeam}</td>
-                              <td className="px-3 py-2.5">{match.awayTeam}</td>
-                              <td className="px-3 py-2.5 text-slate-500">
-                                <p className="text-slate-700">{match.location}</p>
-                                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.tournamentName}</p>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="space-y-5">
+                  {scheduleSections.map((section) => {
+                    const divisionClasses = getScheduleDivisionClasses(section.division);
+                    return (
+                      <div key={`schedule-section-${section.division}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className={`flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 ${divisionClasses.row}`}>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Divisão</p>
+                            <h4 className="text-lg font-black uppercase tracking-tight text-slate-900">{section.division}</h4>
+                          </div>
+                          <span className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.1em] ${divisionClasses.badge}`}>
+                            {section.matches.length} jogo{section.matches.length === 1 ? "" : "s"}
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[760px]">
+                            <thead>
+                              <tr className="bg-slate-50 text-[11px] uppercase tracking-[0.12em] text-slate-500">
+                                <th className="text-left px-3 py-2 font-black">Data</th>
+                                <th className="text-left px-3 py-2 font-black">Horário</th>
+                                <th className="text-left px-3 py-2 font-black">Categoria</th>
+                                <th className="text-left px-3 py-2 font-black">Equipe A</th>
+                                <th className="text-left px-3 py-2 font-black">Equipe B</th>
+                                <th className="text-left px-3 py-2 font-black">Endereço</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {section.matches.map((match) => (
+                                <tr
+                                  key={`schedule-${match.matchId}`}
+                                  onClick={() => navigate(`/torneio/${match.tournamentId}`)}
+                                  className="border-t border-slate-100 text-sm text-slate-700 cursor-pointer transition-colors hover:bg-slate-50"
+                                >
+                                  <td className="px-3 py-2.5 font-black text-slate-900">{match.formattedDate}</td>
+                                  <td className="px-3 py-2.5 font-black text-[#05206F]">{match.time}</td>
+                                  <td className="px-3 py-2.5">
+                                    <p className="font-bold text-slate-800">{match.category}</p>
+                                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.tournamentName}</p>
+                                  </td>
+                                  <td className="px-3 py-2.5 font-semibold">{match.homeTeam}</td>
+                                  <td className="px-3 py-2.5 font-semibold">{match.awayTeam}</td>
+                                  <td className="px-3 py-2.5 text-slate-600">
+                                    <p className="font-medium text-slate-700">{match.location}</p>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
