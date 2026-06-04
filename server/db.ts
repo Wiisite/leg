@@ -85,6 +85,7 @@ async function runMigrations(db: ReturnType<typeof drizzle>) {
     // Drizzle usa '--> statement-breakpoint' para separar statements
     const statements = content
       .split("--> statement-breakpoint")
+      .flatMap((chunk) => chunk.split(/;\s*(?=(?:ALTER|CREATE|INSERT|UPDATE|DELETE|DROP)\b)/i))
       .map((s) => s.trim())
       .filter(Boolean);
 
