@@ -1443,11 +1443,20 @@ export default function TournamentDetail() {
   });
 
   const utils = trpc.useUtils();
+  const invalidateTournamentViews = () => {
+    utils.tournament.getById.invalidate({ id: tournamentId });
+    utils.tournament.list.invalidate();
+    utils.tournament.getHomeNews.invalidate();
+    utils.tournament.getModalitySchedule.invalidate();
+    utils.tournament.getModalityScheduleMonths.invalidate();
+  };
+
   const updateScore = trpc.match.updateScore.useMutation({
     onSuccess: () => {
       refetch();
       refetchBracket();
       utils.tournament.getStandings.invalidate({ tournamentId });
+      invalidateTournamentViews();
       setEditingMatch(null);
       toast.success("Dados da partida atualizados!");
     },
@@ -1455,17 +1464,17 @@ export default function TournamentDetail() {
   });
 
   const generateGroups = trpc.tournament.generateGroupMatches.useMutation({
-    onSuccess: () => { refetch(); toast.success("Confrontos gerados!"); },
+    onSuccess: () => { refetch(); invalidateTournamentViews(); toast.success("Confrontos gerados!"); },
     onError: (e) => toast.error(e.message),
   });
 
   const generateSemis = trpc.tournament.generateSemifinals.useMutation({
-    onSuccess: () => { refetch(); refetchBracket(); setActiveTab("semifinals"); toast.success("Semifinais geradas!"); },
+    onSuccess: () => { refetch(); refetchBracket(); invalidateTournamentViews(); setActiveTab("semifinals"); toast.success("Semifinais geradas!"); },
     onError: (e) => toast.error(e.message),
   });
 
   const generateFinal = trpc.tournament.generateFinal.useMutation({
-    onSuccess: () => { refetch(); refetchBracket(); setActiveTab("final"); toast.success("Final gerada!"); },
+    onSuccess: () => { refetch(); refetchBracket(); invalidateTournamentViews(); setActiveTab("final"); toast.success("Final gerada!"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -1488,6 +1497,7 @@ export default function TournamentDetail() {
       toast.success("Torneio atualizado com sucesso!");
       setIsEditingTournament(false);
       refetch();
+      invalidateTournamentViews();
     },
     onError: (err) => {
       toast.error("Erro ao atualizar: " + err.message);

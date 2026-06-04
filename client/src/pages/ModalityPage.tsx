@@ -41,6 +41,32 @@ const MONTH_OPTIONS = [
   { value: 12, label: "Dezembro" },
 ];
 
+const getScheduleDivisionClasses = (division: string) => {
+  const normalized = division
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (/1|primeira|ouro/.test(normalized)) {
+    return {
+      row: "bg-red-50/45 hover:bg-red-50",
+      badge: "bg-red-100 text-red border-red/20",
+    };
+  }
+
+  if (/2|segunda|prata/.test(normalized)) {
+    return {
+      row: "bg-blue-50/55 hover:bg-blue-50",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
+    };
+  }
+
+  return {
+    row: "hover:bg-blue-50/55",
+    badge: "bg-slate-100 text-slate-500 border-slate-200",
+  };
+};
+
 export default function ModalityPage() {
   const { isAuthenticated, logout } = useAuth();
   const params = useParams<{ modality: string }>();
@@ -435,26 +461,31 @@ export default function ModalityPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {scheduleRows.map((match) => (
-                          <tr
-                            key={`schedule-${match.matchId}`}
-                            onClick={() => navigate(`/torneio/${match.tournamentId}`)}
-                            className="border-t border-slate-100 text-sm text-slate-700 cursor-pointer hover:bg-blue-50/55 transition-colors"
-                          >
-                            <td className="px-3 py-2.5 font-bold">{match.formattedDate}</td>
-                            <td className="px-3 py-2.5 font-bold">{match.time}</td>
-                            <td className="px-3 py-2.5">
-                              <p className="font-semibold text-slate-700">{match.category}</p>
-                              <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.division}</p>
-                            </td>
-                            <td className="px-3 py-2.5">{match.homeTeam}</td>
-                            <td className="px-3 py-2.5">{match.awayTeam}</td>
-                            <td className="px-3 py-2.5 text-slate-500">
-                              <p className="text-slate-700">{match.location}</p>
-                              <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.tournamentName}</p>
-                            </td>
-                          </tr>
-                        ))}
+                        {scheduleRows.map((match) => {
+                          const divisionClasses = getScheduleDivisionClasses(match.division);
+                          return (
+                            <tr
+                              key={`schedule-${match.matchId}`}
+                              onClick={() => navigate(`/torneio/${match.tournamentId}`)}
+                              className={`border-t border-slate-100 text-sm text-slate-700 cursor-pointer transition-colors ${divisionClasses.row}`}
+                            >
+                              <td className="px-3 py-2.5 font-bold">{match.formattedDate}</td>
+                              <td className="px-3 py-2.5 font-bold">{match.time}</td>
+                              <td className="px-3 py-2.5">
+                                <p className="font-semibold text-slate-700">{match.category}</p>
+                                <span className={`inline-flex mt-1 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] ${divisionClasses.badge}`}>
+                                  {match.division}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5">{match.homeTeam}</td>
+                              <td className="px-3 py-2.5">{match.awayTeam}</td>
+                              <td className="px-3 py-2.5 text-slate-500">
+                                <p className="text-slate-700">{match.location}</p>
+                                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{match.tournamentName}</p>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
