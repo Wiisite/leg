@@ -93,9 +93,21 @@ async function runMigrations(db: ReturnType<typeof drizzle>) {
       try {
         await db.execute(sql.raw(stmt));
       } catch (e: any) {
-        // Ignora erros de "tabela já existe" ou "coluna já existe" para permitir que o deploy continue
-        if (e.code === 'ER_TABLE_EXISTS_ERROR' || e.code === 'ER_DUP_FIELDNAME' || e.message?.includes("already exists")) {
-          console.warn(`[Migrations] Ignorando erro em ${entry.tag}: ${e.message}`);
+        const nested = e?.cause ?? e?.original ?? e;
+        const code = nested?.code ?? e?.code;
+        const message = String(
+          nested?.sqlMessage ??
+          nested?.message ??
+          e?.message ??
+          "",
+        );
+        if (
+          code === "ER_TABLE_EXISTS_ERROR" ||
+          code === "ER_DUP_FIELDNAME" ||
+          message.includes("already exists") ||
+          message.includes("Duplicate column")
+        ) {
+          console.warn(`[Migrations] Ignorando erro em ${entry.tag}: ${message}`);
         } else {
           throw e;
         }
