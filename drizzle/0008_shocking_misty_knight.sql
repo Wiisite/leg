@@ -25,6 +25,8 @@ CREATE TABLE `match_events` (
 	CONSTRAINT `match_events_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+ALTER TABLE `teams` ADD `logo` longtext;--> statement-breakpoint
+ALTER TABLE `teams` ADD `groupName` varchar(2);--> statement-breakpoint
 ALTER TABLE `teams` MODIFY COLUMN `logo` longtext;--> statement-breakpoint
 ALTER TABLE `tournaments` MODIFY COLUMN `modality` enum('futsal','basquete','volei','handebol','extra1','extra2') NOT NULL DEFAULT 'futsal';--> statement-breakpoint
 ALTER TABLE `site_settings` ADD `contactConfigJson` longtext;--> statement-breakpoint
