@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
@@ -133,6 +134,7 @@ function App() {
               },
             }}
           />
+          <PwaInstallPrompt />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
