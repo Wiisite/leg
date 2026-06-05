@@ -197,9 +197,11 @@ export default function ModalityPage() {
   const scheduleRows = modalitySchedule ?? [];
   const scheduleSections = useMemo(() => {
     const sectionMap = new Map<string, typeof scheduleRows>();
+    const divisions = new Set(scheduleRows.map((match) => match.division || "Sem divisão"));
+    const shouldPromoteGeneralToSecondDivision = divisions.has("1ª Divisão") && divisions.has("Geral") && !divisions.has("2ª Divisão");
 
     scheduleRows.forEach((match) => {
-      const division = match.division || "Sem divisão";
+      const division = shouldPromoteGeneralToSecondDivision && match.division === "Geral" ? "2ª Divisão" : match.division || "Sem divisão";
       const current = sectionMap.get(division) ?? [];
       current.push(match);
       sectionMap.set(division, current);
