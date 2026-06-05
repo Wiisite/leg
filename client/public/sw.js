@@ -1,4 +1,4 @@
-const CACHE_NAME = "leg-2026-static-v2";
+const CACHE_NAME = "leg-2026-static-v3";
 const APP_SHELL = [
   "/",
   "/index.html",

@@ -443,9 +443,9 @@ function normalizeForGrouping(value: string): string {
 function detectDivisionLabel(tournamentName: string, category: string): string {
   const source = normalizeForGrouping(`${tournamentName} ${category}`);
 
-  if (/(1a|1o|primeira|1\.)\s*divis/.test(source)) return "1ª Divisão";
-  if (/(2a|2o|segunda|2\.)\s*divis/.test(source)) return "2ª Divisão";
-  if (/(3a|3o|terceira|3\.)\s*divis/.test(source)) return "3ª Divisão";
+  if (/(1a|1o|1ª|1º|1\.)\s*(divis|serie)|\b1\s*(divis|serie)|primeira\s*(divis|serie)/.test(source)) return "1ª Divisão";
+  if (/(2a|2o|2ª|2º|2\.)\s*(divis|serie)|\b2\s*(divis|serie)|segunda\s*(divis|serie)/.test(source)) return "2ª Divisão";
+  if (/(3a|3o|3ª|3º|3\.)\s*(divis|serie)|\b3\s*(divis|serie)|terceira\s*(divis|serie)/.test(source)) return "3ª Divisão";
   if (/ouro/.test(source)) return "Série Ouro";
   if (/prata/.test(source)) return "Série Prata";
   return "Geral";

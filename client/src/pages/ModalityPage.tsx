@@ -49,20 +49,26 @@ const getScheduleDivisionClasses = (division: string) => {
 
   if (/1|primeira|ouro/.test(normalized)) {
     return {
-      row: "bg-red-50/45 hover:bg-red-50",
-      badge: "bg-red-100 text-red border-red/20",
+      section: "border-red-300 ring-2 ring-red-100",
+      header: "bg-gradient-to-r from-[#D50000] to-[#8B0000] text-white",
+      row: "bg-red-50/70 hover:bg-red-100/80 border-l-4 border-l-[#D50000]",
+      badge: "bg-white text-[#D50000] border-white/70",
     };
   }
 
   if (/2|segunda|prata/.test(normalized)) {
     return {
-      row: "bg-blue-50/55 hover:bg-blue-50",
-      badge: "bg-blue-100 text-blue-700 border-blue-200",
+      section: "border-blue-300 ring-2 ring-blue-100",
+      header: "bg-gradient-to-r from-[#05206F] to-[#1D4ED8] text-white",
+      row: "bg-blue-50/80 hover:bg-blue-100/80 border-l-4 border-l-[#05206F]",
+      badge: "bg-white text-[#05206F] border-white/70",
     };
   }
 
   return {
-    row: "hover:bg-blue-50/55",
+    section: "border-slate-200",
+    header: "bg-slate-100 text-slate-900",
+    row: "hover:bg-blue-50/55 border-l-4 border-l-slate-200",
     badge: "bg-slate-100 text-slate-500 border-slate-200",
   };
 };
@@ -481,11 +487,11 @@ export default function ModalityPage() {
                   {scheduleSections.map((section) => {
                     const divisionClasses = getScheduleDivisionClasses(section.division);
                     return (
-                      <div key={`schedule-section-${section.division}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className={`flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 ${divisionClasses.row}`}>
+                      <div key={`schedule-section-${section.division}`} className={`overflow-hidden rounded-2xl border bg-white shadow-md ${divisionClasses.section}`}>
+                        <div className={`flex flex-wrap items-center justify-between gap-2 px-4 py-4 ${divisionClasses.header}`}>
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Divisão</p>
-                            <h4 className="text-lg font-black uppercase tracking-tight text-slate-900">{section.division}</h4>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-80">Divisão</p>
+                            <h4 className="text-xl font-black uppercase tracking-tight">{section.division}</h4>
                           </div>
                           <span className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.1em] ${divisionClasses.badge}`}>
                             {section.matches.length} jogo{section.matches.length === 1 ? "" : "s"}
@@ -509,7 +515,7 @@ export default function ModalityPage() {
                                 <tr
                                   key={`schedule-${match.matchId}`}
                                   onClick={() => navigate(`/torneio/${match.tournamentId}`)}
-                                  className="border-t border-slate-100 text-sm text-slate-700 cursor-pointer transition-colors hover:bg-slate-50"
+                                  className={`border-t border-slate-100 text-sm text-slate-700 cursor-pointer transition-colors ${divisionClasses.row}`}
                                 >
                                   <td className="px-3 py-2.5 font-black text-slate-900">{match.formattedDate}</td>
                                   <td className="px-3 py-2.5 font-black text-[#05206F]">{match.time}</td>
