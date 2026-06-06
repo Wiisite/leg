@@ -1255,6 +1255,26 @@ function AthleteManagerModal({
     reader.readAsDataURL(file);
   };
 
+  const handleDownloadTemplate = () => {
+    const rows = [
+      { "Nome": "João da Silva", "Número": 10, "Documento": "123.456.789-00", "Data de Nascimento": "15/03/2005", "Posição": "Atacante" },
+      { "Nome": "Pedro Souza", "Número": 7, "Documento": "987.654.321-00", "Data de Nascimento": "22/08/2006", "Posição": "Meio-campo" },
+      { "Nome": "Carlos Lima", "Número": 1, "Documento": "", "Data de Nascimento": "10/11/2004", "Posição": "Goleiro" },
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(rows, {
+      header: ["Nome", "Número", "Documento", "Data de Nascimento", "Posição"],
+    });
+    worksheet["!cols"] = [{ wch: 28 }, { wch: 10 }, { wch: 18 }, { wch: 20 }, { wch: 16 }];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Elenco");
+    const safeName = (team.shortName || team.name || "equipe")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .toLowerCase();
+    XLSX.writeFile(workbook, `modelo-elenco-${safeName}.xlsx`);
+  };
+
   const handleSpreadsheetImport = async (file: File) => {
     try {
       const buffer = await file.arrayBuffer();
@@ -1263,7 +1283,10 @@ function AthleteManagerModal({
       if (!sheet) return toast.error("A planilha está vazia.");
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
       const parsedAthletes = parseImportedAthleteRows(rows);
-      if (parsedAthletes.length === 0) return toast.error("Nenhum atleta válido encontrado. Verifique se existe uma coluna Nome.");
+      if (parsedAthletes.length === 0) {
+        const headers = rows.length > 0 ? Object.keys(rows[0]).join(", ") : "(planilha vazia)";
+        return toast.error(`Nenhum atleta válido encontrado. Cabeçalhos lidos: ${headers}. É obrigatório existir uma coluna "Nome".`);
+      }
       importAthletes.mutate({ teamId: team.id, athletes: parsedAthletes });
     } catch {
       toast.error("Não foi possível ler a planilha.");
@@ -1300,23 +1323,33 @@ function AthleteManagerModal({
         </div>
 
         <div className="mb-4">
-          <label className={`flex items-center justify-center gap-2 w-full h-11 rounded-2xl border border-dashed border-red/30 bg-red/5 text-red font-black text-[10px] uppercase tracking-widest transition-all ${importAthletes.isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red/10"}`}>
-            <FileDown className="w-4 h-4" />
-            {importAthletes.isPending ? "Importando..." : "Importar Excel / CSV"}
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              className="hidden"
-              disabled={importAthletes.isPending}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.currentTarget.value = "";
-                if (file) handleSpreadsheetImport(file);
-              }}
-            />
-          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl border border-dashed border-slate-300 bg-white text-slate-600 font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer hover:bg-slate-50"
+            >
+              <FileDown className="w-4 h-4" />
+              Baixar modelo
+            </button>
+            <label className={`flex items-center justify-center gap-2 w-full h-11 rounded-2xl border border-dashed border-red/30 bg-red/5 text-red font-black text-[10px] uppercase tracking-widest transition-all ${importAthletes.isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red/10"}`}>
+              <FileDown className="w-4 h-4" />
+              {importAthletes.isPending ? "Importando..." : "Importar Excel / CSV"}
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                disabled={importAthletes.isPending}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.currentTarget.value = "";
+                  if (file) handleSpreadsheetImport(file);
+                }}
+              />
+            </label>
+          </div>
           <p className="mt-2 text-[10px] font-semibold text-slate-400 text-center">
-            Colunas aceitas: Nome, Número, Documento, Data de Nascimento e Posição.
+            Baixe o modelo, preencha e reenvie. Colunas: Nome (obrigatório), Número, Documento, Data de Nascimento e Posição.
           </p>
         </div>
 
