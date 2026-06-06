@@ -2273,6 +2273,16 @@ const siteRouter = router({
        }
        return { success: true };
      }),
+   updateEventAthlete: protectedProcedure
+     .input(z.object({
+       id: z.number(),
+       athleteId: z.number().nullable(),
+     }))
+     .mutation(async ({ input }) => {
+       const { updateMatchEventAthlete } = await import("./db");
+       await updateMatchEventAthlete(input.id, input.athleteId);
+       return { success: true };
+     }),
    removeEvent: protectedProcedure
      .input(z.object({ id: z.number(), matchId: z.number() }))
      .mutation(async ({ input }) => {

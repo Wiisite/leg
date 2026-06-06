@@ -953,3 +953,9 @@ export async function removeMatchEvent(id: number) {
   if (!db) throw new Error("DB not available");
   await db.delete(matchEvents).where(eq(matchEvents.id, id));
 }
+
+export async function updateMatchEventAthlete(id: number, athleteId: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(matchEvents).set({ athleteId }).where(eq(matchEvents.id, id));
+}

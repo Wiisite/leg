@@ -461,16 +461,24 @@ function MatchSheetModal({
     onError: (e) => toast.error(e.message),
   });
 
+  const updateEventAthlete = trpc.matchSheet.updateEventAthlete.useMutation({
+    onSuccess: () => {
+      refetchEvents();
+      toast.success("Autor do evento atualizado!");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const EventList = ({ teamId }: { teamId: number }) => {
     const teamEvents = events?.filter(e => e.teamId === teamId) || [];
+    const teamAthletes = teamId === match.homeTeamId ? (homeAthletes || []) : (awayAthletes || []);
     return (
       <div className="space-y-1.5">
         {teamEvents.map(e => {
-          const athlete = [...(homeAthletes || []), ...(awayAthletes || [])].find(a => a.id === e.athleteId);
           return (
             <div key={e.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-[10px] font-bold border border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className={`w-8 h-5 flex items-center justify-center rounded text-[8px] font-black ${
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className={`w-8 h-5 flex items-center justify-center rounded text-[8px] font-black shrink-0 ${
                   ['goal', 'point_1', 'point_2', 'point_3'].includes(e.type) ? 'bg-green-500 text-white' : 
                   e.type === 'yellow_card' ? 'bg-amber-400 text-amber-900' : 
                   e.type === 'red_card' ? 'bg-red text-white' : 
@@ -486,9 +494,26 @@ function MatchSheetModal({
                    e.type === 'suspension_2min' ? '2M' :
                    e.type === 'foul' ? 'FT' : 'E'}
                 </span>
-                <span className="uppercase text-slate-700 truncate max-w-[100px]">{athlete?.name || "Equipe"}</span>
+                <select
+                  value={e.athleteId ?? ""}
+                  disabled={updateEventAthlete.isPending}
+                  onChange={(ev) => {
+                    const newAthleteId = ev.target.value === "" ? null : Number(ev.target.value);
+                    if (newAthleteId === (e.athleteId ?? null)) return;
+                    updateEventAthlete.mutate({ id: e.id, athleteId: newAthleteId });
+                  }}
+                  className="uppercase text-slate-700 bg-transparent border-0 outline-none cursor-pointer hover:bg-white focus:bg-white rounded px-1 py-0.5 text-[10px] font-bold truncate max-w-[140px] flex-1"
+                  title="Clique para trocar o autor do evento"
+                >
+                  <option value="">— Equipe —</option>
+                  {teamAthletes.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.number ? `#${a.number} ` : ""}{a.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <button onClick={() => removeEvent.mutate({ id: e.id, matchId: match.id })} className="text-slate-300 hover:text-red transition-colors">
+              <button onClick={() => removeEvent.mutate({ id: e.id, matchId: match.id })} className="text-slate-300 hover:text-red transition-colors shrink-0 ml-1">
                 <X className="w-3 h-3" />
               </button>
             </div>
