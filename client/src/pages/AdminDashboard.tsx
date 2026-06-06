@@ -147,6 +147,13 @@ export default function AdminDashboard() {
               ) : null}
             </button>
           ))}
+          <button
+            onClick={() => navigate("/admin/colegios")}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group text-slate-400"
+          >
+            <Shield className="w-5 h-5 shrink-0" />
+            {sidebarOpen && <span className="text-sm font-bold">Colégios</span>}
+          </button>
           {user?.openId === "admin-master" && (
             <button
               onClick={() => navigate("/admin/lab")}

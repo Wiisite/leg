@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { athletes, contactMessages, InsertAthlete, InsertContactMessage, InsertMatchEvent, InsertUser, matches, matchEvents, siteSettings, teams, tournaments, users } from "../drizzle/schema";
+import { athletes, contactMessages, InsertAthlete, InsertContactMessage, InsertMatchEvent, InsertSchool, InsertUser, matches, matchEvents, schools, siteSettings, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import fs from "fs";
 import path from "path";
@@ -187,6 +187,25 @@ async function ensureLegacySchemaCompatibility(db: ReturnType<typeof drizzle>) {
   await db.execute(
     sql.raw("ALTER TABLE teams MODIFY COLUMN logo LONGTEXT NULL"),
   ).catch(() => {});
+
+  // schools table (Colégios)
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS schools (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      slug VARCHAR(120) NOT NULL UNIQUE,
+      shortName VARCHAR(20) NULL,
+      logo LONGTEXT NULL,
+      primaryColor VARCHAR(7) NULL,
+      city VARCHAR(120) NULL,
+      description TEXT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `)).catch(() => {});
+
+  // teams.schoolId FK opcional
+  await ensureColumn(db, "teams", "schoolId", "INT NULL");
 }
 
 export async function getDb() {
@@ -958,4 +977,127 @@ export async function updateMatchEventAthlete(id: number, athleteId: number | nu
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(matchEvents).set({ athleteId }).where(eq(matchEvents.id, id));
+}
+
+// ─── Schools (Colégios) ──────────────────────────────────────────────────────
+
+export function slugifySchoolName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120) || "colegio";
+}
+
+export async function listSchools() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(schools).orderBy(schools.name);
+}
+
+export async function getSchoolById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(schools).where(eq(schools.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getSchoolBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(schools).where(eq(schools.slug, slug)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function upsertSchool(input: InsertSchool & { id?: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  if (input.id) {
+    await db.update(schools).set(input).where(eq(schools.id, input.id));
+    return input.id;
+  }
+  const result = await db.insert(schools).values(input);
+  const insertResult = Array.isArray(result) ? result[0] : result;
+  const rawInsertId = (insertResult as any)?.insertId;
+  return typeof rawInsertId === "number" ? rawInsertId : Number(rawInsertId);
+}
+
+export async function deleteSchool(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  // desvincula equipes antes de excluir
+  await db.update(teams).set({ schoolId: null }).where(eq(teams.schoolId, id));
+  await db.delete(schools).where(eq(schools.id, id));
+}
+
+export async function setTeamSchool(teamId: number, schoolId: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(teams).set({ schoolId }).where(eq(teams.id, teamId));
+}
+
+export async function autoLinkTeamsBySchoolName(schoolId: number, schoolName: string) {
+  const db = await getDb();
+  if (!db) return 0;
+  const allTeams = await db.select().from(teams);
+  const target = schoolName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  let linked = 0;
+  for (const t of allTeams) {
+    if (t.schoolId) continue;
+    const name = (t.name || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+    if (name === target || name.includes(target) || target.includes(name)) {
+      await db.update(teams).set({ schoolId }).where(eq(teams.id, t.id));
+      linked++;
+    }
+  }
+  return linked;
+}
+
+export async function getSchoolFullProfile(schoolId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const school = await getSchoolById(schoolId);
+  if (!school) return null;
+
+  const schoolTeams = await db.select().from(teams).where(eq(teams.schoolId, schoolId));
+  const teamIds = schoolTeams.map((t) => t.id);
+
+  if (teamIds.length === 0) {
+    return { school, teams: [], tournaments: [], athletes: [], matches: [], events: [] };
+  }
+
+  const tournamentIds = Array.from(new Set(schoolTeams.map((t) => t.tournamentId)));
+  const tournamentRows = tournamentIds.length
+    ? await db.select().from(tournaments).where(sql`${tournaments.id} IN (${sql.join(tournamentIds.map((id) => sql`${id}`), sql`, `)})`)
+    : [];
+
+  const athleteRows = await db.select().from(athletes).where(sql`${athletes.teamId} IN (${sql.join(teamIds.map((id) => sql`${id}`), sql`, `)})`);
+
+  const matchRows = await db.select().from(matches).where(
+    sql`${matches.homeTeamId} IN (${sql.join(teamIds.map((id) => sql`${id}`), sql`, `)}) OR ${matches.awayTeamId} IN (${sql.join(teamIds.map((id) => sql`${id}`), sql`, `)})`,
+  );
+
+  const matchIds = matchRows.map((m) => m.id);
+  const eventRows = matchIds.length
+    ? await db.select().from(matchEvents).where(sql`${matchEvents.matchId} IN (${sql.join(matchIds.map((id) => sql`${id}`), sql`, `)})`)
+    : [];
+
+  return {
+    school,
+    teams: schoolTeams,
+    tournaments: tournamentRows,
+    athletes: athleteRows,
+    matches: matchRows,
+    events: eventRows,
+  };
 }

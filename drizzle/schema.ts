@@ -51,11 +51,30 @@ export const tournaments = mysqlTable("tournaments", {
 export type Tournament = typeof tournaments.$inferSelect;
 export type InsertTournament = typeof tournaments.$inferInsert;
 
+// ─── Schools (Colégios) ────────────────────────────────────────────────────────
+
+export const schools = mysqlTable("schools", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  shortName: varchar("shortName", { length: 20 }),
+  logo: longtext("logo"),
+  primaryColor: varchar("primaryColor", { length: 7 }),
+  city: varchar("city", { length: 120 }),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type School = typeof schools.$inferSelect;
+export type InsertSchool = typeof schools.$inferInsert;
+
 // ─── Teams ─────────────────────────────────────────────────────────────────────
 
 export const teams = mysqlTable("teams", {
   id: int("id").autoincrement().primaryKey(),
   tournamentId: int("tournamentId").notNull(),
+  schoolId: int("schoolId"),
   name: varchar("name", { length: 255 }).notNull(),
   shortName: varchar("shortName", { length: 10 }).notNull(),
   color: varchar("color", { length: 7 }).notNull().default("#1e40af"),

@@ -2310,7 +2310,79 @@ const siteRouter = router({
      }),
  });
  
- // ─── App Router ────────────────────────────────────────────────────────────────
+ // ─── School Router (Colégios) ─────────────────────────────────────────────────
+
+const schoolRouter = router({
+  list: publicProcedure.query(async () => {
+    const { listSchools } = await import("./db");
+    return listSchools();
+  }),
+  getBySlug: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      const { getSchoolBySlug, getSchoolFullProfile } = await import("./db");
+      const school = await getSchoolBySlug(input.slug);
+      if (!school) throw new TRPCError({ code: "NOT_FOUND" });
+      return getSchoolFullProfile(school.id);
+    }),
+  upsert: protectedProcedure
+    .input(z.object({
+      id: z.number().optional(),
+      name: z.string().min(1),
+      slug: z.string().optional(),
+      shortName: z.string().optional().nullable(),
+      logo: z.string().optional().nullable(),
+      primaryColor: z.string().optional().nullable(),
+      city: z.string().optional().nullable(),
+      description: z.string().optional().nullable(),
+      autoLinkTeams: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { upsertSchool, slugifySchoolName, autoLinkTeamsBySchoolName, getSchoolBySlug } = await import("./db");
+      const slug = (input.slug && input.slug.trim()) || slugifySchoolName(input.name);
+
+      // Garante slug único quando criando
+      if (!input.id) {
+        const exists = await getSchoolBySlug(slug);
+        if (exists) {
+          throw new TRPCError({ code: "CONFLICT", message: `Já existe um colégio com slug "${slug}".` });
+        }
+      }
+
+      const id = await upsertSchool({
+        id: input.id,
+        name: input.name,
+        slug,
+        shortName: input.shortName ?? null,
+        logo: input.logo ?? null,
+        primaryColor: input.primaryColor ?? null,
+        city: input.city ?? null,
+        description: input.description ?? null,
+      });
+
+      let linkedCount = 0;
+      if (!input.id && input.autoLinkTeams) {
+        linkedCount = await autoLinkTeamsBySchoolName(id, input.name);
+      }
+      return { id, slug, linkedCount };
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const { deleteSchool } = await import("./db");
+      await deleteSchool(input.id);
+      return { success: true };
+    }),
+  setTeamSchool: protectedProcedure
+    .input(z.object({ teamId: z.number(), schoolId: z.number().nullable() }))
+    .mutation(async ({ input }) => {
+      const { setTeamSchool } = await import("./db");
+      await setTeamSchool(input.teamId, input.schoolId);
+      return { success: true };
+    }),
+});
+
+// ─── App Router ────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
   system: systemRouter,
@@ -2476,6 +2548,7 @@ export const appRouter = router({
   team: teamRouter,
   athlete: athleteRouter,
   matchSheet: matchSheetRouter,
+  school: schoolRouter,
   site: siteRouter,
   seed: seedRouter,
   contact: contactRouter,
