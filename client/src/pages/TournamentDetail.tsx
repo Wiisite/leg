@@ -25,13 +25,15 @@ import {
   Plus,
   X,
   ShieldAlert,
+  Target,
+  Award,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import * as XLSX from "xlsx";
 
-type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final" | "athletes";
+type Tab = "groups" | "standings" | "bracket" | "semifinals" | "final" | "athletes" | "highlights";
 
 type MatchForModal = {
   id: number; 
@@ -447,6 +449,7 @@ function MatchSheetModal({
     onSuccess: () => { 
       refetchEvents(); 
       utils.tournament.getById.invalidate();
+      utils.tournament.getStats.invalidate();
       toast.success("Evento registrado!"); 
     },
     onError: (e) => toast.error(e.message),
@@ -456,6 +459,7 @@ function MatchSheetModal({
     onSuccess: () => { 
       refetchEvents(); 
       utils.tournament.getById.invalidate();
+      utils.tournament.getStats.invalidate();
       toast.success("Evento removido."); 
     },
     onError: (e) => toast.error(e.message),
@@ -464,6 +468,7 @@ function MatchSheetModal({
   const updateEventAthlete = trpc.matchSheet.updateEventAthlete.useMutation({
     onSuccess: () => {
       refetchEvents();
+      utils.tournament.getStats.invalidate();
       toast.success("Autor do evento atualizado!");
     },
     onError: (e) => toast.error(e.message),
@@ -1678,6 +1683,9 @@ export default function TournamentDetail() {
     { id: "semifinals", label: "Semifinais", icon: Medal },
     { id: "final", label: "Final", icon: Star },
     { id: "athletes", label: "Atletas", icon: Users },
+    ...(tournament.modality !== "volei"
+      ? [{ id: "highlights" as Tab, label: tournament.modality === "basquete" ? "Cestinhas" : "Destaques", icon: Award }]
+      : []),
   ];
 
   return (
@@ -2430,6 +2438,11 @@ export default function TournamentDetail() {
           </div>
         )}
 
+        {/* Highlights Tab (Artilheiros / Cestinhas + Cartões) */}
+        {activeTab === "highlights" && (
+          <HighlightsTab tournamentId={tournamentId} modality={tournament.modality} />
+        )}
+
 
         {showingMatchSheet && (
           <MatchSheetModal 
@@ -2451,4 +2464,164 @@ export default function TournamentDetail() {
   );
 }
 
+// ─── Highlights Tab ──────────────────────────────────────────────────────────
+
+function HighlightsTab({ tournamentId, modality }: { tournamentId: number; modality: string }) {
+  const { data, isLoading } = trpc.tournament.getStats.useQuery({ tournamentId });
+
+  if (isLoading) {
+    return (
+      <div className="py-16 text-center text-slate-400 font-bold text-sm">Carregando estatísticas…</div>
+    );
+  }
+
+  const topScorers = data?.topScorers ?? [];
+  const cards = data?.cards ?? [];
+  const isBasket = modality === "basquete";
+  const isHandball = modality === "handebol";
+  const scorerLabel = isBasket ? "Cestinhas" : "Artilheiros";
+  const scoreField: "points" | "goals" = isBasket ? "points" : "goals";
+  const scoreSuffix = isBasket ? "pts" : "gols";
+
+  const top10 = topScorers.slice(0, 10);
+  const topCards = cards.slice(0, 15);
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      {/* Top Scorers */}
+      <section className="rounded-3xl border border-slate-100 bg-gradient-to-b from-white to-slate-50 p-6 shadow-sm">
+        <header className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+            <Target className="w-6 h-6 text-emerald-600" />
+          </div>
+          <div>
+            <h3 className="font-display font-black text-xl text-slate-800 uppercase tracking-tight">{scorerLabel}</h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ranking do campeonato</p>
+          </div>
+        </header>
+
+        {top10.length === 0 ? (
+          <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+            <Target className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+            <p className="text-slate-400 font-bold text-xs">Nenhum {isBasket ? "ponto" : "gol"} registrado ainda.</p>
+          </div>
+        ) : (
+          <ol className="space-y-2">
+            {top10.map((a, idx) => (
+              <li
+                key={a.athleteId}
+                className="bg-white border border-slate-100 rounded-2xl p-3 flex items-center gap-3 hover:shadow-md transition-all"
+              >
+                <div
+                  className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center font-black text-sm ${
+                    idx === 0
+                      ? "bg-amber-400 text-amber-900"
+                      : idx === 1
+                      ? "bg-slate-300 text-slate-700"
+                      : idx === 2
+                      ? "bg-orange-400 text-orange-900"
+                      : "bg-slate-50 border border-slate-100 text-slate-500"
+                  }`}
+                >
+                  {idx + 1}
+                </div>
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden">
+                  {a.photo ? (
+                    <img src={a.photo} className="w-full h-full object-cover" />
+                  ) : (
+                    <Users className="w-4 h-4 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    {a.number != null && (
+                      <span className="w-6 h-6 rounded-md bg-red/5 border border-red/10 flex items-center justify-center text-[10px] font-black text-red shrink-0">
+                        {a.number}
+                      </span>
+                    )}
+                    <p className="font-black text-xs text-slate-800 uppercase truncate">{a.name}</p>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase truncate mt-0.5">{a.teamName}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-2xl font-black text-emerald-600 leading-none">{a[scoreField]}</div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{scoreSuffix}</div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      {/* Cards */}
+      <section className="rounded-3xl border border-slate-100 bg-gradient-to-b from-white to-slate-50 p-6 shadow-sm">
+        <header className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center">
+            <Shield className="w-6 h-6 text-amber-600" />
+          </div>
+          <div>
+            <h3 className="font-display font-black text-xl text-slate-800 uppercase tracking-tight">
+              {isHandball ? "Disciplina" : "Cartões"}
+            </h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              {isHandball ? "Amarelos, vermelhos e 2 min" : "Amarelos e vermelhos"}
+            </p>
+          </div>
+        </header>
+
+        {topCards.length === 0 ? (
+          <div className="py-12 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+            <Shield className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+            <p className="text-slate-400 font-bold text-xs">Nenhuma punição registrada.</p>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {topCards.map((a) => (
+              <li
+                key={a.athleteId}
+                className="bg-white border border-slate-100 rounded-2xl p-3 flex items-center gap-3 hover:shadow-md transition-all"
+              >
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden">
+                  {a.photo ? (
+                    <img src={a.photo} className="w-full h-full object-cover" />
+                  ) : (
+                    <Users className="w-4 h-4 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    {a.number != null && (
+                      <span className="w-6 h-6 rounded-md bg-red/5 border border-red/10 flex items-center justify-center text-[10px] font-black text-red shrink-0">
+                        {a.number}
+                      </span>
+                    )}
+                    <p className="font-black text-xs text-slate-800 uppercase truncate">{a.name}</p>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase truncate mt-0.5">{a.teamName}</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {a.yellow > 0 && (
+                    <span className="h-7 min-w-[28px] px-2 rounded-lg bg-amber-400 text-amber-900 font-black text-[11px] flex items-center justify-center" title="Cartões amarelos">
+                      {a.yellow}
+                    </span>
+                  )}
+                  {a.red > 0 && (
+                    <span className="h-7 min-w-[28px] px-2 rounded-lg bg-red text-white font-black text-[11px] flex items-center justify-center" title="Cartões vermelhos">
+                      {a.red}
+                    </span>
+                  )}
+                  {isHandball && a.suspension2min > 0 && (
+                    <span className="h-7 min-w-[34px] px-2 rounded-lg bg-blue-600 text-white font-black text-[10px] flex items-center justify-center" title="Suspensões de 2 minutos">
+                      {a.suspension2min}·2M
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
 

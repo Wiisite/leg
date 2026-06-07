@@ -979,6 +979,41 @@ export async function updateMatchEventAthlete(id: number, athleteId: number | nu
   await db.update(matchEvents).set({ athleteId }).where(eq(matchEvents.id, id));
 }
 
+export async function getEventsByTournament(tournamentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: matchEvents.id,
+      matchId: matchEvents.matchId,
+      teamId: matchEvents.teamId,
+      athleteId: matchEvents.athleteId,
+      type: matchEvents.type,
+      period: matchEvents.period,
+      minute: matchEvents.minute,
+    })
+    .from(matchEvents)
+    .innerJoin(matches, eq(matches.id, matchEvents.matchId))
+    .where(eq(matches.tournamentId, tournamentId));
+}
+
+export async function getAthletesByTournament(tournamentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: athletes.id,
+      teamId: athletes.teamId,
+      name: athletes.name,
+      number: athletes.number,
+      position: athletes.position,
+      photo: athletes.photo,
+    })
+    .from(athletes)
+    .innerJoin(teams, eq(teams.id, athletes.teamId))
+    .where(eq(teams.tournamentId, tournamentId));
+}
+
 // ─── Schools (Colégios) ──────────────────────────────────────────────────────
 
 export function slugifySchoolName(value: string): string {

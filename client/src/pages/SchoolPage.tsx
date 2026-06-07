@@ -276,9 +276,13 @@ export default function SchoolPage() {
                       .slice()
                       .sort((a, b) => (a.number ?? 99) - (b.number ?? 99))
                       .map((a) => {
-                        const goals = g.events.filter(
-                          (e) => e.athleteId === a.id && ["goal", "point_1", "point_2", "point_3"].includes(e.type),
+                        const athleteEvents = g.events.filter((e) => e.athleteId === a.id);
+                        const goals = athleteEvents.filter((e) =>
+                          ["goal", "point_1", "point_2", "point_3"].includes(e.type),
                         ).length;
+                        const yellows = athleteEvents.filter((e) => e.type === "yellow_card").length;
+                        const reds = athleteEvents.filter((e) => e.type === "red_card").length;
+                        const susp2min = athleteEvents.filter((e) => e.type === "suspension_2min").length;
                         return (
                           <div
                             key={a.id}
@@ -298,12 +302,36 @@ export default function SchoolPage() {
                                 </span>
                                 <p className="font-black text-xs text-slate-800 uppercase truncate">{a.name}</p>
                               </div>
-                              <div className="mt-1 flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
+                              <div className="mt-1 flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase flex-wrap">
                                 {a.position && <span>{a.position}</span>}
-                                <span className="flex items-center gap-1">
+                                <span className="flex items-center gap-1" title="Gols / pontos">
                                   <Target className="w-3 h-3" />
                                   {goals}
                                 </span>
+                                {yellows > 0 && (
+                                  <span
+                                    className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded bg-amber-400 text-amber-900 text-[9px] font-black"
+                                    title="Cartões amarelos"
+                                  >
+                                    {yellows}Y
+                                  </span>
+                                )}
+                                {reds > 0 && (
+                                  <span
+                                    className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded bg-red text-white text-[9px] font-black"
+                                    title="Cartões vermelhos"
+                                  >
+                                    {reds}R
+                                  </span>
+                                )}
+                                {susp2min > 0 && (
+                                  <span
+                                    className="inline-flex items-center justify-center min-w-[24px] h-4 px-1 rounded bg-blue-600 text-white text-[9px] font-black"
+                                    title="Suspensões de 2 minutos"
+                                  >
+                                    {susp2min}·2M
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

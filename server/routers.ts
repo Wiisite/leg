@@ -751,6 +751,114 @@ const tournamentRouter = router({
     return { tournament, teams: teamList, matches: matchList };
   }),
 
+  getStats: publicProcedure
+    .input(z.object({ tournamentId: z.number() }))
+    .query(async ({ input }) => {
+      const { getEventsByTournament, getAthletesByTournament } = await import("./db");
+      const tournament = await getTournamentById(input.tournamentId);
+      if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Torneio não encontrado" });
+
+      const teamList = await getTeamsByTournament(input.tournamentId);
+      const athleteList = await getAthletesByTournament(input.tournamentId);
+      const eventList = await getEventsByTournament(input.tournamentId);
+
+      const teamById = new Map(teamList.map((t) => [t.id, t]));
+      const athleteById = new Map(athleteList.map((a) => [a.id, a]));
+
+      type Bucket = {
+        athleteId: number;
+        name: string;
+        number: number | null;
+        photo: string | null;
+        teamId: number;
+        teamName: string;
+        teamShortName: string;
+        teamColor: string;
+        teamLogo: string | null;
+        goals: number;
+        points: number;
+        yellow: number;
+        red: number;
+        suspension2min: number;
+      };
+
+      const map = new Map<number, Bucket>();
+      const ensure = (athleteId: number, teamId: number): Bucket | null => {
+        const ath = athleteById.get(athleteId);
+        if (!ath) return null;
+        const team = teamById.get(teamId);
+        if (!team) return null;
+        let b = map.get(athleteId);
+        if (!b) {
+          b = {
+            athleteId,
+            name: ath.name,
+            number: ath.number ?? null,
+            photo: ath.photo ?? null,
+            teamId,
+            teamName: team.name,
+            teamShortName: team.shortName,
+            teamColor: team.color,
+            teamLogo: team.logo ?? null,
+            goals: 0,
+            points: 0,
+            yellow: 0,
+            red: 0,
+            suspension2min: 0,
+          };
+          map.set(athleteId, b);
+        }
+        return b;
+      };
+
+      for (const ev of eventList) {
+        if (ev.athleteId == null) continue;
+        const b = ensure(ev.athleteId, ev.teamId);
+        if (!b) continue;
+        switch (ev.type) {
+          case "goal":
+            b.goals += 1;
+            b.points += 1;
+            break;
+          case "point_1":
+            b.points += 1;
+            break;
+          case "point_2":
+            b.points += 2;
+            break;
+          case "point_3":
+            b.points += 3;
+            break;
+          case "yellow_card":
+            b.yellow += 1;
+            break;
+          case "red_card":
+            b.red += 1;
+            break;
+          case "suspension_2min":
+            b.suspension2min += 1;
+            break;
+        }
+      }
+
+      const all = Array.from(map.values());
+      const topScorers = all
+        .filter((b) => b.goals > 0 || b.points > 0)
+        .sort((a, b) =>
+          tournament.modality === "basquete"
+            ? b.points - a.points || (a.number ?? 99) - (b.number ?? 99)
+            : b.goals - a.goals || (a.number ?? 99) - (b.number ?? 99),
+        );
+      const cards = all
+        .filter((b) => b.yellow > 0 || b.red > 0 || b.suspension2min > 0)
+        .sort(
+          (a, b) =>
+            b.red * 3 + b.yellow + b.suspension2min - (a.red * 3 + a.yellow + a.suspension2min),
+        );
+
+      return { modality: tournament.modality, topScorers, cards };
+    }),
+
   create: protectedProcedure
     .input(
       z.object({
