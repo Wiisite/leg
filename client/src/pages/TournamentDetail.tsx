@@ -2400,32 +2400,17 @@ export default function TournamentDetail() {
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-display text-xl font-semibold text-foreground">
-                Gestão de Atletas por Equipe
+                Atletas por Equipe
               </h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {teams.map((team) => (
-                <div key={team.id} className="bg-slate-50 border border-slate-100 rounded-[24px] p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                  <div 
-                    className="absolute top-0 left-0 w-full h-1.5 opacity-40"
-                    style={{ backgroundColor: team.color }}
-                  />
-                  <TeamBadge team={team} size="lg" />
-                  <h3 className="mt-4 font-black text-slate-800 uppercase tracking-tight truncate w-full">{team.name}</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 mb-2">{team.shortName}</p>
-                  
-
-                  {isAuthenticated && (
-                    <Button 
-                      variant="outline" 
-                      className="w-full rounded-xl font-bold text-xs border-slate-200 hover:border-red/30 hover:text-red transition-all"
-                      onClick={() => setManagingTeam(team)}
-                    >
-                      <Users className="w-4 h-4 mr-1.5" />
-                      Gerenciar Elenco
-                    </Button>
-                  )}
-                </div>
+                <TeamRosterCard
+                  key={team.id}
+                  team={team}
+                  isAuthenticated={isAuthenticated}
+                  onManage={() => setManagingTeam(team)}
+                />
               ))}
             </div>
 
@@ -2460,6 +2445,82 @@ export default function TournamentDetail() {
         modalityLabelByKey={modalityLabels}
         onModalityClick={(modalityKey) => navigate(`/modalidade/${modalityKey}`)}
       />
+    </div>
+  );
+}
+
+// ─── Team Roster Card ───────────────────────────────────────────────────────
+
+function TeamRosterCard({
+  team,
+  isAuthenticated,
+  onManage,
+}: {
+  team: any;
+  isAuthenticated: boolean;
+  onManage: () => void;
+}) {
+  const { data: athleteList, isLoading } = trpc.athlete.list.useQuery({ teamId: team.id });
+  const roster = (athleteList ?? []).slice().sort((a: any, b: any) => (a.number ?? 99) - (b.number ?? 99));
+
+  return (
+    <div className="bg-slate-50 border border-slate-100 rounded-[24px] p-6 flex flex-col shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+      <div
+        className="absolute top-0 left-0 w-full h-1.5 opacity-40"
+        style={{ backgroundColor: team.color }}
+      />
+      <div className="flex flex-col items-center text-center">
+        <TeamBadge team={team} size="lg" />
+        <h3 className="mt-4 font-black text-slate-800 uppercase tracking-tight truncate w-full">{team.name}</h3>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{team.shortName}</p>
+        <p className="mt-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+          {isLoading ? "Carregando elenco…" : `${roster.length} ${roster.length === 1 ? "atleta" : "atletas"}`}
+        </p>
+      </div>
+
+      <div className="mt-4 space-y-1.5 min-h-[40px]">
+        {!isLoading && roster.length === 0 && (
+          <div className="py-4 text-center bg-white rounded-xl border border-dashed border-slate-200">
+            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Nenhum atleta cadastrado</p>
+          </div>
+        )}
+        {roster.map((a: any) => (
+          <div
+            key={a.id}
+            className="bg-white border border-slate-100 rounded-xl px-2.5 py-2 flex items-center gap-2"
+          >
+            <span className="w-7 h-7 shrink-0 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden">
+              {a.photo ? (
+                <img src={a.photo} className="w-full h-full object-cover" />
+              ) : (
+                <Users className="w-3 h-3 text-slate-300" />
+              )}
+            </span>
+            <span className="w-7 h-7 shrink-0 rounded-md bg-red/5 border border-red/10 flex items-center justify-center text-[10px] font-black text-red">
+              {a.number ?? "—"}
+            </span>
+            <span className="flex-1 min-w-0 text-[11px] font-black text-slate-700 uppercase truncate">
+              {a.name}
+            </span>
+            {a.position && (
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+                {a.position}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {isAuthenticated && (
+        <Button
+          variant="outline"
+          className="mt-4 w-full rounded-xl font-bold text-xs border-slate-200 hover:border-red/30 hover:text-red transition-all"
+          onClick={onManage}
+        >
+          <Users className="w-4 h-4 mr-1.5" />
+          Gerenciar Elenco
+        </Button>
+      )}
     </div>
   );
 }
