@@ -42,6 +42,7 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
   );
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSection, setMobileSection] = useState<"modalidades" | "colegios" | "institucional" | null>(null);
   const initialMetrics = getLogoMetrics(0, isHome);
   const [logoTop, setLogoTop] = useState(initialMetrics.top);
   const [logoScale, setLogoScale] = useState(initialMetrics.scale);
@@ -225,60 +226,96 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
 
         {mobileMenuOpen && (
           <div className="xl:hidden border-t border-white/20 bg-[#C80000]">
-            <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
-              <button onClick={() => handleNav("/")} className="text-left">Home</button>
-              <button onClick={() => handleNav("/clinicas")} className="text-left">Clínicas</button>
-              <button onClick={() => handleNav("/classificacao-geral")} className="text-left">Classificação Geral</button>
-              <button onClick={() => handleNav("/quem-somos")} className="text-left">Quem Somos</button>
-              <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-100 mb-2">Modalidades</p>
-                <div className="flex flex-col gap-1.5">
-                  {modalitiesInOrder.map((m) => (
-                    <button
-                      key={`mob-${m}`}
-                      onClick={() => handleNav(`/modalidade/${m}`)}
-                      className="text-left px-2 py-1.5 rounded text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15"
-                    >
-                      {modalityLabels[m]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-100 mb-2 inline-flex items-center gap-1.5">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  Colégios
-                </p>
-                <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
-                  {schoolsSorted.length === 0 ? (
-                    <p className="px-2 py-1.5 text-[11px] font-bold text-white/70 normal-case tracking-normal">
-                      Nenhum colégio cadastrado
-                    </p>
-                  ) : (
-                    schoolsSorted.map((s) => (
+            <div className="container py-4 flex flex-col gap-1.5 text-[13px] font-black uppercase tracking-[0.12em]">
+              <button onClick={() => handleNav("/")} className="text-left px-3 py-2.5 rounded-lg hover:bg-white/10">Home</button>
+              <button onClick={() => handleNav("/classificacao-geral")} className="text-left px-3 py-2.5 rounded-lg hover:bg-white/10">Classificação Geral</button>
+              <button onClick={() => handleNav("/clinicas")} className="text-left px-3 py-2.5 rounded-lg hover:bg-white/10">Clínicas</button>
+
+              {/* Modalidades (acordeão) */}
+              <div className="rounded-lg border border-white/20 bg-white/5 overflow-hidden">
+                <button
+                  onClick={() => setMobileSection((s) => (s === "modalidades" ? null : "modalidades"))}
+                  className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors"
+                >
+                  <span>Modalidades</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${mobileSection === "modalidades" ? "rotate-180" : ""}`} />
+                </button>
+                {mobileSection === "modalidades" && (
+                  <div className="border-t border-white/15 px-2 py-2 flex flex-col gap-1">
+                    {modalitiesInOrder.map((m) => (
                       <button
-                        key={`mob-school-${s.id}`}
-                        onClick={() => handleNav(`/colegio/${s.slug}`)}
-                        className="flex items-center gap-2 text-left px-2 py-1.5 rounded text-[12px] font-black uppercase tracking-[0.10em] text-white hover:bg-white/15"
+                        key={`mob-${m}`}
+                        onClick={() => handleNav(`/modalidade/${m}`)}
+                        className="text-left px-3 py-2 rounded text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15"
                       >
-                        <span className="w-6 h-6 shrink-0 rounded bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
-                          {s.logo ? (
-                            <img src={s.logo} alt="" className="w-full h-full object-contain" />
-                          ) : (
-                            <GraduationCap className="w-3 h-3 text-white/70" />
-                          )}
-                        </span>
-                        <span className="flex-1 min-w-0 truncate">{s.shortName || s.name}</span>
+                        {modalityLabels[m]}
                       </button>
-                    ))
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <button onClick={() => handleNav("/regulamentos")} className="text-left">Regulamentos</button>
-              <button onClick={() => handleNav("/contato")} className="text-left">Contato</button>
+
+              {/* Colégios (acordeão) */}
+              <div className="rounded-lg border border-white/20 bg-white/5 overflow-hidden">
+                <button
+                  onClick={() => setMobileSection((s) => (s === "colegios" ? null : "colegios"))}
+                  className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4" />
+                    Colégios
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${mobileSection === "colegios" ? "rotate-180" : ""}`} />
+                </button>
+                {mobileSection === "colegios" && (
+                  <div className="border-t border-white/15 px-2 py-2 flex flex-col gap-1 max-h-72 overflow-y-auto">
+                    {schoolsSorted.length === 0 ? (
+                      <p className="px-3 py-2 text-[11px] font-bold text-white/70 normal-case tracking-normal">
+                        Nenhum colégio cadastrado
+                      </p>
+                    ) : (
+                      schoolsSorted.map((s) => (
+                        <button
+                          key={`mob-school-${s.id}`}
+                          onClick={() => handleNav(`/colegio/${s.slug}`)}
+                          className="flex items-center gap-2 text-left px-3 py-2 rounded text-[12px] font-black uppercase tracking-[0.10em] text-white hover:bg-white/15"
+                        >
+                          <span className="w-6 h-6 shrink-0 rounded bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
+                            {s.logo ? (
+                              <img src={s.logo} alt="" className="w-full h-full object-contain" />
+                            ) : (
+                              <GraduationCap className="w-3 h-3 text-white/70" />
+                            )}
+                          </span>
+                          <span className="flex-1 min-w-0 truncate">{s.shortName || s.name}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Institucional (acordeão) */}
+              <div className="rounded-lg border border-white/20 bg-white/5 overflow-hidden">
+                <button
+                  onClick={() => setMobileSection((s) => (s === "institucional" ? null : "institucional"))}
+                  className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors"
+                >
+                  <span>Institucional</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${mobileSection === "institucional" ? "rotate-180" : ""}`} />
+                </button>
+                {mobileSection === "institucional" && (
+                  <div className="border-t border-white/15 px-2 py-2 flex flex-col gap-1">
+                    <button onClick={() => handleNav("/quem-somos")} className="text-left px-3 py-2 rounded text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15">Quem Somos</button>
+                    <button onClick={() => handleNav("/regulamentos")} className="text-left px-3 py-2 rounded text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15">Regulamentos</button>
+                    <button onClick={() => handleNav("/contato")} className="text-left px-3 py-2 rounded text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15">Contato</button>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => handleNav("/ao-vivo")}
-                className="live-blink inline-flex items-center gap-2 text-left px-3 py-1.5 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] w-fit"
+                className="live-blink inline-flex items-center gap-2 text-left px-3 py-2 mt-1 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] w-fit"
               >
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-200" />
                 Ao Vivo
