@@ -27,6 +27,7 @@ import {
   ShieldAlert,
   Target,
   Award,
+  GraduationCap,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -1064,6 +1065,28 @@ function EditTournamentModal({
   const [teamList, setTeamList] = useState(teams);
   const disableTeamEditing = hasFinishedMatches;
 
+  const { data: schools } = trpc.school.list.useQuery();
+
+  const applySchoolToTeam = (index: number, schoolId: string) => {
+    if (!schoolId) return;
+    const school = (schools ?? []).find((s) => String(s.id) === schoolId);
+    if (!school) return;
+    setTeamList((prev) =>
+      prev.map((t, i) =>
+        i === index
+          ? {
+              ...t,
+              name: school.name,
+              shortName: (school.shortName || school.name).toUpperCase().slice(0, 10),
+              color: school.primaryColor || t.color,
+              logo: school.logo || t.logo,
+            }
+          : t,
+      ),
+    );
+    toast.success(`Dados do ${school.shortName || school.name} aplicados.`);
+  };
+
   const handleUpdateTeam = (index: number, field: string, value: string) => {
     const newTeams = [...teamList];
     (newTeams[index] as any)[field] = value;
@@ -1192,6 +1215,26 @@ function EditTournamentModal({
                   </div>
 
                   <div className="flex-1 space-y-3">
+                    {(schools?.length ?? 0) > 0 && !disableTeamEditing && (
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            applySchoolToTeam(idx, e.target.value);
+                            e.target.value = "";
+                          }}
+                          className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-bold uppercase tracking-wider text-slate-600 focus:outline-none focus:ring-2 focus:ring-red/20"
+                        >
+                          <option value="">Puxar dados de um colégio…</option>
+                          {(schools ?? []).map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <input
                         type="text"
