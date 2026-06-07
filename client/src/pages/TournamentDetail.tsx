@@ -502,7 +502,7 @@ function MatchSheetModal({
                     if (newAthleteId === (e.athleteId ?? null)) return;
                     updateEventAthlete.mutate({ id: e.id, athleteId: newAthleteId });
                   }}
-                  className="uppercase text-slate-700 bg-transparent border-0 outline-none cursor-pointer hover:bg-white focus:bg-white rounded px-1 py-0.5 text-[10px] font-bold truncate max-w-[140px] flex-1"
+                  className="uppercase text-slate-700 bg-transparent border-0 outline-none cursor-pointer hover:bg-white focus:bg-white rounded px-1 py-0.5 text-[10px] font-bold truncate flex-1 min-w-0"
                   title="Clique para trocar o autor do evento"
                 >
                   <option value="">— Equipe —</option>
@@ -556,14 +556,14 @@ function MatchSheetModal({
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-slate-50/50 backdrop-blur-sm py-2">Registrar Ação</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-slate-50 py-2 z-10 -mx-1 px-1">Registrar Ação</p>
               {homeAthletes?.map(a => (
-                <div key={a.id} className="bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm hover:border-red/10 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black">{a.number || "?"}</div>
-                    <span className="text-xs font-black text-slate-700 uppercase truncate max-w-[120px]">{a.name}</span>
+                <div key={a.id} className="bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between gap-2 shadow-sm hover:border-red/10 transition-all">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 shrink-0 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black">{a.number || "?"}</div>
+                    <span className="text-xs font-black text-slate-700 uppercase truncate min-w-0">{a.name}</span>
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 shrink-0">
                     {modality === "basquete" ? (
                       <>
                         <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_1" })} className="h-8 w-8 bg-green-500 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-500/20 active:scale-95 transition-transform">+1</button>
@@ -590,7 +590,7 @@ function MatchSheetModal({
                 </div>
               ))}
             </div>
-            <div className="mt-4 border-t border-slate-200 pt-4 overflow-y-auto max-h-32">
+            <div className="mt-4 border-t border-slate-200 pt-4 overflow-y-auto max-h-48">
                <EventList teamId={match.homeTeamId} />
             </div>
           </div>
@@ -608,14 +608,14 @@ function MatchSheetModal({
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-slate-50/50 backdrop-blur-sm py-2">Registrar Ação</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 bg-slate-50 py-2 z-10 -mx-1 px-1">Registrar Ação</p>
               {awayAthletes?.map(a => (
-                <div key={a.id} className="bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm hover:border-red/10 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black">{a.number || "?"}</div>
-                    <span className="text-xs font-black text-slate-700 uppercase truncate max-w-[120px]">{a.name}</span>
+                <div key={a.id} className="bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between gap-2 shadow-sm hover:border-red/10 transition-all">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 shrink-0 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black">{a.number || "?"}</div>
+                    <span className="text-xs font-black text-slate-700 uppercase truncate min-w-0">{a.name}</span>
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 shrink-0">
                     {modality === "basquete" ? (
                       <>
                         <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_1" })} className="h-8 w-8 bg-green-500 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-500/20 active:scale-95 transition-transform">+1</button>
@@ -642,7 +642,7 @@ function MatchSheetModal({
                 </div>
               ))}
             </div>
-             <div className="mt-4 border-t border-slate-200 pt-4 overflow-y-auto max-h-32">
+             <div className="mt-4 border-t border-slate-200 pt-4 overflow-y-auto max-h-48">
                <EventList teamId={match.awayTeamId} />
             </div>
           </div>
