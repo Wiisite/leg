@@ -2,8 +2,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl, getRegisterUrl } from "@/const";
 import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
-import { LogOut, Menu, Shield, X, Contact, ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { LogOut, Menu, Shield, X, Contact, ChevronDown, GraduationCap } from "lucide-react";
 
 interface SiteHeaderProps {
   isHome?: boolean;
@@ -34,7 +34,13 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const { data: settings } = trpc.site.getSettings.useQuery();
-  
+  const { data: schools } = trpc.school.list.useQuery();
+
+  const schoolsSorted = useMemo(
+    () => (schools ?? []).slice().sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+    [schools],
+  );
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const initialMetrics = getLogoMetrics(0, isHome);
   const [logoTop, setLogoTop] = useState(initialMetrics.top);
@@ -155,6 +161,39 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
                 </div>
               </div>
             </div>
+            <div className="relative group">
+              <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
+                <GraduationCap className="w-4 h-4" />
+                Colégios
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="absolute top-full left-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                <div className="min-w-[280px] max-h-[420px] overflow-y-auto rounded-xl border border-white/30 bg-[#C80000] shadow-xl p-2">
+                  {schoolsSorted.length === 0 ? (
+                    <p className="px-3 py-2 text-[11px] font-bold text-white/70 uppercase tracking-[0.12em]">
+                      Nenhum colégio cadastrado
+                    </p>
+                  ) : (
+                    schoolsSorted.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => handleNav(`/colegio/${s.slug}`)}
+                        className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-[12px] font-black uppercase tracking-[0.10em] text-white hover:bg-white/15 transition-colors"
+                      >
+                        <span className="w-7 h-7 shrink-0 rounded-md bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
+                          {s.logo ? (
+                            <img src={s.logo} alt="" className="w-full h-full object-contain" />
+                          ) : (
+                            <GraduationCap className="w-3.5 h-3.5 text-white/70" />
+                          )}
+                        </span>
+                        <span className="flex-1 min-w-0 truncate">{s.shortName || s.name}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
             <button onClick={() => handleNav("/regulamentos")} className="hover:text-red-100 transition-colors">Regulamentos</button>
             <button onClick={() => handleNav("/contato")} className="hover:text-red-100 transition-colors text-red-100">Contato</button>
             <button
@@ -193,6 +232,36 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
                       {modalityLabels[m]}
                     </button>
                   ))}
+                </div>
+              </div>
+              <div className="rounded-lg border border-white/20 bg-white/10 px-3 py-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-100 mb-2 inline-flex items-center gap-1.5">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  Colégios
+                </p>
+                <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
+                  {schoolsSorted.length === 0 ? (
+                    <p className="px-2 py-1.5 text-[11px] font-bold text-white/70 normal-case tracking-normal">
+                      Nenhum colégio cadastrado
+                    </p>
+                  ) : (
+                    schoolsSorted.map((s) => (
+                      <button
+                        key={`mob-school-${s.id}`}
+                        onClick={() => handleNav(`/colegio/${s.slug}`)}
+                        className="flex items-center gap-2 text-left px-2 py-1.5 rounded text-[12px] font-black uppercase tracking-[0.10em] text-white hover:bg-white/15"
+                      >
+                        <span className="w-6 h-6 shrink-0 rounded bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden">
+                          {s.logo ? (
+                            <img src={s.logo} alt="" className="w-full h-full object-contain" />
+                          ) : (
+                            <GraduationCap className="w-3 h-3 text-white/70" />
+                          )}
+                        </span>
+                        <span className="flex-1 min-w-0 truncate">{s.shortName || s.name}</span>
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
               <button onClick={() => handleNav("/regulamentos")} className="text-left">Regulamentos</button>
