@@ -121,11 +121,10 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
         </div>
 
         <div className="container relative h-24 flex items-center justify-between">
-          <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
+          <nav className="hidden xl:flex items-center gap-5 text-[13px] font-black uppercase tracking-[0.12em] pr-28">
             <button onClick={() => handleNav("/")} className="hover:text-red-100 transition-colors">Home</button>
+            <button onClick={() => handleNav("/classificacao-geral")} className="hover:text-red-100 transition-colors">Classificação</button>
             <button onClick={() => handleNav("/clinicas")} className="hover:text-red-100 transition-colors">Clínicas</button>
-            <button onClick={() => handleNav("/classificacao-geral")} className="hover:text-red-100 transition-colors">Classificação Geral</button>
-            <button onClick={() => handleNav("/quem-somos")} className="hover:text-red-100 transition-colors">Quem Somos</button>
           </nav>
 
           <div
@@ -141,7 +140,7 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
             </div>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
+          <nav className="hidden xl:flex items-center gap-5 text-[13px] font-black uppercase tracking-[0.12em] pl-28">
             <div className="relative group">
               <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
                 Modalidades
@@ -167,7 +166,7 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
                 Colégios
                 <ChevronDown className="w-4 h-4" />
               </button>
-              <div className="absolute top-full left-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+              <div className="absolute top-full right-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
                 <div className="min-w-[280px] max-h-[420px] overflow-y-auto rounded-xl border border-white/30 bg-[#C80000] shadow-xl p-2">
                   {schoolsSorted.length === 0 ? (
                     <p className="px-3 py-2 text-[11px] font-bold text-white/70 uppercase tracking-[0.12em]">
@@ -194,8 +193,19 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
                 </div>
               </div>
             </div>
-            <button onClick={() => handleNav("/regulamentos")} className="hover:text-red-100 transition-colors">Regulamentos</button>
-            <button onClick={() => handleNav("/contato")} className="hover:text-red-100 transition-colors text-red-100">Contato</button>
+            <div className="relative group">
+              <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
+                Institucional
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="absolute top-full right-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                <div className="min-w-[200px] rounded-xl border border-white/30 bg-[#C80000] shadow-xl p-2">
+                  <button onClick={() => handleNav("/quem-somos")} className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15 transition-colors">Quem Somos</button>
+                  <button onClick={() => handleNav("/regulamentos")} className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15 transition-colors">Regulamentos</button>
+                  <button onClick={() => handleNav("/contato")} className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15 transition-colors">Contato</button>
+                </div>
+              </div>
+            </div>
             <button
               onClick={() => handleNav("/ao-vivo")}
               className="live-blink inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] text-white shadow-[0_0_16px_rgba(255,69,58,0.45)] hover:scale-[1.03] transition-all"
@@ -206,7 +216,7 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
           </nav>
 
           <button
-            className="lg:hidden h-10 w-10 rounded-lg border border-white/40 flex items-center justify-center"
+            className="xl:hidden h-10 w-10 rounded-lg border border-white/40 flex items-center justify-center"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -214,7 +224,7 @@ export function SiteHeader({ isHome = false }: SiteHeaderProps) {
         </div>
 
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
+          <div className="xl:hidden border-t border-white/20 bg-[#C80000]">
             <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
               <button onClick={() => handleNav("/")} className="text-left">Home</button>
               <button onClick={() => handleNav("/clinicas")} className="text-left">Clínicas</button>

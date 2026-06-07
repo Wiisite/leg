@@ -384,14 +384,14 @@ export default function Home() {
             <div className="absolute -right-16 top-0 h-full w-52 bg-[#B80000] skew-x-[-30deg]" />
           </div>
 
-          <div className="container relative h-24 flex items-center justify-between">
-            <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
+          <div className="container relative h-24 flex items-center justify-between gap-4">
+            <nav className="hidden xl:flex items-center gap-5 text-[13px] font-black uppercase tracking-[0.12em] pr-28">
               <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="hover:text-red-100 transition-colors">Home</button>
-              <button onClick={() => navigate("/classificacao-geral")} className="hover:text-red-100 transition-colors">Classificação Geral</button>
+              <button onClick={() => navigate("/classificacao-geral")} className="hover:text-red-100 transition-colors">Classificação</button>
               <button onClick={() => scrollToSection("noticias")} className="hover:text-red-100 transition-colors">Notícia</button>
               <div className="relative group">
                 <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
-                  Modalidade
+                  Modalidades
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 <div className="absolute top-full left-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
@@ -425,14 +425,14 @@ export default function Home() {
               </div>
             </div>
 
-            <nav className="hidden lg:flex items-center gap-7 text-[14px] font-black uppercase tracking-[0.14em]">
+            <nav className="hidden xl:flex items-center gap-5 text-[13px] font-black uppercase tracking-[0.12em] pl-28">
               <div className="relative group">
                 <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
                   <GraduationCap className="w-4 h-4" />
                   Colégios
                   <ChevronDown className="w-4 h-4" />
                 </button>
-                <div className="absolute top-full left-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                <div className="absolute top-full right-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
                   <div className="min-w-[280px] max-h-[420px] overflow-y-auto rounded-xl border border-white/30 bg-[#C80000] shadow-xl p-2">
                     {schoolsSorted.length === 0 ? (
                       <p className="px-3 py-2 text-[11px] font-bold text-white/70 uppercase tracking-[0.12em]">
@@ -462,10 +462,20 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <button onClick={() => navigate("/clinicas")} className="hover:text-red-100 transition-colors">Clínicas</button>
-              <button onClick={() => navigate("/quem-somos")} className="hover:text-red-100 transition-colors">Quem Somos</button>
-              <button onClick={() => navigate("/regulamentos")} className="hover:text-red-100 transition-colors">Regulamento</button>
-              <button onClick={() => navigate("/contato")} className="hover:text-red-100 transition-colors">Contato</button>
+              <div className="relative group">
+                <button className="inline-flex items-center gap-1 hover:text-red-100 transition-colors">
+                  Institucional
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <div className="absolute top-full right-0 pt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                  <div className="min-w-[200px] rounded-xl border border-white/30 bg-[#C80000] shadow-xl p-2">
+                    <button onClick={() => navigate("/clinicas")} className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15 transition-colors">Clínicas</button>
+                    <button onClick={() => navigate("/quem-somos")} className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15 transition-colors">Quem Somos</button>
+                    <button onClick={() => navigate("/regulamentos")} className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15 transition-colors">Regulamento</button>
+                    <button onClick={() => navigate("/contato")} className="w-full text-left px-3 py-2 rounded-lg text-[12px] font-black uppercase tracking-[0.12em] text-white hover:bg-white/15 transition-colors">Contato</button>
+                  </div>
+                </div>
+              </div>
               <button
                 onClick={() => navigate("/ao-vivo")}
                 className="live-blink inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-200/90 bg-gradient-to-r from-[#FF3B30] via-[#D50000] to-[#A60000] text-white shadow-[0_0_16px_rgba(255,69,58,0.45)] hover:scale-[1.03] transition-all"
@@ -476,7 +486,7 @@ export default function Home() {
             </nav>
 
             <button
-              className="lg:hidden h-10 w-10 rounded-lg border border-white/40 flex items-center justify-center"
+              className="xl:hidden h-10 w-10 rounded-lg border border-white/40 flex items-center justify-center"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -484,7 +494,7 @@ export default function Home() {
           </div>
 
           {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-white/20 bg-[#C80000]">
+            <div className="xl:hidden border-t border-white/20 bg-[#C80000]">
               <div className="container py-4 flex flex-col gap-3 text-[13px] font-black uppercase tracking-[0.12em]">
                 <button onClick={() => navigate("/")} className="text-left">Home</button>
                 <button onClick={() => navigate("/classificacao-geral")} className="text-left">Classificação Geral</button>
