@@ -37,10 +37,10 @@ export default function SchoolPage() {
       tournamentName: string;
       modality: string;
       category: string;
-      team: typeof profile.teams[number];
-      athletes: typeof profile.athletes;
-      matches: typeof profile.matches;
-      events: typeof profile.events;
+      team: any;
+      athletes: any[];
+      matches: any[];
+      events: any[];
       stats: {
         played: number;
         wins: number;
@@ -274,15 +274,15 @@ export default function SchoolPage() {
                   ) : (
                     g.athletes
                       .slice()
-                      .sort((a, b) => (a.number ?? 99) - (b.number ?? 99))
-                      .map((a) => {
-                        const athleteEvents = g.events.filter((e) => e.athleteId === a.id);
-                        const goals = athleteEvents.filter((e) =>
+                      .sort((a: any, b: any) => (a.number ?? 99) - (b.number ?? 99))
+                      .map((a: any) => {
+                        const athleteEvents = g.events.filter((e: any) => e.athleteId === a.id);
+                        const goals = athleteEvents.filter((e: any) =>
                           ["goal", "point_1", "point_2", "point_3"].includes(e.type),
                         ).length;
-                        const yellows = athleteEvents.filter((e) => e.type === "yellow_card").length;
-                        const reds = athleteEvents.filter((e) => e.type === "red_card").length;
-                        const susp2min = athleteEvents.filter((e) => e.type === "suspension_2min").length;
+                        const yellows = athleteEvents.filter((e: any) => e.type === "yellow_card").length;
+                        const reds = athleteEvents.filter((e: any) => e.type === "red_card").length;
+                        const susp2min = athleteEvents.filter((e: any) => e.type === "suspension_2min").length;
                         return (
                           <div
                             key={a.id}

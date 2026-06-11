@@ -349,7 +349,7 @@ async function startServer() {
         return;
       }
 
-      const { getTournamentById, getTeamsByTournament, getMatchesByTournament, getAthletesByTeam } =
+      const { getTournamentById, getTeamsByTournament, getMatchesByTournament, getAthletesByTeam, getMatchEvents } =
         await import("../db");
       const tournament = await getTournamentById(tournamentId);
       if (!tournament) {
@@ -374,11 +374,19 @@ async function startServer() {
           ? matches.filter((m) => m.id === selectedMatchId)
           : matches;
 
+      const eventsByMatch: Record<number, Awaited<ReturnType<typeof getMatchEvents>>> = {};
+      await Promise.all(
+        matchesForPdf.map(async (m) => {
+          eventsByMatch[m.id] = await getMatchEvents(m.id);
+        })
+      );
+
       const pdfBuffer = buildMatchSheetsPdf({
         tournament,
         teams,
         matches: matchesForPdf,
         athletesByTeam,
+        eventsByMatch,
       });
 
       const safeName = String(tournament.name || `torneio-${tournamentId}`)

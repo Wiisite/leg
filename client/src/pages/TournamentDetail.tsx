@@ -442,6 +442,7 @@ function MatchSheetModal({
   const homeTeam = teams.find(t => t.id === match.homeTeamId);
   const awayTeam = teams.find(t => t.id === match.awayTeamId);
   
+  const [currentPeriod, setCurrentPeriod] = useState<number>(1);
   const { data: homeAthletes } = trpc.athlete.list.useQuery({ teamId: match.homeTeamId });
   const { data: awayAthletes } = trpc.athlete.list.useQuery({ teamId: match.awayTeamId });
   const { data: events, refetch: refetchEvents } = trpc.matchSheet.getEvents.useQuery({ matchId: match.id });
@@ -501,6 +502,9 @@ function MatchSheetModal({
                    e.type === 'suspension_2min' ? '2M' :
                    e.type === 'foul' ? 'FT' : 'E'}
                 </span>
+                <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded text-[8px] font-black shrink-0">
+                  {e.period === 4 ? 'PR' : `${e.period}T`}
+                </span>
                 <select
                   value={e.athleteId ?? ""}
                   disabled={updateEventAthlete.isPending}
@@ -534,7 +538,7 @@ function MatchSheetModal({
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onClose} />
       <div className="relative bg-white rounded-[40px] p-8 w-full max-w-4xl shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-500 h-[85vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-red/5 flex items-center justify-center border border-red/10">
               <Trophy className="w-6 h-6 text-red" />
@@ -547,6 +551,29 @@ function MatchSheetModal({
           <button onClick={onClose} className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all">
             <X className="w-6 h-6" />
           </button>
+        </div>
+
+        {/* Seletor de Período */}
+        <div className="flex items-center justify-center gap-2 mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-100 shrink-0">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Tempo / Período Ativo:</span>
+          {[
+            { value: 1, label: "1º Tempo" },
+            { value: 2, label: "2º Tempo" },
+            { value: 3, label: "3º Tempo" },
+            { value: 4, label: "Prorrogação" },
+          ].map((p) => (
+            <button
+              key={p.value}
+              onClick={() => setCurrentPeriod(p.value)}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 ${
+                currentPeriod === p.value
+                  ? "bg-red text-white shadow-md shadow-red/20"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
 
         <div className="flex-1 grid grid-cols-2 gap-8 overflow-hidden">
@@ -573,23 +600,23 @@ function MatchSheetModal({
                   <div className="flex gap-1.5 shrink-0">
                     {modality === "basquete" ? (
                       <>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_1" })} className="h-8 w-8 bg-green-500 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-500/20 active:scale-95 transition-transform">+1</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_2" })} className="h-8 w-8 bg-green-600 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-600/20 active:scale-95 transition-transform">+2</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_3" })} className="h-8 w-8 bg-green-700 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-700/20 active:scale-95 transition-transform">+3</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "foul" })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_1", period: currentPeriod })} className="h-8 w-8 bg-green-500 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-500/20 active:scale-95 transition-transform">+1</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_2", period: currentPeriod })} className="h-8 w-8 bg-green-600 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-600/20 active:scale-95 transition-transform">+2</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_3", period: currentPeriod })} className="h-8 w-8 bg-green-700 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-700/20 active:scale-95 transition-transform">+3</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "foul", period: currentPeriod })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
                       </>
                     ) : modality === "volei" ? (
                       <>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_1" })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">PONTO</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "foul" })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "point_1", period: currentPeriod })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">PONTO</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "foul", period: currentPeriod })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "goal" })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">GOL</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "yellow_card" })} className="h-8 w-8 bg-amber-400 text-amber-900 rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-amber-400/20"><Shield className="w-4 h-4" /></button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "red_card" })} className="h-8 w-8 bg-red text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-red/20"><Shield className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "goal", period: currentPeriod })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">GOL</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "yellow_card", period: currentPeriod })} className="h-8 w-8 bg-amber-400 text-amber-900 rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-amber-400/20"><Shield className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "red_card", period: currentPeriod })} className="h-8 w-8 bg-red text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-red/20"><Shield className="w-4 h-4" /></button>
                         {modality === "handebol" && (
-                          <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "suspension_2min" })} className="h-8 w-8 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-blue-600/20 font-black text-[8px]">2M</button>
+                          <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.homeTeamId, athleteId: a.id, type: "suspension_2min", period: currentPeriod })} className="h-8 w-8 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-blue-600/20 font-black text-[8px]">2M</button>
                         )}
                       </>
                     )}
@@ -625,23 +652,23 @@ function MatchSheetModal({
                   <div className="flex gap-1.5 shrink-0">
                     {modality === "basquete" ? (
                       <>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_1" })} className="h-8 w-8 bg-green-500 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-500/20 active:scale-95 transition-transform">+1</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_2" })} className="h-8 w-8 bg-green-600 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-600/20 active:scale-95 transition-transform">+2</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_3" })} className="h-8 w-8 bg-green-700 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-700/20 active:scale-95 transition-transform">+3</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "foul" })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_1", period: currentPeriod })} className="h-8 w-8 bg-green-500 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-500/20 active:scale-95 transition-transform">+1</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_2", period: currentPeriod })} className="h-8 w-8 bg-green-600 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-600/20 active:scale-95 transition-transform">+2</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_3", period: currentPeriod })} className="h-8 w-8 bg-green-700 text-white rounded-lg font-black text-[10px] shadow-lg shadow-green-700/20 active:scale-95 transition-transform">+3</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "foul", period: currentPeriod })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
                       </>
                     ) : modality === "volei" ? (
                       <>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_1" })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">PONTO</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "foul" })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "point_1", period: currentPeriod })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">PONTO</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "foul", period: currentPeriod })} className="h-8 w-8 bg-slate-800 text-white rounded-lg flex items-center justify-center active:scale-95"><ShieldAlert className="w-4 h-4" /></button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "goal" })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">GOL</button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "yellow_card" })} className="h-8 w-8 bg-amber-400 text-amber-900 rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-amber-400/20"><Shield className="w-4 h-4" /></button>
-                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "red_card" })} className="h-8 w-8 bg-red text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-red/20"><Shield className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "goal", period: currentPeriod })} className="h-8 px-3 bg-green-500 text-white rounded-lg font-black text-[10px] uppercase shadow-lg shadow-green-500/20 active:scale-95 transition-transform">GOL</button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "yellow_card", period: currentPeriod })} className="h-8 w-8 bg-amber-400 text-amber-900 rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-amber-400/20"><Shield className="w-4 h-4" /></button>
+                        <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "red_card", period: currentPeriod })} className="h-8 w-8 bg-red text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-red/20"><Shield className="w-4 h-4" /></button>
                         {modality === "handebol" && (
-                          <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "suspension_2min" })} className="h-8 w-8 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-blue-600/20 font-black text-[8px]">2M</button>
+                          <button onClick={() => addEvent.mutate({ matchId: match.id, teamId: match.awayTeamId, athleteId: a.id, type: "suspension_2min", period: currentPeriod })} className="h-8 w-8 bg-blue-600 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-lg shadow-blue-600/20 font-black text-[8px]">2M</button>
                         )}
                       </>
                     )}
