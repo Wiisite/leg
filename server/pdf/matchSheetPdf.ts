@@ -142,9 +142,9 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
 
   const pageWidth = 595;
   const pageHeight = 842;
-  const marginX = 28;
-  const topMargin = 28;
-  const bottomMargin = 28;
+  const marginX = 10;
+  const topMargin = 10;
+  const bottomMargin = 10;
   const contentWidth = pageWidth - marginX * 2;
 
   const pages: string[][] = [];
@@ -199,154 +199,127 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     const teamName = team?.name || "A definir";
     const roster = team ? (athletesByTeam[team.id] || []) : [];
 
-    // Title bar
-    const titleHeight = 14;
+    // ── Equipe title bar ──
+    const titleHeight = 13;
     fillRect(marginX, cursorY - titleHeight, contentWidth, titleHeight, 0.12);
     commands.push("1 1 1 rg");
-    text(`${label}: ${teamName.toUpperCase()}`, marginX + 5, cursorY - 10, "F2", 8.5);
+    text(`${label}: ${teamName.toUpperCase()}`, marginX + 4, cursorY - 9, "F2", 8);
     commands.push("0 0 0 rg");
     cursorY -= titleHeight;
 
-    // Column definition for the player table
+    // ── Player table columns ──
     const playerCols = [
-      { key: "reg", label: "Registro", width: 35 },
-      { key: "name", label: "Jogadores", width: 175 },
-      { key: "num", label: "No", width: 18 },
-      { key: "g1", label: "G1a", width: 22 },
-      { key: "g2", label: "G2a", width: 22 },
-      { key: "g3", label: "G3a", width: 22 },
-      { key: "pen", label: "PEN", width: 22 },
-      { key: "yellow", label: "Amar.", width: 25 },
-      { key: "red", label: "Verm.", width: 25 },
+      { key: "reg", label: "Registro", width: 32 },
+      { key: "name", label: "Jogadores", width: 165 },
+      { key: "num", label: "Nº", width: 20 },
+      { key: "g1", label: "G1º", width: 20 },
+      { key: "g2", label: "G2º", width: 20 },
+      { key: "g3", label: "G3º", width: 20 },
+      { key: "pen", label: "PEN", width: 20 },
+      { key: "yellow", label: "Amar.", width: 26 },
+      { key: "red", label: "Verm.", width: 26 },
     ];
+    const playerWidth = 32 + 165 + 20 + 20 + 20 + 20 + 20 + 26 + 26; // 369
+    const sideWidth = contentWidth - playerWidth; // 206
 
-    // Table Header Row
-    const headerHeight = 14;
+    // ── Header row ──
+    const headerHeight = 13;
     {
       const top = cursorY;
       const bottom = top - headerHeight;
       fillRect(marginX, bottom, contentWidth, headerHeight, 0.85);
-
       let x = marginX;
       for (const col of playerCols) {
         rect(x, bottom, col.width, headerHeight);
-        text(col.label, x + 2, top - 10, "F2", 6.5);
+        text(col.label, x + 2, top - 9, "F2", 6.5);
         x += col.width;
       }
-      
-      // Sidebar headers
-      rect(x, bottom, 50, headerHeight);
-      text("1a tempo :", x + 3, top - 10, "F2", 6.5);
-      x += 50;
-
-      rect(x, bottom, 58, headerHeight);
-      text("Coletivas", x + 3, top - 10, "F2", 6.5);
-      x += 58;
-
-      rect(x, bottom, 65, headerHeight);
-      text("Professor", x + 3, top - 10, "F2", 6.5);
-
+      // Side header: Professor (single wide column)
+      rect(x, bottom, sideWidth, headerHeight);
+      text("Professor", x + 4, top - 9, "F2", 6.5);
+      text("1º tempo", x + sideWidth - 50, top - 9, "F2", 6.5);
       cursorY = bottom;
     }
 
-    // Athlete rows (exactly 15 rows for structural symmetry)
-    const rowHeight = 12;
+    // ── Athlete rows ──
+    const rowHeight = 11;
     const totalRows = 15;
     for (let i = 0; i < totalRows; i++) {
       const athlete = roster[i];
       const topRow = cursorY;
       const bottomRow = topRow - rowHeight;
-
-      // 1. Draw Player Table Cells
       let xRow = marginX;
+
+      // Player cells
       for (const col of playerCols) {
         rect(xRow, bottomRow, col.width, rowHeight);
         if (athlete) {
           if (col.key === "reg") {
-            text(String(athlete.id), xRow + 3, topRow - 8.5, "F1", 7);
+            text(String(i + 1), xRow + 4, topRow - 7.5, "F1", 7);
           } else if (col.key === "name") {
-            const maxChars = Math.floor((col.width - 4) / (7.5 * 0.52));
-            text(fitCellText(athlete.name, maxChars), xRow + 3, topRow - 8.5, "F1", 7.5);
+            const maxChars = Math.floor((col.width - 4) / (7 * 0.52));
+            text(fitCellText(athlete.name, maxChars), xRow + 3, topRow - 7.5, "F1", 7);
           } else if (col.key === "num" && athlete.number != null) {
-            text(String(athlete.number), xRow + 3, topRow - 8.5, "F2", 7.5);
-          } else if (eventsByMatch && matchId) {
-            const matchEvents = eventsByMatch[matchId] || [];
-            const athleteEvents = matchEvents.filter((e) => e.athleteId === athlete.id);
-
-            if (col.key === "g1") {
-              const goals1 = athleteEvents.filter((e) => e.type === "goal" && e.period === 1).length;
-              if (goals1 > 0) text(String(goals1), xRow + 8, topRow - 8.5, "F1", 7.5);
-            } else if (col.key === "g2") {
-              const goals2 = athleteEvents.filter((e) => e.type === "goal" && e.period === 2).length;
-              if (goals2 > 0) text(String(goals2), xRow + 8, topRow - 8.5, "F1", 7.5);
-            } else if (col.key === "g3") {
-              const goals3 = athleteEvents.filter((e) => e.type === "goal" && e.period === 3).length;
-              if (goals3 > 0) text(String(goals3), xRow + 8, topRow - 8.5, "F1", 7.5);
-            } else if (col.key === "pen") {
-              const fouls = athleteEvents.filter((e) => e.type === "foul").length;
-              if (fouls > 0) text(String(fouls), xRow + 8, topRow - 8.5, "F1", 7.5);
-            } else if (col.key === "yellow") {
-              const yellow = athleteEvents.some((e) => e.type === "yellow_card");
-              if (yellow) text("X", xRow + 9, topRow - 8.5, "F2", 7.5);
-            } else if (col.key === "red") {
-              const red = athleteEvents.some((e) => e.type === "red_card");
-              if (red) text("X", xRow + 9, topRow - 8.5, "F2", 7.5);
-            }
+            text(String(athlete.number), xRow + 4, topRow - 7.5, "F2", 7);
           }
         }
         xRow += col.width;
       }
 
-      // 2. Draw Timeout Column Cell
-      rect(xRow, bottomRow, 50, rowHeight);
-      if (i === 6) {
-        text("2a tempo :", xRow + 3, topRow - 8.5, "F2", 6.5);
-      } else if (i === 13) {
-        text("3a tempo :", xRow + 3, topRow - 8.5, "F2", 6.5);
-      }
-      xRow += 50;
-
-      // 3. Draw Collective Fouls Column Cell
-      rect(xRow, bottomRow, 58, rowHeight);
+      // Side cell (Professor / tempos / coletivas / capitao)
+      rect(xRow, bottomRow, sideWidth, rowHeight);
+      const sx = xRow;
       if (i === 0) {
-        text("COLET. 1o", xRow + 3, topRow - 8.5, "F2", 6.5);
+        text("COLET. 1º", sx + 4, topRow - 7.5, "F2", 6.5);
+        text("A", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
       } else if (i >= 1 && i <= 5) {
-        text(String(i), xRow + 4, topRow - 8.5, "F1", 7);
-        rect(xRow + 35, bottomRow + 2, 12, 8);
+        text(String(i), sx + 4, topRow - 7.5, "F1", 7);
+        rect(sx + 14, bottomRow + 2, 10, 7);
+        if (i === 1) text("S", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
+        if (i === 2) text("S", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
+        if (i === 3) text(":", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
       } else if (i === 6) {
-        text("COLET. 2o", xRow + 3, topRow - 8.5, "F2", 6.5);
+        text("COLET. 2º", sx + 4, topRow - 7.5, "F2", 6.5);
+        text("2º tempo", sx + sideWidth - 50, topRow - 7.5, "F2", 6.5);
       } else if (i >= 7 && i <= 11) {
-        text(String(i - 6), xRow + 4, topRow - 8.5, "F1", 7);
-        rect(xRow + 35, bottomRow + 2, 12, 8);
+        text(String(i - 6), sx + 4, topRow - 7.5, "F1", 7);
+        rect(sx + 14, bottomRow + 2, 10, 7);
+        if (i === 7) { text("Capitão", sx + 26, topRow - 7.5, "F2", 6.5); text("A", sx + sideWidth - 12, topRow - 7.5, "F1", 7); }
+        if (i === 8) text("S", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
+        if (i === 9) text("S", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
+        if (i === 10) text(":", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
       } else if (i === 12) {
-        text("COLET. 3o", xRow + 3, topRow - 8.5, "F2", 6.5);
-      } else if (i >= 13 && i <= 14) {
-        if (i === 13) {
-          text("1   2   3", xRow + 6, topRow - 8.5, "F1", 7);
-        } else {
-          text("4   5", xRow + 6, topRow - 8.5, "F1", 7);
-        }
+        text("COLET. 3º", sx + 4, topRow - 7.5, "F2", 6.5);
+        text("3º tempo", sx + sideWidth - 50, topRow - 7.5, "F2", 6.5);
+      } else if (i === 13) {
+        text("1   2   3", sx + 4, topRow - 7.5, "F1", 7);
+        rect(sx + 18, bottomRow + 2, 10, 7);
+        rect(sx + 34, bottomRow + 2, 10, 7);
+        rect(sx + 50, bottomRow + 2, 10, 7);
+      } else if (i === 14) {
+        text("4   5", sx + 4, topRow - 7.5, "F1", 7);
+        rect(sx + 18, bottomRow + 2, 10, 7);
+        rect(sx + 34, bottomRow + 2, 10, 7);
       }
-      xRow += 58;
-
-      // 4. Draw Signature Column Cell
-      rect(xRow, bottomRow, 65, rowHeight);
-      if (i === 0) text("A", xRow + 28, topRow - 8.5, "F1", 7);
-      else if (i === 1) text("S", xRow + 28, topRow - 8.5, "F1", 7);
-      else if (i === 2) text("S", xRow + 28, topRow - 8.5, "F1", 7);
-      else if (i === 3) text(":", xRow + 28, topRow - 8.5, "F1", 7);
-      else if (i === 6) {
-        text("Capitao", xRow + 3, topRow - 8.5, "F2", 6.5);
-        text("A", xRow + 28, topRow - 8.5, "F1", 7);
-      }
-      else if (i === 7) text("S", xRow + 28, topRow - 8.5, "F1", 7);
-      else if (i === 8) text("S", xRow + 28, topRow - 8.5, "F1", 7);
-      else if (i === 9) text(":", xRow + 28, topRow - 8.5, "F1", 7);
 
       cursorY = bottomRow;
     }
 
-    cursorY -= 8; // Spacer below table
+    // ── Tec / Aux / Professor row ──
+    const footHeight = 12;
+    {
+      const top = cursorY;
+      const bottom = top - footHeight;
+      rect(marginX, bottom, 75, footHeight);
+      text("Tec:", marginX + 3, top - 8.5, "F2", 7);
+      rect(marginX + 75, bottom, 75, footHeight);
+      text("Aux:", marginX + 78, top - 8.5, "F2", 7);
+      rect(marginX + 150, bottom, contentWidth - 150, footHeight);
+      text("Professor:", marginX + 153, top - 8.5, "F2", 7);
+      cursorY = bottom;
+    }
+
+    cursorY -= 4;
   };
 
   for (const match of [...matches].sort((a, b) => {
@@ -373,128 +346,98 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     const homeTeam = teamById.get(match.homeTeamId);
     const awayTeam = teamById.get(match.awayTeamId);
 
-    // ─── Official APEFI Header Box ───
-    const boxHeight = 55;
-    rect(marginX, cursorY - boxHeight, contentWidth, boxHeight);
-
-    const centerText = (val: string, y: number, font: "F1" | "F2", size: number) => {
-      const charWidth = size * 0.52;
-      const textWidth = escapePdfString(val).length * charWidth;
-      const x = marginX + (contentWidth - textWidth) / 2;
-      text(val, x, y, font, size);
-    };
-
-    centerText("APEFI-ORGANIZACAO E PROMOCOES DE EVENTOS Ltda-ME", cursorY - 14, "F2", 10.5);
-    centerText("www.apefi.com.br / apefi@apefi.com.br", cursorY - 26, "F1", 8.5);
-    centerText("Tel:2533-2425 cel:99761-0088", cursorY - 37, "F1", 8.5);
-    centerText("CNPJ:09.002.721/0001-05", cursorY - 48, "F1", 8.5);
-    cursorY -= (boxHeight + 5);
 
     // ─── Matchup row ───
-    const half = (contentWidth - 30) / 2;
+    const half = (contentWidth - 24) / 2;
     drawRow(
       [
-        { width: 45, label: "Equipe A:" },
-        { width: half - 45, value: homeTeam?.name || "A definir", valueFont: "F2", valueSize: 9.5 },
-        { width: 30, value: "x", valueFont: "F2", valueSize: 12 },
-        { width: 45, label: "Equipe B:" },
-        { width: half - 45, value: awayTeam?.name || "A definir", valueFont: "F2", valueSize: 9.5 },
+        { width: 55, label: "Equipe A", value: homeTeam?.name || "", valueFont: "F2", valueSize: 9 },
+        { width: 24, value: "x", valueFont: "F2", valueSize: 12 },
+        { width: 55, label: "Equipe B", value: awayTeam?.name || "", valueFont: "F2", valueSize: 9 },
+        { width: contentWidth - 55 - 24 - 55, label: "Contagens", value: "1º Per. |   |  2º Per. |   |  3º Per. |   |  P. Extra |   |  Final |   |", valueFont: "F1", valueSize: 7.5 },
       ],
-      20,
-    );
-
-    // ─── Competition info ───
-    drawRow(
-      [
-        { width: 200, label: "Competicao:", value: tournament.name, valueFont: "F2", valueSize: 9 },
-        { width: 339, label: "Contagens", value: "1o Per: |   |   2o Per: |   |   3o Per: |   |   P. Extra: |   |   Final: |   |", valueFont: "F1", valueSize: 8 },
-      ],
-      20,
+      16,
     );
 
     drawRow(
       [
-        { width: contentWidth * 0.5, label: "Data:", value: formatDate(match.date), valueFont: "F2" },
-        { width: contentWidth * 0.5, label: "Horario:", value: (match.time || "").trim(), valueFont: "F2" },
+        { width: contentWidth * 0.35, label: "Competição", value: tournament.name, valueFont: "F2", valueSize: 8.5 },
+        { width: contentWidth * 0.65, label: "", value: "" },
       ],
-      20,
+      16,
     );
 
     const weekDay = getPortugueseWeekDay(match.date);
     drawRow(
       [
-        { width: contentWidth * 0.5, label: "Categoria:", value: tournament.category, valueFont: "F2" },
-        { width: contentWidth * 0.5, label: "Semana:", value: weekDay || "Sabado", valueFont: "F2" },
+        { width: contentWidth * 0.25, label: "Data", value: formatDate(match.date), valueFont: "F2" },
+        { width: contentWidth * 0.25, label: "Horário", value: (match.time || "").trim(), valueFont: "F2" },
+        { width: contentWidth * 0.25, label: "Categoria", value: tournament.category, valueFont: "F2" },
+        { width: contentWidth * 0.25, label: "Semana", value: weekDay || "Sábado", valueFont: "F2" },
       ],
-      20,
+      16,
     );
 
     drawRow(
       [
-        { width: contentWidth * 0.6, label: "Ginasio:", value: (match.location || "").trim(), valueFont: "F1", valueSize: 8 },
-        { width: contentWidth * 0.4, label: "Cidade:", value: "GUARULHOS", valueFont: "F2" },
+        { width: contentWidth * 0.55, label: "Ginásio", value: (match.location || "").trim(), valueFont: "F1", valueSize: 8.5 },
+        { width: contentWidth * 0.45, label: "Cidade", value: "", valueFont: "F1" },
       ],
-      20,
+      16,
     );
-    cursorY -= 5;
+    cursorY -= 1;
 
-    // ─── Arbitragem Section ───
-    const arbHeaderHeight = 12;
-    fillRect(marginX, cursorY - arbHeaderHeight, contentWidth, arbHeaderHeight, 0.85);
-    text("ARBITRAGEM", marginX + 5, cursorY - 9, "F2", 7);
-    cursorY -= arbHeaderHeight;
-
+    // ─── Arbitragem / Horário ───
+    const arbHeight = 48;
     const topArb = cursorY;
-    const bottomArb = cursorY - 39;
-    rect(marginX, bottomArb, contentWidth, 39);
+    const bottomArb = cursorY - arbHeight;
+    rect(marginX, bottomArb, contentWidth, arbHeight);
 
-    text("Arbitro:", marginX + 4, topArb - 10, "F1", 7.5);
-    text("Arbitro:", marginX + 4, topArb - 23, "F1", 7.5);
-    text("Anotador:", marginX + 4, topArb - 36, "F1", 7.5);
+    text("Arbitragem", marginX + 4, topArb - 9, "F2", 7);
+    text("Árbitro:", marginX + 4, topArb - 22, "F1", 7);
+    text("Anotador:", marginX + 4, topArb - 35, "F1", 7);
 
     commands.push(`0.5 w`);
-    commands.push(`${(marginX + 45).toFixed(2)} ${(topArb - 10).toFixed(2)} m ${(marginX + 280).toFixed(2)} ${(topArb - 10).toFixed(2)} l S`);
-    commands.push(`${(marginX + 45).toFixed(2)} ${(topArb - 23).toFixed(2)} m ${(marginX + 280).toFixed(2)} ${(topArb - 23).toFixed(2)} l S`);
-    commands.push(`${(marginX + 45).toFixed(2)} ${(topArb - 36).toFixed(2)} m ${(marginX + 280).toFixed(2)} ${(topArb - 36).toFixed(2)} l S`);
+    commands.push(`${(marginX + 45).toFixed(2)} ${(topArb - 22).toFixed(2)} m ${(marginX + 230).toFixed(2)} ${(topArb - 22).toFixed(2)} l S`);
+    commands.push(`${(marginX + 45).toFixed(2)} ${(topArb - 35).toFixed(2)} m ${(marginX + 230).toFixed(2)} ${(topArb - 35).toFixed(2)} l S`);
     commands.push(`0.7 w`);
 
-    commands.push(`${(marginX + 300).toFixed(2)} ${topArb.toFixed(2)} m ${(marginX + 300).toFixed(2)} ${bottomArb.toFixed(2)} l S`);
-
-    const xGrid = marginX + 300;
-    const wGrid = contentWidth - 300;
-    const wLabel = 60;
-    const wHalf = (wGrid - wLabel) / 2;
+    // Right side: Horário grid
+    commands.push(`${(marginX + 250).toFixed(2)} ${topArb.toFixed(2)} m ${(marginX + 250).toFixed(2)} ${bottomArb.toFixed(2)} l S`);
+    const xGrid = marginX + 250;
+    const wGrid = contentWidth - 250;
+    const wCol = wGrid / 3;
 
     fillRect(xGrid, topArb - 10, wGrid, 10, 0.9);
     rect(xGrid, topArb - 10, wGrid, 10);
-    text("Horario", xGrid + 4, topArb - 8, "F2", 6.5);
-    text("Inicio", xGrid + wLabel + 4, topArb - 8, "F2", 6.5);
-    text("Termino", xGrid + wLabel + wHalf + 4, topArb - 8, "F2", 6.5);
+    text("Horário", xGrid + 4, topArb - 8, "F2", 6.5);
+    text("Início", xGrid + wCol + 4, topArb - 8, "F2", 6.5);
+    text("Término", xGrid + wCol * 2 + 4, topArb - 8, "F2", 6.5);
 
     const drawArbPeriodRow = (label: string, y: number) => {
       rect(xGrid, y, wGrid, 10);
       text(label, xGrid + 4, y + 2, "F1", 7);
-      commands.push(`${(xGrid + wLabel).toFixed(2)} ${(y + 10).toFixed(2)} m ${(xGrid + wLabel).toFixed(2)} ${y.toFixed(2)} l S`);
-      commands.push(`${(xGrid + wLabel + wHalf).toFixed(2)} ${(y + 10).toFixed(2)} m ${(xGrid + wLabel + wHalf).toFixed(2)} ${y.toFixed(2)} l S`);
+      commands.push(`${(xGrid + wCol).toFixed(2)} ${(y + 10).toFixed(2)} m ${(xGrid + wCol).toFixed(2)} ${y.toFixed(2)} l S`);
+      commands.push(`${(xGrid + wCol * 2).toFixed(2)} ${(y + 10).toFixed(2)} m ${(xGrid + wCol * 2).toFixed(2)} ${y.toFixed(2)} l S`);
     };
 
-    drawArbPeriodRow("1o Per.", topArb - 20);
-    drawArbPeriodRow("2o Per.", topArb - 30);
+    drawArbPeriodRow("1º Per.", topArb - 20);
+    drawArbPeriodRow("2º Per.", topArb - 30);
     drawArbPeriodRow("P. Extra", topArb - 40);
 
-    cursorY = bottomArb - 8;
+    cursorY = bottomArb - 4;
 
     // ─── Team rosters ───
     drawTeamTable(homeTeam, "EQUIPE A", match.id);
     drawTeamTable(awayTeam, "EQUIPE B", match.id);
 
     // ─── Footer Notes / Observations ───
-    const obsHeight = 35;
+    const obsHeight = 28;
     rect(marginX, bottomMargin, contentWidth, obsHeight);
-    text("Observacoes / Ocorrencias:", marginX + 4, bottomMargin + obsHeight - 8, "F2", 7);
+    text("Observacoes / Ocorrencias:", marginX + 4, bottomMargin + obsHeight - 7, "F2", 7);
     commands.push(`0.5 w`);
-    commands.push(`${(marginX + 2).toFixed(2)} ${(bottomMargin + 15).toFixed(2)} m ${(marginX + contentWidth - 2).toFixed(2)} ${(bottomMargin + 15).toFixed(2)} l S`);
-    commands.push(`${(marginX + 2).toFixed(2)} ${(bottomMargin + 5).toFixed(2)} m ${(marginX + contentWidth - 2).toFixed(2)} ${(bottomMargin + 5).toFixed(2)} l S`);
+    commands.push(`${(marginX + 2).toFixed(2)} ${(bottomMargin + 12).toFixed(2)} m ${(marginX + contentWidth - 2).toFixed(2)} ${(bottomMargin + 12).toFixed(2)} l S`);
+    commands.push(`${(marginX + 2).toFixed(2)} ${(bottomMargin + 4).toFixed(2)} m ${(marginX + contentWidth - 2).toFixed(2)} ${(bottomMargin + 4).toFixed(2)} l S`);
     commands.push(`0.7 w`);
   }
 
