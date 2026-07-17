@@ -225,8 +225,9 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     const playerWidth = 32 + 165 + 20 + 20 + 20 + 20 + 20 + 26 + 26; // 369
     const sideWidth = contentWidth - playerWidth; // 206
 
-    // ── Header row ──
-    const headerHeight = 13;
+    // ── Header row (2 linhas: "1º tempo" e depois ":" / "Professor") ──
+    const headerRowHeight = 11;
+    const headerHeight = headerRowHeight * 2;
     {
       const top = cursorY;
       const bottom = top - headerHeight;
@@ -234,53 +235,55 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
       let x = marginX;
       for (const col of playerCols) {
         rect(x, bottom, col.width, headerHeight);
-        text(col.label, x + 2, top - 9, "F2", 6.5);
+        text(col.label, x + 2, top - headerHeight / 2 + 2, "F2", 6.5);
         x += col.width;
       }
-      // Side header: Professor (single wide column)
-      rect(x, bottom, sideWidth, headerHeight);
-      text("Professor", x + 4, top - 9, "F2", 6.5);
-      text("1º tempo", x + sideWidth - 50, top - 9, "F2", 6.5);
+      // Side header, 2 linhas: "1º tempo" na primeira, ":" + "Professor" na segunda
+      rect(x, top - headerRowHeight, sideWidth, headerRowHeight);
+      text("1º tempo", x + 4, top - 8, "F2", 6.5);
+      rect(x, bottom, sideWidth, headerRowHeight);
+      text(":", x + 4, bottom + 3, "F1", 6.5);
+      text("Professor", x + 60, bottom + 3, "F2", 6.5);
       cursorY = bottom;
     }
 
     // ── Athlete rows ──
-    // Coluna lateral (tempos / faltas coletivas / capitão) segue o modelo
-    // oficial da APEFI usado no Excel: cada período (1º/2º/3º tempo) tem seu
-    // rótulo "COLET. Nº" seguido de 5 caixas para contar as faltas coletivas
-    // (a partir da 6ª falta o time sofre tiro livre sem barreira). As marcas
-    // "A"/"S"/":" (Árbitro/Súmula) aparecem uma única vez, junto ao início da
-    // contagem do 1º tempo — o mesmo dado já tem campo próprio, com rótulo,
-    // no bloco "Arbitragem" no topo da página.
+    // Coluna lateral (tempos / faltas coletivas / capitão) segue exatamente o
+    // modelo oficial da APEFI usado no Excel: cada período (1º/2º/3º tempo)
+    // tem seu separador ":", o rótulo "COLET. Nº" e a contagem de 1 a 5
+    // faltas coletivas (a partir da 6ª falta o time sofre tiro livre sem
+    // barreira). As marcas "A"/"S"/":" (Árbitro/Súmula) aparecem em dois
+    // pontos da planilha, junto ao 1º e ao 3º tempo.
     type SideRow = {
       colet?: string;
       tempoLabel?: string;
+      separator?: boolean;
       num?: string;
-      checkbox?: boolean;
       captain?: boolean;
       mark?: string;
     };
     const sideRows: SideRow[] = [
       { colet: "COLET. 1º", mark: "A" },
-      { num: "1", checkbox: true, mark: "S" },
-      { num: "2", checkbox: true, mark: ":" },
-      { num: "3", checkbox: true },
-      { num: "4", checkbox: true },
-      { num: "5", checkbox: true },
+      { num: "1", mark: "S" },
+      { num: "2", mark: ":" },
+      { num: "3" },
+      { num: "4" },
+      { num: "5" },
       { tempoLabel: "2º tempo" },
+      { separator: true },
       { colet: "COLET. 2º" },
-      { num: "1", checkbox: true },
-      { num: "2", checkbox: true },
-      { num: "3", checkbox: true, captain: true },
-      { num: "4", checkbox: true },
-      { num: "5", checkbox: true },
-      { tempoLabel: "3º tempo" },
-      { colet: "COLET. 3º" },
-      { num: "1", checkbox: true },
-      { num: "2", checkbox: true },
-      { num: "3", checkbox: true },
-      { num: "4", checkbox: true },
-      { num: "5", checkbox: true },
+      { num: "1" },
+      { num: "2" },
+      { num: "3", captain: true },
+      { num: "4", mark: "A" },
+      { num: "5", mark: "S" },
+      { tempoLabel: "3º tempo", mark: "S" },
+      { separator: true },
+      { num: "1" },
+      { num: "2" },
+      { num: "3" },
+      { num: "4" },
+      { num: "5" },
     ];
 
     const rowHeight = 11;
@@ -315,9 +318,10 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
         text(side.colet, sx + 4, topRow - 7.5, "F2", 6.5);
       } else if (side.tempoLabel) {
         text(side.tempoLabel, sx + 4, topRow - 7.5, "F2", 6.5);
+      } else if (side.separator) {
+        text(":", sx + 4, topRow - 7.5, "F1", 6.5);
       } else if (side.num) {
         text(side.num, sx + 4, topRow - 7.5, "F1", 7);
-        if (side.checkbox) rect(sx + 14, bottomRow + 2, 10, 7);
         if (side.captain) text("Capitão", sx + 30, topRow - 7.5, "F2", 6.5);
       }
       if (side.mark) text(side.mark, sx + sideWidth - 12, topRow - 7.5, "F1", 7);
