@@ -186,7 +186,10 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
       if (cell.label) text(cell.label, x + 4, top - 9.5, "F2", 6.5);
       if (cell.value !== undefined && cell.value !== "") {
         const valueSize = cell.valueSize ?? 8;
-        const valueY = cell.label ? top - 18 : top - (rowHeight / 2 + valueSize / 2 - 1);
+        // Quando há rótulo, o valor fica numa segunda linha ancorada a partir
+        // da base da célula (não do topo), para nunca ultrapassar a borda
+        // inferior em linhas mais baixas.
+        const valueY = cell.label ? bottom + 3 : top - (rowHeight / 2 + valueSize / 2 - 1);
         const maxChars = Math.floor((cell.width - 8) / (valueSize * 0.52));
         text(fitCellText(cell.value, maxChars), x + 4, valueY, cell.valueFont ?? "F1", valueSize);
       }
@@ -242,8 +245,46 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     }
 
     // ── Athlete rows ──
+    // Coluna lateral (tempos / faltas coletivas / capitão) segue o modelo
+    // oficial da APEFI usado no Excel: cada período (1º/2º/3º tempo) tem seu
+    // rótulo "COLET. Nº" seguido de 5 caixas para contar as faltas coletivas
+    // (a partir da 6ª falta o time sofre tiro livre sem barreira). As marcas
+    // "A"/"S"/":" (Árbitro/Súmula) aparecem uma única vez, junto ao início da
+    // contagem do 1º tempo — o mesmo dado já tem campo próprio, com rótulo,
+    // no bloco "Arbitragem" no topo da página.
+    type SideRow = {
+      colet?: string;
+      tempoLabel?: string;
+      num?: string;
+      checkbox?: boolean;
+      captain?: boolean;
+      mark?: string;
+    };
+    const sideRows: SideRow[] = [
+      { colet: "COLET. 1º", mark: "A" },
+      { num: "1", checkbox: true, mark: "S" },
+      { num: "2", checkbox: true, mark: ":" },
+      { num: "3", checkbox: true },
+      { num: "4", checkbox: true },
+      { num: "5", checkbox: true },
+      { tempoLabel: "2º tempo" },
+      { colet: "COLET. 2º" },
+      { num: "1", checkbox: true },
+      { num: "2", checkbox: true },
+      { num: "3", checkbox: true, captain: true },
+      { num: "4", checkbox: true },
+      { num: "5", checkbox: true },
+      { tempoLabel: "3º tempo" },
+      { colet: "COLET. 3º" },
+      { num: "1", checkbox: true },
+      { num: "2", checkbox: true },
+      { num: "3", checkbox: true },
+      { num: "4", checkbox: true },
+      { num: "5", checkbox: true },
+    ];
+
     const rowHeight = 11;
-    const totalRows = 15;
+    const totalRows = sideRows.length;
     for (let i = 0; i < totalRows; i++) {
       const athlete = roster[i];
       const topRow = cursorY;
@@ -266,41 +307,20 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
         xRow += col.width;
       }
 
-      // Side cell (Professor / tempos / coletivas / capitao)
+      // Side cell (tempos / faltas coletivas / capitão)
       rect(xRow, bottomRow, sideWidth, rowHeight);
       const sx = xRow;
-      if (i === 0) {
-        text("COLET. 1º", sx + 4, topRow - 7.5, "F2", 6.5);
-        text("A", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
-      } else if (i >= 1 && i <= 5) {
-        text(String(i), sx + 4, topRow - 7.5, "F1", 7);
-        rect(sx + 14, bottomRow + 2, 10, 7);
-        if (i === 1) text("S", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
-        if (i === 2) text("S", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
-        if (i === 3) text(":", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
-      } else if (i === 6) {
-        text("COLET. 2º", sx + 4, topRow - 7.5, "F2", 6.5);
-        text("2º tempo", sx + sideWidth - 50, topRow - 7.5, "F2", 6.5);
-      } else if (i >= 7 && i <= 11) {
-        text(String(i - 6), sx + 4, topRow - 7.5, "F1", 7);
-        rect(sx + 14, bottomRow + 2, 10, 7);
-        if (i === 7) { text("Capitão", sx + 26, topRow - 7.5, "F2", 6.5); text("A", sx + sideWidth - 12, topRow - 7.5, "F1", 7); }
-        if (i === 8) text("S", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
-        if (i === 9) text("S", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
-        if (i === 10) text(":", sx + sideWidth - 12, topRow - 7.5, "F1", 7);
-      } else if (i === 12) {
-        text("COLET. 3º", sx + 4, topRow - 7.5, "F2", 6.5);
-        text("3º tempo", sx + sideWidth - 50, topRow - 7.5, "F2", 6.5);
-      } else if (i === 13) {
-        text("1   2   3", sx + 4, topRow - 7.5, "F1", 7);
-        rect(sx + 18, bottomRow + 2, 10, 7);
-        rect(sx + 34, bottomRow + 2, 10, 7);
-        rect(sx + 50, bottomRow + 2, 10, 7);
-      } else if (i === 14) {
-        text("4   5", sx + 4, topRow - 7.5, "F1", 7);
-        rect(sx + 18, bottomRow + 2, 10, 7);
-        rect(sx + 34, bottomRow + 2, 10, 7);
+      const side = sideRows[i];
+      if (side.colet) {
+        text(side.colet, sx + 4, topRow - 7.5, "F2", 6.5);
+      } else if (side.tempoLabel) {
+        text(side.tempoLabel, sx + 4, topRow - 7.5, "F2", 6.5);
+      } else if (side.num) {
+        text(side.num, sx + 4, topRow - 7.5, "F1", 7);
+        if (side.checkbox) rect(sx + 14, bottomRow + 2, 10, 7);
+        if (side.captain) text("Capitão", sx + 30, topRow - 7.5, "F2", 6.5);
       }
+      if (side.mark) text(side.mark, sx + sideWidth - 12, topRow - 7.5, "F1", 7);
 
       cursorY = bottomRow;
     }
@@ -356,7 +376,7 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
         { width: 55, label: "Equipe B", value: awayTeam?.name || "", valueFont: "F2", valueSize: 9 },
         { width: contentWidth - 55 - 24 - 55, label: "Contagens", value: "1º Per. |   |  2º Per. |   |  3º Per. |   |  P. Extra |   |  Final |   |", valueFont: "F1", valueSize: 7.5 },
       ],
-      16,
+      22,
     );
 
     drawRow(
@@ -364,7 +384,7 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
         { width: contentWidth * 0.35, label: "Competição", value: tournament.name, valueFont: "F2", valueSize: 8.5 },
         { width: contentWidth * 0.65, label: "", value: "" },
       ],
-      16,
+      22,
     );
 
     const weekDay = getPortugueseWeekDay(match.date);
@@ -375,7 +395,7 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
         { width: contentWidth * 0.25, label: "Categoria", value: tournament.category, valueFont: "F2" },
         { width: contentWidth * 0.25, label: "Semana", value: weekDay || "Sábado", valueFont: "F2" },
       ],
-      16,
+      22,
     );
 
     drawRow(
@@ -383,7 +403,7 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
         { width: contentWidth * 0.55, label: "Ginásio", value: (match.location || "").trim(), valueFont: "F1", valueSize: 8.5 },
         { width: contentWidth * 0.45, label: "Cidade", value: "", valueFont: "F1" },
       ],
-      16,
+      22,
     );
     cursorY -= 1;
 
