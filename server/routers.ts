@@ -19,7 +19,7 @@ import {
   upsertSiteSettings,
 } from "./db";
 import { eq, and, sql, inArray } from "drizzle-orm";
-import { matches, teams, tournaments, athletes } from "../drizzle/schema";
+import { matches, teams, tournaments, athletes, matchEvents } from "../drizzle/schema";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -1267,11 +1267,29 @@ const tournamentRouter = router({
       const db = await getDb();
       if (!db) throw new Error("DB not available");
 
-      // Delete matches, teams, and finally the tournament
+      const tournamentMatches = await db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(eq(matches.tournamentId, input.tournamentId));
+      const matchIds = tournamentMatches.map((m) => m.id);
+
+      const tournamentTeams = await db
+        .select({ id: teams.id })
+        .from(teams)
+        .where(eq(teams.tournamentId, input.tournamentId));
+      const teamIds = tournamentTeams.map((t) => t.id);
+
+      // Delete match events, athletes, matches, teams, and finally the tournament
+      if (matchIds.length > 0) {
+        await db.delete(matchEvents).where(inArray(matchEvents.matchId, matchIds));
+      }
+      if (teamIds.length > 0) {
+        await db.delete(athletes).where(inArray(athletes.teamId, teamIds));
+      }
       await db.delete(matches).where(eq(matches.tournamentId, input.tournamentId));
       await db.delete(teams).where(eq(teams.tournamentId, input.tournamentId));
       await db.delete(tournaments).where(eq(tournaments.id, input.tournamentId));
-      
+
       return { ok: true };
     }),
 
@@ -1788,7 +1806,7 @@ const seedRouter = router({
     return t;
   }),
 
-  fixDatabase: publicProcedure.mutation(async () => {
+  fixDatabase: adminProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
     const results: string[] = [];
@@ -2495,7 +2513,11 @@ const schoolRouter = router({
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
+    me: publicProcedure.query((opts) => {
+      if (!opts.ctx.user) return null;
+      const { password, ...safeUser } = opts.ctx.user;
+      return safeUser;
+    }),
     updateMe: protectedProcedure
       .input(z.object({
         name: z.string().optional(),
@@ -2533,17 +2555,31 @@ export const appRouter = router({
     login: publicProcedure
       .input(z.object({ username: z.string(), password: z.string() }))
       .mutation(async ({ input, ctx }) => {
-        console.log(`[Auth] Tentativa de login para usuário: ${input.username}`);
-        
         const { getAdminByUsername, upsertUser } = await import("./db");
+        const { verifyPassword, isHashedPassword } = await import("./password");
+        const { isLoginLocked, registerLoginFailure, registerLoginSuccess } = await import("./rateLimiter");
+
+        const clientIp = ctx.req.ip || "unknown";
+        const rateLimitKey = `${clientIp}:${input.username}`;
+
+        if (isLoginLocked(rateLimitKey)) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "Muitas tentativas de login. Tente novamente mais tarde.",
+          });
+        }
+
         const MASTER_CODE = process.env.AUTH_SECRET;
         let authenticatedUser: any = null;
+        let needsPasswordRehash = false;
 
         // 1. Tenta buscar no Banco de Dados primeiro (permite troca de senha do admin)
         const dbUser = await getAdminByUsername(input.username);
-        
-        if (dbUser && dbUser.password === input.password) {
-          console.log(`[Auth] Usuário encontrado no banco: ${input.username}`);
+        const passwordMatches = dbUser
+          ? await verifyPassword(input.password, dbUser.password)
+          : false;
+
+        if (dbUser && passwordMatches) {
           authenticatedUser = {
             openId: dbUser.openId,
             name: dbUser.name,
@@ -2552,10 +2588,10 @@ export const appRouter = router({
             loginMethod: "local",
             role: "admin",
           };
-        } 
+          needsPasswordRehash = !isHashedPassword(dbUser.password || "");
+        }
         // 2. Fallback para Login Mestre (caso a senha do banco falhe ou não exista)
         else if (MASTER_CODE && input.username === "admin" && input.password === MASTER_CODE) {
-          console.log(`[Auth] Login via chave mestra autorizado para: admin`);
           authenticatedUser = {
             openId: "admin-master",
             name: "Administrador LEG",
@@ -2567,6 +2603,7 @@ export const appRouter = router({
         }
 
         if (!authenticatedUser) {
+          registerLoginFailure(rateLimitKey);
           console.warn(`[Auth] Falha no login para: ${input.username} (Usuário não encontrado ou senha incorreta)`);
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -2574,8 +2611,11 @@ export const appRouter = router({
           });
         }
 
+        registerLoginSuccess(rateLimitKey);
+
         await upsertUser({
           ...authenticatedUser,
+          ...(needsPasswordRehash ? { password: input.password } : {}),
           lastSignedIn: new Date(),
         });
 

@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { athletes, contactMessages, InsertAthlete, InsertContactMessage, InsertMatchEvent, InsertSchool, InsertUser, matches, matchEvents, schools, siteSettings, teams, tournaments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { hashPassword, isHashedPassword } from "./password";
 import fs from "fs";
 import path from "path";
 
@@ -147,6 +148,10 @@ async function ensureColumn(
 }
 
 async function ensureLegacySchemaCompatibility(db: ReturnType<typeof drizzle>) {
+  // users
+  await ensureColumn(db, "users", "username", "VARCHAR(64) NULL");
+  await ensureColumn(db, "users", "password", "TEXT NULL");
+
   // tournaments
   await ensureColumn(db, "tournaments", "modality", "ENUM('futsal','basquete','volei','handebol','extra1','extra2') NOT NULL DEFAULT 'futsal'");
   await ensureColumn(db, "tournaments", "pointsPerWin", "INT NOT NULL DEFAULT 3");
@@ -259,8 +264,12 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     updateSet.username = user.username;
   }
   if (user.password !== undefined) {
-    values.password = user.password;
-    updateSet.password = user.password;
+    const password =
+      user.password === null || isHashedPassword(user.password)
+        ? user.password
+        : await hashPassword(user.password);
+    values.password = password;
+    updateSet.password = password;
   }
   if (user.lastSignedIn !== undefined) {
     values.lastSignedIn = user.lastSignedIn;
@@ -299,7 +308,21 @@ export async function getAdminByUsername(username: string) {
 export async function getAllAdmins() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(users).where(eq(users.role, "admin"));
+  return db
+    .select({
+      id: users.id,
+      openId: users.openId,
+      name: users.name,
+      email: users.email,
+      loginMethod: users.loginMethod,
+      username: users.username,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(users)
+    .where(eq(users.role, "admin"));
 }
 
 export async function deleteUser(id: number) {
