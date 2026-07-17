@@ -29,11 +29,17 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Copia apenas o necessário do estágio de build
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/drizzle ./drizzle
-COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/package.json ./package.json
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/drizzle ./drizzle
+COPY --from=builder --chown=node:node /app/drizzle.config.ts ./drizzle.config.ts
+
+# Pasta de uploads locais precisa existir e ser gravável pelo usuário não-root
+RUN mkdir -p uploads && chown -R node:node uploads
+
+# Executa como usuário não-privilegiado (imagem node:alpine já traz o usuário "node")
+USER node
 
 # Expõe a porta padrão
 EXPOSE 3000

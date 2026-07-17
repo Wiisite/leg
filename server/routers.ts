@@ -212,20 +212,7 @@ function computeStandings(
         entry.pointsLost > 0 ? entry.pointsWon / entry.pointsLost : entry.pointsWon;
     }
   }
-  return entries.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (modality === "volei") {
-      const setsAverageA = a.setsAverage ?? 0;
-      const setsAverageB = b.setsAverage ?? 0;
-      if (setsAverageB !== setsAverageA) return setsAverageB - setsAverageA;
-
-      const pointsAverageA = a.pointsAverage ?? 0;
-      const pointsAverageB = b.pointsAverage ?? 0;
-      if (pointsAverageB !== pointsAverageA) return pointsAverageB - pointsAverageA;
-    }
-    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
-    return b.goalsFor - a.goalsFor;
-  });
+  return sortStandingEntries(entries, modality);
 }
 
 type OverallSchoolRow = {
@@ -485,9 +472,11 @@ const tournamentRouter = router({
 
       const months = new Map<string, { month: number; year: number; firstDate: string }>();
 
-      for (const tournament of tournaments) {
-        const matchesList = await getMatchesByTournament(tournament.id);
+      const matchesByTournament = await Promise.all(
+        tournaments.map((tournament) => getMatchesByTournament(tournament.id))
+      );
 
+      for (const matchesList of matchesByTournament) {
         for (const match of matchesList) {
           if (match.status === "finished" || match.homeScore !== null || match.awayScore !== null) continue;
 
@@ -537,10 +526,16 @@ const tournamentRouter = router({
         awayTeam: string;
       }> = [];
 
-      for (const tournament of tournaments) {
-        const teams = await getTeamsByTournament(tournament.id);
+      const tournamentData = await Promise.all(
+        tournaments.map(async (tournament) => ({
+          tournament,
+          teams: await getTeamsByTournament(tournament.id),
+          matchesList: await getMatchesByTournament(tournament.id),
+        }))
+      );
+
+      for (const { tournament, teams, matchesList } of tournamentData) {
         const teamById = new Map(teams.map((team) => [team.id, team]));
-        const matchesList = await getMatchesByTournament(tournament.id);
         const division = detectDivisionLabel(tournament.name, tournament.category);
 
         for (const match of matchesList) {
@@ -608,7 +603,15 @@ const tournamentRouter = router({
       dateTs: number;
     }> = [];
 
-    for (const tournament of tournaments) {
+    const tournamentData = await Promise.all(
+      tournaments.map(async (tournament) => ({
+        tournament,
+        teamList: await getTeamsByTournament(tournament.id),
+        groupMatches: await getMatchesByPhase(tournament.id, "group"),
+      }))
+    );
+
+    for (const { tournament, teamList, groupMatches } of tournamentData) {
       const modalityKey = String(tournament.modality || "futsal").toLowerCase();
       const modalityLabel = modalityLabelByKey[modalityKey] ?? "Modalidade";
       const updatedAt = new Date(String((tournament as any).updatedAt ?? (tournament as any).createdAt ?? Date.now()));
@@ -635,8 +638,6 @@ const tournamentRouter = router({
         });
       }
 
-      const teamList = await getTeamsByTournament(tournament.id);
-      const groupMatches = await getMatchesByPhase(tournament.id, "group");
       const finishedGroupMatches = groupMatches.filter((m) => m.status === "finished" && m.homeScore !== null && m.awayScore !== null);
 
       const groupNames = teamList
@@ -1044,6 +1045,16 @@ const tournamentRouter = router({
       const numGroups = totalTeams <= 4 ? 1 : 2;
       const homeAndAwayEnabled = Number(tournament.homeAndAway ?? 0) === 1;
       const groups: (typeof teamList)[] = [];
+
+      if (input.mode === "manual" && numGroups < 2) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Sorteio manual requer equipes suficientes para 2 grupos. Com ${totalTeams} equipe${totalTeams === 1 ? "" : "s"}, o torneio usa apenas 1 grupo.`,
+        });
+      }
+      if (input.mode === "manual" && !input.manualGroups) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Defina os grupos manualmente antes de continuar." });
+      }
 
       if (input.mode === "manual" && input.manualGroups && numGroups >= 2) {
         // ── Modo manual: admin definiu os grupos ──
@@ -2592,6 +2603,7 @@ export const appRouter = router({
         }
         // 2. Fallback para Login Mestre (caso a senha do banco falhe ou não exista)
         else if (MASTER_CODE && input.username === "admin" && input.password === MASTER_CODE) {
+          console.warn(`[Auth] Login via chave mestra (AUTH_SECRET) autorizado. IP: ${clientIp}`);
           authenticatedUser = {
             openId: "admin-master",
             name: "Administrador LEG",
