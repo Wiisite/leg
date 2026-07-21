@@ -11,6 +11,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { buildModalitySchedulePdf } from "../pdf/modalitySchedulePdf";
 import { buildMatchSheetsPdf } from "../pdf/matchSheetPdf";
+import { buildVolleyMatchSheetsPdf } from "../pdf/volleyMatchSheetPdf";
 import { buildStandingsPdf } from "../pdf/standingsPdf";
 import { computeStandings } from "../routers";
 
@@ -350,14 +351,23 @@ async function startServer() {
         })
       );
 
-      const pdfBuffer = buildMatchSheetsPdf({
-        tournament,
-        teams,
-        matches: matchesForPdf,
-        athletesByTeam,
-        eventsByMatch,
-        contact: siteSettings.contactConfig,
-      });
+      const isVolei = String(tournament.modality || "").toLowerCase() === "volei";
+      const pdfBuffer = isVolei
+        ? buildVolleyMatchSheetsPdf({
+            tournament,
+            teams,
+            matches: matchesForPdf,
+            athletesByTeam,
+            contact: siteSettings.contactConfig,
+          })
+        : buildMatchSheetsPdf({
+            tournament,
+            teams,
+            matches: matchesForPdf,
+            athletesByTeam,
+            eventsByMatch,
+            contact: siteSettings.contactConfig,
+          });
 
       const safeName = String(tournament.name || `torneio-${tournamentId}`)
         .normalize("NFD")
