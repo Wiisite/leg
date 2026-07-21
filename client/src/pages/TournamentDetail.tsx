@@ -631,6 +631,85 @@ function MatchSheetModal({
   );
 }
 
+function SumulaPickerModal({
+  matches,
+  teams,
+  onClose,
+  onDownload,
+}: {
+  matches: MatchForModal[];
+  teams: { id: number; name: string; shortName: string }[];
+  onClose: () => void;
+  onDownload: (matchId?: number) => void;
+}) {
+  const sortedMatches = [...matches].sort((a, b) => {
+    const da = (a.date || "").trim();
+    const db = (b.date || "").trim();
+    if (da !== db) {
+      if (!da) return 1;
+      if (!db) return -1;
+      return da.localeCompare(db);
+    }
+    const ta = (a.time || "").trim();
+    const tb = (b.time || "").trim();
+    if (!ta) return 1;
+    if (!tb) return -1;
+    return ta.localeCompare(tb);
+  });
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative bg-white rounded-[32px] p-6 w-full max-w-lg shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300 max-h-[80vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-display font-black text-xl text-slate-800 uppercase tracking-tight">Baixar Súmula</h3>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Escolha o jogo</p>
+          </div>
+          <button onClick={onClose} className="h-10 w-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <Button
+          onClick={() => onDownload(undefined)}
+          className="w-full mb-4 bg-red text-white font-bold justify-center"
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Baixar todas as súmulas
+        </Button>
+
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+          {sortedMatches.length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-6">Nenhum jogo cadastrado neste torneio.</p>
+          )}
+          {sortedMatches.map((match) => {
+            const homeTeam = teams.find((t) => t.id === match.homeTeamId);
+            const awayTeam = teams.find((t) => t.id === match.awayTeamId);
+            return (
+              <button
+                key={match.id}
+                onClick={() => onDownload(match.id)}
+                className="w-full flex items-center justify-between gap-3 bg-slate-50 hover:bg-red/5 border border-slate-100 hover:border-red/20 rounded-2xl px-4 py-3 text-left transition-all"
+              >
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-xs font-black text-slate-700 uppercase truncate">
+                    {homeTeam?.shortName || homeTeam?.name || "A definir"} x {awayTeam?.shortName || awayTeam?.name || "A definir"}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                    {[formatMatchDate(match.date), match.time].filter(Boolean).join(" • ") || "Sem data definida"}
+                  </span>
+                </div>
+                <FileDown className="w-4 h-4 text-slate-300 group-hover:text-red flex-shrink-0" />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type MatchScheduleSection = {
   key: string;
   label: string;
@@ -1510,6 +1589,7 @@ export default function TournamentDetail() {
   const [editingMatch, setEditingMatch] = useState<null | MatchForModal>(null);
   const [managingTeam, setManagingTeam] = useState<any>(null);
   const [showingMatchSheet, setShowingMatchSheet] = useState<null | MatchForModal>(null);
+  const [showingSumulaPicker, setShowingSumulaPicker] = useState(false);
   const [showGroupSetup, setShowGroupSetup] = useState(false);
   const [groupMode, setGroupMode] = useState<"auto" | "manual">("auto");
   const [manualAssignment, setManualAssignment] = useState<Record<number, "A" | "B">>({});
@@ -1583,6 +1663,15 @@ export default function TournamentDetail() {
     }
   });
 
+  const handleExportStandingsPdf = () => {
+    const pdfUrl = `/api/tournaments/${tournamentId}/standings/pdf`;
+    const anchor = document.createElement("a");
+    anchor.href = pdfUrl;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.click();
+  };
+
   const handleExportPdf = () => {
     const pdfUrl = `/api/tournaments/${tournamentId}/pdf`;
     const anchor = document.createElement("a");
@@ -1592,8 +1681,10 @@ export default function TournamentDetail() {
     anchor.click();
   };
 
-  const handleExportSumulas = () => {
-    const pdfUrl = `/api/tournaments/${tournamentId}/sumulas/pdf`;
+  const handleExportSumulas = (matchId?: number) => {
+    const pdfUrl = matchId
+      ? `/api/tournaments/${tournamentId}/sumulas/pdf?matchId=${matchId}`
+      : `/api/tournaments/${tournamentId}/sumulas/pdf`;
     const anchor = document.createElement("a");
     anchor.href = pdfUrl;
     anchor.target = "_blank";
@@ -1799,10 +1890,19 @@ export default function TournamentDetail() {
               size="sm"
               variant="outline"
               className="h-8 border-border hover:border-red/50 hover:text-red text-xs px-2.5"
-              onClick={handleExportSumulas}
+              onClick={() => setShowingSumulaPicker(true)}
             >
               <FileText className="w-3.5 h-3.5 mr-1" />
               Súmulas
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 border-border hover:border-red/50 hover:text-red text-xs px-2.5"
+              onClick={handleExportStandingsPdf}
+            >
+              <Medal className="w-3.5 h-3.5 mr-1" />
+              Classificação
             </Button>
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}>
               {status.label}
@@ -2464,11 +2564,23 @@ export default function TournamentDetail() {
 
 
         {showingMatchSheet && (
-          <MatchSheetModal 
-            match={showingMatchSheet} 
-            teams={teams} 
+          <MatchSheetModal
+            match={showingMatchSheet}
+            teams={teams}
             modality={tournament.modality}
-            onClose={() => setShowingMatchSheet(null)} 
+            onClose={() => setShowingMatchSheet(null)}
+          />
+        )}
+
+        {showingSumulaPicker && (
+          <SumulaPickerModal
+            matches={matches}
+            teams={teams}
+            onClose={() => setShowingSumulaPicker(false)}
+            onDownload={(matchId) => {
+              handleExportSumulas(matchId);
+              setShowingSumulaPicker(false);
+            }}
           />
         )}
       </main>

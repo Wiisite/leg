@@ -58,6 +58,9 @@ type BuildMatchSheetsPdfInput = {
 
 const PHASE_ORDER: MatchLike["phase"][] = ["group", "quarterfinal", "semifinal", "third_place", "final"];
 
+const PAGE_WIDTH = 842;
+const PAGE_HEIGHT = 595;
+
 type RGB = [number, number, number];
 const BLUE: RGB = [0.09, 0.32, 0.64];
 const GRAY_TEXT: RGB = [0.45, 0.45, 0.45];
@@ -111,11 +114,11 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
   const { tournament, teams, matches, athletesByTeam, contact } = input;
   const teamById = new Map(teams.map((t) => [t.id, t]));
 
-  const pageWidth = 595;
-  const pageHeight = 842;
+  const pageWidth = PAGE_WIDTH;
+  const pageHeight = PAGE_HEIGHT;
   const marginX = 10;
   const topMargin = 10;
-  const contentWidth = pageWidth - marginX * 2; // 575
+  const contentWidth = pageWidth - marginX * 2; // 822
 
   const pages: string[][] = [];
   let commands: string[] = [];
@@ -165,10 +168,10 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     const blockTop = cursorY;
     const blockBottom = blockTop - blockHeight;
 
-    const dadosW = 190;
-    const contagemW = 90;
-    const arbitragemW = 135;
-    const horariosW = 160; // soma = 575
+    const dadosW = 272;
+    const contagemW = 129;
+    const arbitragemW = 193;
+    const horariosW = 228; // soma = 822
 
     const dadosX = marginX;
     const contagemX = dadosX + dadosW;
@@ -277,22 +280,32 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
 
   // ── Roster de uma equipe (tabela de jogadores) ──
   const playerCols = [
-    { key: "reg", label: "Reg.", width: 22 },
-    { key: "name", label: "Jogadores", width: 143 },
-    { key: "num", label: "Nº", width: 16 },
-    { key: "g1", label: "G1º", width: 16 },
-    { key: "g2", label: "G2º", width: 16 },
-    { key: "g3", label: "G3º", width: 16 },
-    { key: "pen", label: "PEN", width: 16 },
-    { key: "yellow", label: "Amar.", width: 20 },
-    { key: "red", label: "Verm.", width: 20 },
+    { key: "reg", label: "Reg.", weight: 22 },
+    { key: "name", label: "Jogadores", weight: 143 },
+    { key: "num", label: "Nº", weight: 16 },
+    { key: "g1", label: "G1º", weight: 16 },
+    { key: "g2", label: "G2º", weight: 16 },
+    { key: "g3", label: "G3º", weight: 16 },
+    { key: "pen", label: "PEN", weight: 16 },
+    { key: "yellow", label: "Amar.", weight: 20 },
+    { key: "red", label: "Verm.", weight: 20 },
   ];
   const ROSTER_ROWS = 22;
   const ROW_H = 13;
 
+  const computeColWidths = (totalWidth: number): number[] => {
+    const totalWeight = playerCols.reduce((sum, c) => sum + c.weight, 0);
+    const widths = playerCols.map((c) => Math.round((totalWidth * c.weight) / totalWeight));
+    const sumWidths = widths.reduce((sum, w) => sum + w, 0);
+    const nameIdx = playerCols.findIndex((c) => c.key === "name");
+    widths[nameIdx] += totalWidth - sumWidths;
+    return widths;
+  };
+
   const drawRosterTable = (x: number, width: number, label: string, team: TeamLike | undefined) => {
     const teamName = team?.name || "A definir";
     const roster = team ? athletesByTeam[team.id] || [] : [];
+    const colWidths = computeColWidths(width);
 
     const titleH = 12;
     fillRect(x, cursorY - titleH, width, titleH, 0.12);
@@ -303,10 +316,12 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     const headerBottom = titleBottom - headerH;
     fillRect(x, headerBottom, width, headerH, 0.85);
     let cx = x;
-    for (const col of playerCols) {
-      rect(cx, headerBottom, col.width, headerH);
+    for (let c = 0; c < playerCols.length; c++) {
+      const col = playerCols[c];
+      const colWidth = colWidths[c];
+      rect(cx, headerBottom, colWidth, headerH);
       text(col.label, cx + 2, headerBottom + headerH / 2 - 2, "F2", 6);
-      cx += col.width;
+      cx += colWidth;
     }
 
     let rowTop = headerBottom;
@@ -314,19 +329,21 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
       const athlete = roster[i];
       const rowBottom = rowTop - ROW_H;
       let colX = x;
-      for (const col of playerCols) {
-        rect(colX, rowBottom, col.width, ROW_H);
+      for (let c = 0; c < playerCols.length; c++) {
+        const col = playerCols[c];
+        const colWidth = colWidths[c];
+        rect(colX, rowBottom, colWidth, ROW_H);
         if (athlete) {
           if (col.key === "reg") {
             text(String(i + 1), colX + 3, rowTop - ROW_H / 2 - 2, "F1", 6.5);
           } else if (col.key === "name") {
-            const maxChars = Math.floor((col.width - 4) / (6.5 * 0.5));
+            const maxChars = Math.floor((colWidth - 4) / (6.5 * 0.5));
             text(fitCellText(athlete.name, maxChars), colX + 2, rowTop - ROW_H / 2 - 2, "F1", 6.5);
           } else if (col.key === "num" && athlete.number != null) {
             text(String(athlete.number), colX + 3, rowTop - ROW_H / 2 - 2, "F2", 6.5);
           }
         }
-        colX += col.width;
+        colX += colWidth;
       }
       rowTop = rowBottom;
     }
@@ -505,8 +522,8 @@ export function buildMatchSheetsPdf(input: BuildMatchSheetsPdfInput): Buffer {
   const pages = buildMatchSheetPages(input);
   const safePages = pages.length > 0 ? pages : [["0.7 w", "0 0 0 RG", "0 0 0 rg"]];
 
-  const pageWidth = 595;
-  const pageHeight = 842;
+  const pageWidth = PAGE_WIDTH;
+  const pageHeight = PAGE_HEIGHT;
 
   const catalogId = 1;
   const pagesId = 2;

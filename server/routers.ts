@@ -30,7 +30,7 @@ import nodemailer from "nodemailer";
 
 // ─── Standings helper ──────────────────────────────────────────────────────────
 
-type StandingEntry = {
+export type StandingEntry = {
   teamId: number;
   teamName: string;
   shortName: string;
@@ -77,7 +77,7 @@ function parseVoleiSetsJson(value: string | null | undefined): VoleiSetScore[] {
   }
 }
 
-function computeStandings(
+export function computeStandings(
   teamList: { id: number; name: string; shortName: string; color: string; logo: string | null }[],
   groupMatches: {
     homeTeamId: number;

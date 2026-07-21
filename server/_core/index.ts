@@ -12,6 +12,8 @@ import { serveStatic, setupVite } from "./vite";
 import { buildTournamentMatchesPdf } from "../pdf/tournamentPdf";
 import { buildModalitySchedulePdf } from "../pdf/modalitySchedulePdf";
 import { buildMatchSheetsPdf } from "../pdf/matchSheetPdf";
+import { buildStandingsPdf } from "../pdf/standingsPdf";
+import { computeStandings } from "../routers";
 
 const REGULATION_FILE_CANDIDATES_BY_MODALITY: Record<string, string[]> = {
   futsal: [
@@ -421,6 +423,91 @@ async function startServer() {
     }
   });
 
+  app.get("/api/tournaments/:id/standings/pdf", async (req, res) => {
+    try {
+      const tournamentId = Number(req.params.id);
+      if (!Number.isFinite(tournamentId) || tournamentId <= 0) {
+        res.status(400).json({ message: "ID de torneio inválido" });
+        return;
+      }
+
+      const { getTournamentById, getTeamsByTournament, getMatchesByPhase } = await import("../db");
+      const tournament = await getTournamentById(tournamentId);
+      if (!tournament) {
+        res.status(404).json({ message: "Torneio não encontrado" });
+        return;
+      }
+
+      const teamList = await getTeamsByTournament(tournamentId);
+      const groupMatches = await getMatchesByPhase(tournamentId, "group");
+      const groupNames = teamList
+        .map((t) => t.groupName)
+        .filter((g): g is string => g != null)
+        .filter((v, i, a) => a.indexOf(v) === i);
+
+      const groups =
+        groupNames.length <= 1
+          ? [
+              {
+                groupName: null,
+                standings: computeStandings(
+                  teamList,
+                  groupMatches,
+                  tournament.pointsPerWin,
+                  tournament.pointsPerDraw,
+                  tournament.pointsPerLoss,
+                  tournament.modality
+                ),
+              },
+            ]
+          : groupNames.sort().map((groupName) => {
+              const groupTeams = teamList.filter((t) => t.groupName === groupName);
+              const groupTeamIds = new Set(groupTeams.map((t) => t.id));
+              const gMatches = groupMatches.filter(
+                (m) => groupTeamIds.has(m.homeTeamId) && groupTeamIds.has(m.awayTeamId)
+              );
+              return {
+                groupName,
+                standings: computeStandings(
+                  groupTeams,
+                  gMatches,
+                  tournament.pointsPerWin,
+                  tournament.pointsPerDraw,
+                  tournament.pointsPerLoss,
+                  tournament.modality
+                ),
+              };
+            });
+
+      const pdfBuffer = buildStandingsPdf({
+        tournamentName: tournament.name,
+        category: tournament.category,
+        modality: tournament.modality,
+        groups,
+      });
+
+      const safeName = String(tournament.name || `torneio-${tournamentId}`)
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-zA-Z0-9-_]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase();
+
+      const fileName = `${safeName || `torneio-${tournamentId}`}-classificacao.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Length", String(pdfBuffer.length));
+      res.status(200).send(pdfBuffer);
+    } catch (error) {
+      console.error("[Standings PDF] Erro ao gerar PDF:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Erro interno ao gerar classificação em PDF" });
+      }
+    }
+  });
+
   app.get("/api/modality/:modality/schedule/pdf", async (req, res) => {
     try {
       const modality = String(req.params.modality || "").toLowerCase();
@@ -448,7 +535,7 @@ async function startServer() {
 
       const rows: Array<{
         matchId: number;
-        date: string;
+        round: number;
         formattedDate: string;
         time: string;
         category: string;
@@ -456,6 +543,8 @@ async function startServer() {
         homeTeam: string;
         awayTeam: string;
         location: string;
+        homeScore: number | null;
+        awayScore: number | null;
       }> = [];
 
       for (const tournament of tournaments) {
@@ -465,15 +554,13 @@ async function startServer() {
         const division = detectDivisionLabel(tournament.name, tournament.category);
 
         for (const match of matches) {
-          if (match.status === "finished" || match.homeScore !== null || match.awayScore !== null) continue;
-
           const parsedDate = parseIsoDate(match.date);
           if (!parsedDate) continue;
           if (parsedDate.year !== year || parsedDate.month !== month) continue;
 
           rows.push({
             matchId: match.id,
-            date: match.date || "",
+            round: match.round || 1,
             formattedDate: `${String(parsedDate.day).padStart(2, "0")}/${String(parsedDate.month).padStart(2, "0")}`,
             time: String(match.time || "").trim() || "-",
             category: tournament.category,
@@ -481,38 +568,26 @@ async function startServer() {
             homeTeam: teamById.get(match.homeTeamId)?.name || `Equipe ${match.homeTeamId}`,
             awayTeam: teamById.get(match.awayTeamId)?.name || `Equipe ${match.awayTeamId}`,
             location: String(match.location || "").trim() || "-",
+            homeScore: match.homeScore,
+            awayScore: match.awayScore,
           });
         }
       }
-
-      const sortedRows = rows.sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-
-        const locA = a.location || "";
-        const locB = b.location || "";
-        if (locA !== locB) return locA.localeCompare(locB, "pt-BR");
-
-        if (a.time !== b.time) {
-          if (a.time === "-") return 1;
-          if (b.time === "-") return -1;
-          return a.time.localeCompare(b.time);
-        }
-        if (a.category !== b.category) return a.category.localeCompare(b.category);
-        if (a.division !== b.division) return a.division.localeCompare(b.division);
-        return a.matchId - b.matchId;
-      });
 
       const pdfBuffer = buildModalitySchedulePdf({
         modalityLabel: MODALITY_LABELS[modality],
         monthLabel: MONTH_LABELS[month] || String(month),
         year,
-        rows: sortedRows.map((row) => ({
+        rows: rows.map((row) => ({
+          round: row.round,
           formattedDate: row.formattedDate,
           time: row.time,
           category: `${row.category} - ${row.division}`,
+          quadra: row.location,
           homeTeam: row.homeTeam,
           awayTeam: row.awayTeam,
-          location: row.location,
+          homeScore: row.homeScore,
+          awayScore: row.awayScore,
         })),
       });
 

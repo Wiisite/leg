@@ -1,26 +1,38 @@
-type ModalitySchedulePdfRow = {
-  round: number;
-  formattedDate: string;
-  time: string;
-  category: string;
-  quadra: string;
-  homeTeam: string;
-  awayTeam: string;
-  homeScore: number | null;
-  awayScore: number | null;
+type StandingEntryLike = {
+  teamId: number;
+  teamName: string;
+  shortName: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDiff: number;
+  points: number;
+  setsWon?: number;
+  setsLost?: number;
 };
 
-type BuildModalitySchedulePdfInput = {
-  modalityLabel: string;
-  monthLabel: string;
-  year: number;
-  rows: ModalitySchedulePdfRow[];
+type StandingsGroup = {
+  groupName: string | null;
+  standings: StandingEntryLike[];
+};
+
+type BuildStandingsPdfInput = {
+  tournamentName: string;
+  category: string;
+  modality: string;
+  groups: StandingsGroup[];
   generatedAt?: Date;
 };
 
-const YELLOW: [number, number, number] = [1, 0.92, 0.15];
-const ORANGE: [number, number, number] = [0.97, 0.73, 0.42];
-const NAVY: [number, number, number] = [0.06, 0.14, 0.32];
+const MODALITY_LABELS: Record<string, string> = {
+  futsal: "Futsal",
+  basquete: "Basquete",
+  volei: "Voleibol",
+  handebol: "Handebol",
+};
 
 function normalizeForPdfText(value: string): string {
   return value
@@ -59,52 +71,8 @@ function fitCellText(value: string, maxChars: number): string {
   return `${text.slice(0, cut).trimEnd()}...`;
 }
 
-function quadraLabel(rawLocation: string): string {
-  const value = (rawLocation || "").trim();
-  if (!value) return "-";
-  const stripped = value.replace(/^quadra\s*/i, "").trim();
-  return stripped || value;
-}
-
-type RowGroup = {
-  round: number;
-  quadra: string;
-  rows: ModalitySchedulePdfRow[];
-};
-
-function groupRows(rows: ModalitySchedulePdfRow[]): RowGroup[] {
-  const sorted = [...rows].sort((a, b) => {
-    if (a.round !== b.round) return a.round - b.round;
-
-    const quadraNumA = parseInt(a.quadra.match(/\d+/)?.[0] || "", 10);
-    const quadraNumB = parseInt(b.quadra.match(/\d+/)?.[0] || "", 10);
-    if (!Number.isNaN(quadraNumA) && !Number.isNaN(quadraNumB) && quadraNumA !== quadraNumB) {
-      return quadraNumA - quadraNumB;
-    }
-    if (a.quadra !== b.quadra) return a.quadra.localeCompare(b.quadra, "pt-BR");
-
-    if (a.time !== b.time) {
-      if (a.time === "-") return 1;
-      if (b.time === "-") return -1;
-      return a.time.localeCompare(b.time);
-    }
-    return a.category.localeCompare(b.category, "pt-BR");
-  });
-
-  const groups: RowGroup[] = [];
-  for (const row of sorted) {
-    const last = groups[groups.length - 1];
-    if (last && last.round === row.round && last.quadra === row.quadra) {
-      last.rows.push(row);
-    } else {
-      groups.push({ round: row.round, quadra: row.quadra, rows: [row] });
-    }
-  }
-  return groups;
-}
-
-export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): Buffer {
-  const { modalityLabel, monthLabel, year, rows, generatedAt = new Date() } = input;
+export function buildStandingsPdf(input: BuildStandingsPdfInput): Buffer {
+  const { tournamentName, category, modality, groups, generatedAt = new Date() } = input;
 
   const generatedLabel = generatedAt.toLocaleString("pt-BR", {
     day: "2-digit",
@@ -114,15 +82,22 @@ export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): 
     minute: "2-digit",
   });
 
-  const pageWidth = 842;
-  const pageHeight = 595;
-  const marginX = 20;
-  const topMargin = 24;
-  const bottomMargin = 20;
-  const tableWidth = pageWidth - marginX * 2; // 802
+  const isVolei = modality === "volei";
+  const modalityLabel = MODALITY_LABELS[String(modality || "").toLowerCase()] ?? modality;
 
-  const columnWidths = [55, 60, 85, 55, 240, 67, 240]; // soma = 802
-  const columns = ["Dia", "Horario", "Categoria", "Quadra", "Equipe A", "", "Equipe B"];
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const marginX = 30;
+  const topMargin = 28;
+  const bottomMargin = 28;
+  const tableWidth = pageWidth - marginX * 2;
+
+  const columns = isVolei
+    ? ["Pos", "Equipe", "PJ", "V", "D", "Sets V", "Sets D", "Pts"]
+    : ["Pos", "Equipe", "PJ", "V", "E", "D", "GP", "GC", "SG", "Pts"];
+  const columnWidths = isVolei
+    ? [28, 269, 34, 34, 34, 48, 48, 40] // soma = 535 (tableWidth)
+    : [26, 245, 34, 30, 30, 30, 34, 34, 34, 38]; // soma = 535 (tableWidth)
 
   const pages: string[][] = [];
   let commands: string[] = [];
@@ -134,26 +109,24 @@ export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): 
     cursorY = pageHeight - topMargin;
   };
 
-  const pushText = (text: string, x: number, y: number, font: "F1" | "F2", size: number, color?: [number, number, number]) => {
-    if (color) commands.push(`${color[0]} ${color[1]} ${color[2]} rg`);
+  const pushText = (text: string, x: number, y: number, font: "F1" | "F2", size: number) => {
     commands.push("BT");
     commands.push(`/${font} ${size} Tf`);
     commands.push(`1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm`);
     commands.push(`(${escapePdfString(text)}) Tj`);
     commands.push("ET");
-    if (color) commands.push("0 0 0 rg");
   };
 
   const estimateWidth = (value: string, font: "F1" | "F2", size: number): number =>
     normalizeForPdfText(value).length * size * (font === "F2" ? 0.58 : 0.5);
 
-  const centerText = (value: string, cx: number, y: number, font: "F1" | "F2", size: number, color?: [number, number, number]) => {
+  const centerText = (value: string, cx: number, y: number, font: "F1" | "F2", size: number) => {
     const w = estimateWidth(value, font, size);
-    pushText(value, cx - w / 2, y, font, size, color);
+    pushText(value, cx - w / 2, y, font, size);
   };
 
-  const fillRect = (x: number, y: number, w: number, h: number, color: [number, number, number]) => {
-    commands.push(`${color[0]} ${color[1]} ${color[2]} rg`);
+  const fillRect = (x: number, y: number, w: number, h: number, gray: number) => {
+    commands.push(`${gray} ${gray} ${gray} rg`);
     commands.push(`${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
     commands.push("0 0 0 rg");
   };
@@ -171,91 +144,100 @@ export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): 
   newPage();
 
   const metadataLines = [
-    { text: "LEG - Tabelao de Jogos", font: "F2" as const, size: 13 },
-    { text: `Modalidade: ${modalityLabel}  |  Referencia: ${monthLabel}/${year}  |  Gerado em: ${generatedLabel}`, font: "F1" as const, size: 9 },
+    { text: "LEG - Classificacao do Campeonato", font: "F2" as const, size: 13 },
+    { text: `Campeonato: ${tournamentName}`, font: "F2" as const, size: 10 },
+    { text: `Categoria: ${category}  |  Modalidade: ${modalityLabel}`, font: "F1" as const, size: 10 },
+    { text: `Gerado em: ${generatedLabel}`, font: "F1" as const, size: 10 },
   ];
 
   for (const line of metadataLines) {
     ensureSpace(14);
     pushText(line.text, marginX, cursorY - 10, line.font, line.size);
-    cursorY -= 15;
+    cursorY -= 14;
   }
-  cursorY -= 4;
+  cursorY -= 8;
 
-  const groups = groupRows(rows);
-
-  const rowHeight = 16;
-  const bannerHeight = 18;
-  const headerHeight = 16;
-
-  const drawBanner = (round: number) => {
-    fillRect(marginX, cursorY - bannerHeight, tableWidth, bannerHeight, YELLOW);
-    strokeRect(marginX, cursorY - bannerHeight, tableWidth, bannerHeight);
-    centerText(`${round}a Rodada`, marginX + tableWidth / 2, cursorY - bannerHeight / 2 - 3, "F2", 10, NAVY);
-    cursorY -= bannerHeight;
-  };
+  const rowHeight = 18;
+  const headerHeight = 18;
 
   const drawHeader = () => {
-    fillRect(marginX, cursorY - headerHeight, tableWidth, headerHeight, ORANGE);
+    fillRect(marginX, cursorY - headerHeight, tableWidth, headerHeight, 0.88);
     let x = marginX;
     for (let i = 0; i < columns.length; i++) {
       const width = columnWidths[i];
       strokeRect(x, cursorY - headerHeight, width, headerHeight);
-      if (columns[i]) centerText(columns[i], x + width / 2, cursorY - headerHeight / 2 - 2.5, "F2", 8.5);
+      centerText(columns[i], x + width / 2, cursorY - headerHeight / 2 - 3, "F2", 8.5);
       x += width;
     }
     cursorY -= headerHeight;
   };
 
-  if (groups.length === 0) {
+  if (groups.length === 0 || groups.every((g) => g.standings.length === 0)) {
     ensureSpace(16);
-    pushText("Nenhum jogo cadastrado para o periodo selecionado.", marginX, cursorY - 10, "F1", 10);
+    pushText("Nenhuma partida finalizada para gerar a classificacao.", marginX, cursorY - 10, "F1", 10);
   } else {
     for (const group of groups) {
-      const groupHeight = bannerHeight + headerHeight + group.rows.length * rowHeight;
-      ensureSpace(Math.min(groupHeight, bannerHeight + headerHeight + rowHeight));
+      if (group.standings.length === 0) continue;
 
-      drawBanner(group.round);
+      ensureSpace(headerHeight + rowHeight + (group.groupName ? 18 : 0));
+
+      if (group.groupName) {
+        pushText(`Grupo ${group.groupName}`, marginX, cursorY - 10, "F2", 10.5);
+        cursorY -= 18;
+      }
+
       drawHeader();
 
-      for (const row of group.rows) {
+      group.standings.forEach((entry, index) => {
         if (cursorY - rowHeight < bottomMargin) {
           newPage();
-          drawBanner(group.round);
+          if (group.groupName) {
+            pushText(`Grupo ${group.groupName} (cont.)`, marginX, cursorY - 10, "F2", 10.5);
+            cursorY -= 18;
+          }
           drawHeader();
         }
 
-        const isFinished = row.homeScore !== null && row.awayScore !== null;
-        const middleValue = isFinished ? `${row.homeScore} x ${row.awayScore}` : "vs";
-
-        const cells = [
-          fitCellText(row.formattedDate, 10),
-          fitCellText(row.time, 10),
-          fitCellText(row.category, 16),
-          fitCellText(quadraLabel(row.quadra), 8),
-          fitCellText(row.homeTeam, 42),
-          middleValue,
-          fitCellText(row.awayTeam, 42),
-        ];
+        const cells = isVolei
+          ? [
+              String(index + 1),
+              fitCellText(entry.teamName, 43),
+              String(entry.played),
+              String(entry.won),
+              String(entry.lost),
+              String(entry.setsWon ?? 0),
+              String(entry.setsLost ?? 0),
+              String(entry.points),
+            ]
+          : [
+              String(index + 1),
+              fitCellText(entry.teamName, 38),
+              String(entry.played),
+              String(entry.won),
+              String(entry.drawn),
+              String(entry.lost),
+              String(entry.goalsFor),
+              String(entry.goalsAgainst),
+              String(entry.goalDiff),
+              String(entry.points),
+            ];
 
         const rowBottom = cursorY - rowHeight;
         let x = marginX;
         for (let i = 0; i < cells.length; i++) {
           const width = columnWidths[i];
           strokeRect(x, rowBottom, width, rowHeight);
-          if (i === 5) {
-            centerText(cells[i], x + width / 2, cursorY - rowHeight / 2 - 2.5, "F2", isFinished ? 9 : 8.5);
-          } else if (i === 4 || i === 6) {
-            centerText(cells[i], x + width / 2, cursorY - rowHeight / 2 - 2.5, "F1", 9);
+          if (i === 1) {
+            pushText(cells[i], x + 5, cursorY - rowHeight / 2 - 3, "F1", 9);
           } else {
-            centerText(cells[i], x + width / 2, cursorY - rowHeight / 2 - 2.5, "F1", 8.5);
+            centerText(cells[i], x + width / 2, cursorY - rowHeight / 2 - 3, i === cells.length - 1 ? "F2" : "F1", 9);
           }
           x += width;
         }
         cursorY = rowBottom;
-      }
+      });
 
-      cursorY -= 6;
+      cursorY -= 14;
     }
   }
 
