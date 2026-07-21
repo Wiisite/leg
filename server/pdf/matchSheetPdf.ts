@@ -351,14 +351,18 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     return titleH + headerH + ROSTER_ROWS * ROW_H;
   };
 
-  // ── Falta coletiva (1º e 2º tempo) para uma equipe ──
+  // ── Falta coletiva (1º, 2º e 3º tempo) para uma equipe ──
   const drawFaltaColetiva = (x: number, width: number) => {
-    const subW = width / 2;
+    const subW = width / 3;
     const labelH = 10;
     const valueH = 10;
     const top = cursorY;
 
-    [["Falta Coletiva 1o", x], ["Falta Coletiva 2o", x + subW]].forEach(([label, sx]) => {
+    [
+      ["Falta Coletiva 1o", x],
+      ["Falta Coletiva 2o", x + subW],
+      ["Falta Coletiva 3o", x + subW * 2],
+    ].forEach(([label, sx]) => {
       const boxX = sx as number;
       rect(boxX, top - labelH - valueH, subW, labelH + valueH);
       line(boxX, top - labelH, boxX + subW, top - labelH);
@@ -369,13 +373,17 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     return labelH + valueH;
   };
 
-  // ── Linha "1º tempo" / "2º tempo" com placeholder de horário ──
+  // ── Linha "1º tempo" / "2º tempo" / "3º tempo" com placeholder de horário ──
   const drawTempoRow = (x: number, width: number) => {
-    const subW = width / 2;
+    const subW = width / 3;
     const h = 14;
     const top = cursorY;
 
-    [["1o tempo", x], ["2o tempo", x + subW]].forEach(([label, sx]) => {
+    [
+      ["1o tempo", x],
+      ["2o tempo", x + subW],
+      ["3o tempo", x + subW * 2],
+    ].forEach(([label, sx]) => {
       const boxX = sx as number;
       rect(boxX, top - h, subW, h);
       text(label as string, boxX + 4, top - h / 2 - 2, "F2", 7);
