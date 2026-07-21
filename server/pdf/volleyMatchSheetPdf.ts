@@ -51,8 +51,7 @@ const PAGE_WIDTH = 842;
 const PAGE_HEIGHT = 595;
 
 type RGB = [number, number, number];
-const BLUE: RGB = [0.09, 0.32, 0.64];
-const GRAY_TEXT: RGB = [0.45, 0.45, 0.45];
+const GRAY_TEXT: RGB = [0.4, 0.4, 0.4];
 
 function normalizeForPdfText(value: string): string {
   return value
@@ -107,9 +106,9 @@ function buildVolleyMatchSheetPages(input: BuildVolleyMatchSheetsPdfInput): stri
 
   const pageWidth = PAGE_WIDTH;
   const pageHeight = PAGE_HEIGHT;
-  const marginX = 10;
-  const topMargin = 10;
-  const contentWidth = pageWidth - marginX * 2; // 822
+  const marginX = 8;
+  const topMargin = 8;
+  const contentWidth = pageWidth - marginX * 2; // 826
 
   const pages: string[][] = [];
   let commands: string[] = [];
@@ -117,7 +116,7 @@ function buildVolleyMatchSheetPages(input: BuildVolleyMatchSheetsPdfInput): stri
 
   const startPage = () => {
     if (commands.length > 0) pages.push(commands);
-    commands = ["0.6 w", "0 0 0 RG", "0 0 0 rg"];
+    commands = ["0.5 w", "0 0 0 RG", "0 0 0 rg"];
     cursorY = pageHeight - topMargin;
   };
 
@@ -153,124 +152,186 @@ function buildVolleyMatchSheetPages(input: BuildVolleyMatchSheetsPdfInput): stri
     commands.push(`${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S`);
   };
 
-  // ── Bloco de um SET (2 equipes lado a lado: rodizio + grade de pontos) ──
-  const drawSetBlock = (
-    x: number,
-    width: number,
-    height: number,
-    setLabel: string,
-    homeName: string,
-    awayName: string,
-    maxPoints: number
-  ) => {
-    const top = cursorY;
+  // ── Coluna estreita "Inicio/Fim" + "PONTOS" (grade numerada 1..maxPoints) ──
+  const drawPontosCol = (x: number, top: number, width: number, height: number, timeLabel: string, maxPoints: number) => {
+    const timeH = height * 0.12;
+    rect(x, top - timeH, width, timeH);
+    text(`${timeLabel}:`, x + 1.5, top - timeH + 2, "F1", 4.8);
 
-    const titleH = 12;
-    fillRect(x, top - titleH, width, titleH, 0.12);
-    centerText(setLabel, x + width / 2, top - titleH + 3, "F2", 8, [1, 1, 1]);
-    let y = top - titleH;
-
-    const teamRowH = 12;
-    const halfW = width / 2;
-    rect(x, y - teamRowH, width, teamRowH);
-    line(x + halfW, y, x + halfW, y - teamRowH);
-    text(`Equipe A: ${fitCellText(homeName, 26)}`, x + 3, y - teamRowH + 3, "F2", 6.5);
-    text("Inicio:", x + halfW - 46, y - teamRowH + 3, "F1", 6.5);
-    line(x + halfW - 24, y - teamRowH + 2, x + halfW - 3, y - teamRowH + 2);
-    text(`Equipe B: ${fitCellText(awayName, 26)}`, x + halfW + 3, y - teamRowH + 3, "F2", 6.5);
-    text("Fim:", x + width - 40, y - teamRowH + 3, "F1", 6.5);
-    line(x + width - 24, y - teamRowH + 2, x + width - 3, y - teamRowH + 2);
-    y -= teamRowH;
-
-    const columnHeight = y - (top - height);
-    const rotationH = 32;
-    const labelColW = 24;
-
-    [0, 1].forEach((sideIdx) => {
-      const colX = x + sideIdx * halfW;
-      const dataW = halfW - labelColW;
-      const cellW = dataW / 6;
-
-      const rowLabels: [string, string][] = [
-        ["Saque", "I|II|III|IV|V|VI"],
-        ["Titular", ""],
-        ["Sub 1", ""],
-        ["Sub 2", ""],
-      ];
-      const rowH = rotationH / rowLabels.length;
-
-      rowLabels.forEach((_, rIdx) => {
-        const rowTop = y - rIdx * rowH;
-        rect(colX, rowTop - rowH, labelColW, rowH);
-        text(rowLabels[rIdx][0], colX + 2, rowTop - rowH + 2.5, "F2", 5.5);
-        for (let c = 0; c < 6; c++) {
-          const cellX = colX + labelColW + c * cellW;
-          rect(cellX, rowTop - rowH, cellW, rowH);
-          if (rIdx === 0) {
-            centerText(ROMAN[c], cellX + cellW / 2, rowTop - rowH + 2.5, "F2", 6);
-          }
-        }
-      });
-
-      const belowY = y - rotationH;
-      const remainingH = belowY - (top - height);
-      const rodizioW = labelColW + 10;
-      rect(colX, belowY - remainingH, rodizioW, remainingH);
-      centerText("Rodizio", colX + rodizioW / 2, belowY - 8, "F2", 5.5);
-      const pairs: [string, string][] = [
-        ["1", "5"],
-        ["2", "6"],
-        ["3", "7"],
-        ["4", "8"],
-      ];
-      const rodizioRowH = (remainingH - 10) / pairs.length;
-      pairs.forEach(([a, b], i) => {
-        const rowTop = belowY - 10 - i * rodizioRowH;
-        centerText(`${a} / ${b}`, colX + rodizioW / 2, rowTop - rodizioRowH + rodizioRowH / 2 - 2, "F1", 6);
-      });
-
-      const gridX = colX + rodizioW;
-      const gridW = halfW - rodizioW;
-      const gridRows = Math.ceil(maxPoints / 3);
-      const gridRowH = remainingH / gridRows;
-      const gridColW = gridW / 3;
-
-      rect(gridX, belowY - remainingH, gridW, remainingH);
-      for (let r = 0; r < gridRows; r++) {
-        const rowTop = belowY - r * gridRowH;
-        if (r > 0) line(gridX, rowTop, gridX + gridW, rowTop);
-        for (let c = 0; c < 3; c++) {
-          const value = r + 1 + c * gridRows;
-          if (value > maxPoints) continue;
-          const cellX = gridX + c * gridColW;
-          if (c > 0) line(cellX, rowTop, cellX, rowTop - gridRowH);
-          centerText(String(value), cellX + gridColW / 2, rowTop - gridRowH + gridRowH / 2 - 2, "F1", 6.5, GRAY_TEXT);
+    const gridTop = top - timeH;
+    const gridH = height - timeH;
+    const rows = Math.ceil(maxPoints / 3);
+    const rowH = gridH / rows;
+    const colW = width / 3;
+    rect(x, gridTop - gridH, width, gridH);
+    for (let r = 0; r < rows; r++) {
+      const rowTop = gridTop - r * rowH;
+      if (r > 0) line(x, rowTop, x + width, rowTop);
+      for (let c = 0; c < 3; c++) {
+        const cellX = x + c * colW;
+        if (c > 0) line(cellX, rowTop, cellX, rowTop - rowH);
+        const value = r + 1 + c * rows;
+        if (value <= maxPoints) {
+          centerText(String(value), cellX + colW / 2, rowTop - rowH / 2 - 1.6, "F1", 4.6, GRAY_TEXT);
         }
       }
-    });
-
-    line(x + halfW, y, x + halfW, top - height);
+    }
   };
 
-  // ── Lista de elenco (Nº + Nome) de uma equipe ──
-  const drawRosterList = (x: number, width: number, height: number, label: string, team: TeamLike | undefined) => {
+  // ── Grupo de uma equipe: cabecalho (nome+S+R) + colunas I..VI + grade larga ──
+  const drawTeamGroup = (
+    x: number,
+    top: number,
+    width: number,
+    headerH: number,
+    rotationRowsH: number,
+    wideGridRowsCount: number,
+    wideGridH: number,
+    teamLabel: string,
+    teamName: string,
+    withLabelCol: boolean,
+    labelColW: number
+  ) => {
+    const srW = width * 0.09;
+    const nameW = width - srW * 2;
+
+    rect(x, top - headerH, nameW, headerH);
+    text(teamLabel, x + 1.5, top - headerH * 0.45, "F2", 5.2);
+    centerText(fitCellText(teamName, 22), x + nameW / 2, top - headerH + 2, "F1", 5, GRAY_TEXT);
+    rect(x + nameW, top - headerH, srW, headerH);
+    centerText("S", x + nameW + srW / 2, top - headerH * 0.45, "F2", 5.2);
+    rect(x + nameW + srW, top - headerH, srW, headerH);
+    centerText("R", x + nameW + srW * 1.5, top - headerH * 0.45, "F2", 5.2);
+
+    const bodyTop = top - headerH;
+    const dataW = width - labelColW;
+    const cellW = dataW / 6;
+
+    if (withLabelCol) {
+      rect(x, bodyTop - rotationRowsH, labelColW, rotationRowsH);
+    }
+
+    const rowLabels = ["ordem de saque", "jogadores iniciantes", "SUBS no jogador", ""];
+    const rowH = rotationRowsH / rowLabels.length;
+    rowLabels.forEach((label, rIdx) => {
+      const rowTop = bodyTop - rIdx * rowH;
+      if (withLabelCol && label) {
+        text(fitCellText(label, 22), x + 1.5, rowTop - rowH + rowH / 2 - 1.5, "F1", 4.6);
+      }
+      for (let c = 0; c < 6; c++) {
+        const cellX = x + labelColW + c * cellW;
+        rect(cellX, rowTop - rowH, cellW, rowH);
+        if (rIdx === 0) {
+          centerText(ROMAN[c], cellX + cellW / 2, rowTop - rowH + rowH / 2 - 1.8, "F2", 5.5);
+        }
+      }
+      if (rIdx > 0) line(x, rowTop, x + width, rowTop);
+    });
+
+    const gridTop = bodyTop - rotationRowsH;
+    if (withLabelCol) {
+      const rodizioH = wideGridH / wideGridRowsCount;
+      rect(x, gridTop - wideGridH, labelColW, wideGridH);
+      centerText("RODIZIO", x + labelColW / 2, gridTop - rodizioH * 0.65 - 1.5, "F2", 4.6);
+      centerText("SAQUE", x + labelColW / 2, gridTop - rodizioH * 1.65 - 1.5, "F2", 4.6);
+      const pairs = ["1 / 5", "2 / 6", "3 / 7", "4 / 8"];
+      pairs.forEach((pairLabel, i) => {
+        if (i + 2 >= wideGridRowsCount) return;
+        const rowTop = gridTop - (i + 2) * rodizioH;
+        centerText(pairLabel, x + labelColW / 2, rowTop - rodizioH / 2 - 1.6, "F1", 4.8);
+      });
+    }
+
+    const wideX = x + labelColW;
+    const wideW = width - labelColW;
+    const subColW = wideW / 12;
+    const wideRowH = wideGridH / wideGridRowsCount;
+    rect(wideX, gridTop - wideGridH, wideW, wideGridH);
+    for (let r = 1; r < wideGridRowsCount; r++) {
+      line(wideX, gridTop - r * wideRowH, wideX + wideW, gridTop - r * wideRowH);
+    }
+    for (let c = 1; c < 12; c++) {
+      line(wideX + c * subColW, gridTop, wideX + c * subColW, gridTop - wideGridH);
+    }
+  };
+
+  // ── Um bloco de SET completo (2 equipes) ──
+  const drawSetBlock = (
+    x: number,
+    top: number,
+    width: number,
+    setLabel: string,
+    leftName: string,
+    leftLabel: string,
+    rightName: string,
+    rightLabel: string,
+    maxPoints: number,
+    wideGridRowsCount: number
+  ) => {
+    const titleH = 9;
+    fillRect(x, top - titleH, width, titleH, 0.15);
+    centerText(setLabel, x + width / 2, top - titleH + 2.3, "F2", 7, [1, 1, 1]);
+
+    const headerH = 16;
+    const pontosW = width * 0.065;
+    const teamZoneW = (width - pontosW * 2) / 2;
+
+    const bodyTop = top - titleH;
+    const rotationRowsH = 56;
+    const wideGridH = 106;
+    const groupHeight = headerH + rotationRowsH + wideGridH;
+
+    drawTeamGroup(
+      x,
+      bodyTop,
+      teamZoneW,
+      headerH,
+      rotationRowsH,
+      wideGridRowsCount,
+      wideGridH,
+      leftLabel,
+      leftName,
+      true,
+      teamZoneW * 0.32
+    );
+    drawPontosCol(x + teamZoneW, bodyTop, pontosW, groupHeight, "Inicio", maxPoints);
+    drawTeamGroup(
+      x + teamZoneW + pontosW,
+      bodyTop,
+      teamZoneW,
+      headerH,
+      rotationRowsH,
+      wideGridRowsCount,
+      wideGridH,
+      rightLabel,
+      rightName,
+      false,
+      0
+    );
+    drawPontosCol(x + teamZoneW * 2 + pontosW, bodyTop, pontosW, groupHeight, "Fim", maxPoints);
+
+    return titleH + groupHeight;
+  };
+
+  // ── Lista de elenco (No + Nome) de uma equipe ──
+  const drawRosterList = (x: number, top: number, width: number, height: number, label: string, team: TeamLike | undefined) => {
     const teamName = team?.name || "A definir";
     const roster = team ? athletesByTeam[team.id] || [] : [];
 
-    const titleH = 10;
-    fillRect(x, cursorY - titleH, width, titleH, 0.12);
-    text(fitCellText(`${label} - ${teamName.toUpperCase()}`, 48), x + 3, cursorY - titleH + 3, "F2", 6.5, [1, 1, 1]);
+    const titleH = 9;
+    fillRect(x, top - titleH, width, titleH, 0.15);
+    text(fitCellText(`${label} - ${teamName.toUpperCase()}`, 46), x + 3, top - titleH + 2.3, "F2", 6, [1, 1, 1]);
 
-    const headerH = 9;
-    const headerTop = cursorY - titleH;
+    const headerH = 8;
+    const headerTop = top - titleH;
     fillRect(x, headerTop - headerH, width, headerH, 0.85);
-    const numW = 22;
+    const numW = 20;
     rect(x, headerTop - headerH, numW, headerH);
     rect(x + numW, headerTop - headerH, width - numW, headerH);
-    text("No", x + 3, headerTop - headerH + 2.3, "F2", 5.5);
-    text("Nome", x + numW + 3, headerTop - headerH + 2.3, "F2", 5.5);
+    text("No", x + 3, headerTop - headerH + 2, "F2", 5.2);
+    text("Nome", x + numW + 3, headerTop - headerH + 2, "F2", 5.2);
 
-    const rowsAvailable = Math.max(1, Math.floor((height - titleH - headerH) / 8.5));
+    const rowsAvailable = Math.max(1, Math.floor((height - titleH - headerH) / 8));
     const rowH = (height - titleH - headerH) / rowsAvailable;
     let rowTop = headerTop - headerH;
     for (let i = 0; i < rowsAvailable; i++) {
@@ -279,10 +340,10 @@ function buildVolleyMatchSheetPages(input: BuildVolleyMatchSheetsPdfInput): stri
       rect(x + numW, rowTop - rowH, width - numW, rowH);
       if (athlete) {
         if (athlete.number != null) {
-          text(String(athlete.number), x + 4, rowTop - rowH + 2.3, "F1", 6);
+          text(String(athlete.number), x + 4, rowTop - rowH + 2, "F1", 5.5);
         }
-        const maxChars = Math.floor((width - numW - 4) / (6 * 0.5));
-        text(fitCellText(athlete.name, maxChars), x + numW + 3, rowTop - rowH + 2.3, "F1", 6);
+        const maxChars = Math.floor((width - numW - 4) / (5.5 * 0.5));
+        text(fitCellText(athlete.name, maxChars), x + numW + 3, rowTop - rowH + 2, "F1", 5.5);
       }
       rowTop -= rowH;
     }
@@ -314,151 +375,221 @@ function buildVolleyMatchSheetPages(input: BuildVolleyMatchSheetsPdfInput): stri
     const homeName = (homeTeam?.name || "A definir").toUpperCase();
     const awayName = (awayTeam?.name || "A definir").toUpperCase();
 
-    // ─── Cabecalho / marca ───
-    centerText("LEG - Sumula Oficial de Voleibol", marginX + contentWidth / 2, cursorY - 9, "F2", 11);
-    cursorY -= 12;
-    centerText(tournament.name.toUpperCase(), marginX + contentWidth / 2, cursorY - 8, "F2", 9);
-    cursorY -= 10;
-    const contactParts = [contact?.officialEmail, contact?.phone, contact?.address]
-      .map((v) => (v || "").trim())
-      .filter(Boolean);
-    if (contactParts.length > 0) {
-      centerText(contactParts.join("  /  "), marginX + contentWidth / 2, cursorY - 6, "F1", 6.5, GRAY_TEXT);
-      cursorY -= 9;
-    }
-    cursorY -= 4;
-
-    // ─── Equipe A x Equipe B ───
+    // ─── Linha 1: Competicao / Data / Horario ───
     {
-      const boxH = 24;
-      const midW = 26;
-      const sideW = (contentWidth - midW) / 2;
-      const top = cursorY;
-      const bottom = top - boxH;
-      const midX = marginX + sideW;
-      const rightX = midX + midW;
-
-      rect(marginX, bottom, contentWidth, boxH);
-      line(midX, top, midX, bottom);
-      line(rightX, top, rightX, bottom);
-
-      text("EQUIPE A", marginX + 4, top - 7, "F2", 6, GRAY_TEXT);
-      centerText(homeName, marginX + sideW / 2, top - 18, "F2", 9.5, BLUE);
-
-      centerText("x", midX + midW / 2, top - 15, "F2", 11);
-
-      text("EQUIPE B", rightX + 4, top - 7, "F2", 6, GRAY_TEXT);
-      centerText(awayName, rightX + sideW / 2, top - 18, "F2", 9.5, BLUE);
-
-      cursorY = bottom;
-    }
-    cursorY -= 4;
-
-    // ─── Linha de metadados (Cidade / Categoria / Ginasio / Jogo No / Data / Horario) ───
-    {
-      const rowH = 14;
-      const fields: [string, string][] = [
-        ["Cidade", ""],
-        ["Categoria", tournament.category],
-        ["Ginasio", (match.location || "").trim()],
-        ["Jogo No", String(match.id)],
-        ["Data", formatDate(match.date)],
-        ["Horario", (match.time || "").trim()],
+      const rowH = 11;
+      const fields: [string, string, number][] = [
+        ["Competicao", tournament.name, 0.62],
+        ["Data", formatDate(match.date), 0.19],
+        ["Horario", (match.time || "").trim(), 0.19],
       ];
-      const colW = contentWidth / fields.length;
+      let colX = marginX;
       rect(marginX, cursorY - rowH, contentWidth, rowH);
-      fields.forEach(([label, value], i) => {
-        const colX = marginX + i * colW;
+      fields.forEach(([label, value, frac], i) => {
+        const colW = contentWidth * frac;
         if (i > 0) line(colX, cursorY, colX, cursorY - rowH);
-        text(`${label}:`, colX + 3, cursorY - rowH / 2 - 2, "F2", 6);
-        const labelW = estimateWidth(`${label}: `, "F2", 6);
-        text(fitCellText(value, 16), colX + 3 + labelW, cursorY - rowH / 2 - 2, "F1", 6.5);
+        text(`${label}:`, colX + 3, cursorY - rowH / 2 - 2, "F2", 6.5);
+        const labelW = estimateWidth(`${label}: `, "F2", 6.5);
+        text(fitCellText(value, 60), colX + 3 + labelW, cursorY - rowH / 2 - 2, "F1", 6.5);
+        colX += colW;
       });
       cursorY -= rowH;
     }
-    cursorY -= 4;
 
-    // ─── Sets 1 e 2 lado a lado ───
-    const gap = 6;
-    const halfWidth = (contentWidth - gap) / 2;
-    const setsTopHeight = 300;
+    // ─── Linha 2: Cidade / Categoria / Divisao / Jogo n. ───
+    {
+      const rowH = 11;
+      const fields: [string, string, number][] = [
+        ["Cidade", "", 0.28],
+        ["Categoria", tournament.category, 0.28],
+        ["Divisao", "", 0.22],
+        ["Jogo no", String(match.id), 0.22],
+      ];
+      let colX = marginX;
+      rect(marginX, cursorY - rowH, contentWidth, rowH);
+      fields.forEach(([label, value, frac], i) => {
+        const colW = contentWidth * frac;
+        if (i > 0) line(colX, cursorY, colX, cursorY - rowH);
+        text(`${label}:`, colX + 3, cursorY - rowH / 2 - 2, "F2", 6.5);
+        const labelW = estimateWidth(`${label}: `, "F2", 6.5);
+        text(fitCellText(value, 40), colX + 3 + labelW, cursorY - rowH / 2 - 2, "F1", 6.5);
+        colX += colW;
+      });
+      cursorY -= rowH;
+    }
 
-    const setsTop = cursorY;
-    drawSetBlock(marginX, halfWidth, setsTopHeight, "1o SET", homeName, awayName, 27);
-    cursorY = setsTop;
-    drawSetBlock(marginX + halfWidth + gap, halfWidth, setsTopHeight, "2o SET", homeName, awayName, 27);
-    cursorY = setsTop - setsTopHeight;
-    cursorY -= 4;
+    // ─── Linha 3: Ginasio / Equipe(A ou B) + marca LEG ───
+    {
+      const rowH = 22;
+      const leftW = contentWidth * 0.5;
+      rect(marginX, cursorY - rowH, leftW, rowH);
 
-    // ─── Set 3 (tie-break) + Elenco / Assinaturas ───
-    const bottomRowHeight = 175;
-    const bottomTop = cursorY;
+      text("Ginasio:", marginX + 3, cursorY - 8, "F2", 6.5);
+      text(fitCellText((match.location || "").trim(), 40), marginX + 42, cursorY - 8, "F1", 6.5);
 
-    drawSetBlock(marginX, halfWidth, bottomRowHeight, "3o SET (tie-break)", homeName, awayName, 21);
-    cursorY = bottomTop;
+      centerText("EQUIPE A x EQUIPE B", marginX + leftW / 2, cursorY - 18, "F2", 7);
 
-    // Painel direito: elenco A / B + resultado + assinaturas
-    const panelX = marginX + halfWidth + gap;
-    const rosterHeight = 90;
-    const rosterGap = 4;
-    const rosterColW = (halfWidth - rosterGap) / 2;
-    drawRosterList(panelX, rosterColW, rosterHeight, "Elenco A", homeTeam);
-    drawRosterList(panelX + rosterColW + rosterGap, rosterColW, rosterHeight, "Elenco B", awayTeam);
-    cursorY = bottomTop - rosterHeight;
+      rect(marginX + leftW, cursorY - rowH, contentWidth - leftW, rowH);
+      centerText("LEG - Sumula Oficial de Voleibol", marginX + leftW + (contentWidth - leftW) / 2, cursorY - 9, "F2", 9.5);
+      const contactParts = [contact?.officialEmail, contact?.phone, contact?.address]
+        .map((v) => (v || "").trim())
+        .filter(Boolean);
+      const contactLine = contactParts.length > 0 ? contactParts.join("  /  ") : "www.leg.com.br";
+      centerText(contactLine, marginX + leftW + (contentWidth - leftW) / 2, cursorY - 18, "F1", 6, GRAY_TEXT);
+
+      cursorY -= rowH;
+    }
+
+    // ─── Linha 4: sexo / (Equipe A) vs (Equipe B) ───
+    {
+      const rowH = 11;
+      rect(marginX, cursorY - rowH, contentWidth, rowH);
+      text("Sexo:  masc ( )   fem ( )", marginX + 3, cursorY - rowH / 2 - 2, "F1", 6.5);
+      const midX = marginX + contentWidth * 0.28;
+      const vsCx = marginX + contentWidth * 0.5;
+      const rightX = marginX + contentWidth * 0.72;
+      line(midX, cursorY, midX, cursorY - rowH);
+      line(vsCx - contentWidth * 0.22, cursorY, vsCx - contentWidth * 0.22, cursorY - rowH);
+      line(vsCx + contentWidth * 0.22, cursorY, vsCx + contentWidth * 0.22, cursorY - rowH);
+      centerText(`(${fitCellText(homeName, 26)})`, (midX + vsCx - contentWidth * 0.22) / 2, cursorY - rowH / 2 - 2, "F2", 6.5);
+      centerText("vs", vsCx, cursorY - rowH / 2 - 2, "F2", 7);
+      centerText(`(${fitCellText(awayName, 26)})`, (vsCx + contentWidth * 0.22 + rightX) / 2, cursorY - rowH / 2 - 2, "F2", 6.5);
+      cursorY -= rowH;
+    }
     cursorY -= 3;
 
+    // ─── Set 1 e Set 2 lado a lado ───
+    const gap = 5;
+    const halfWidth = (contentWidth - gap) / 2;
+    const setsTop = cursorY;
+    drawSetBlock(marginX, setsTop, halfWidth, "1o SET", homeName, "EQUIPE (A)", awayName, "EQUIPE (B)", 27, 6);
+    const usedHeight = drawSetBlock(
+      marginX + halfWidth + gap,
+      setsTop,
+      halfWidth,
+      "2o SET",
+      awayName,
+      "EQUIPE (B)",
+      homeName,
+      "EQUIPE (A)",
+      27,
+      6
+    );
+    cursorY = setsTop - usedHeight;
+    cursorY -= 4;
+
+    // ─── Set 3 (tie-break) a esquerda, painel a direita ───
+    const bottomTop = cursorY;
+    const set3Height = drawSetBlock(
+      marginX,
+      bottomTop,
+      halfWidth,
+      "3o SET (tie-break)",
+      homeName,
+      "EQUIPE (A)",
+      awayName,
+      "EQUIPE (B)",
+      21,
+      4
+    );
+
+    const bottomRowHeight = 320;
+    const panelX = marginX + halfWidth + gap;
+
+    // Painel direito: elenco A / B
+    const rosterHeight = 155;
+    const rosterGap = 4;
+    const rosterColW = (halfWidth - rosterGap) / 2;
+    drawRosterList(panelX, bottomTop, rosterColW, rosterHeight, "Elenco A", homeTeam);
+    drawRosterList(panelX + rosterColW + rosterGap, bottomTop, rosterColW, rosterHeight, "Elenco B", awayTeam);
+
+    // Resultado
     {
-      const resultH = 46;
-      const rowLabels = ["1o Set", "2o Set", "3o Set", "Total"];
+      const resultTop = bottomTop - rosterHeight - 4;
+      const resultH = 78;
+      const rowLabels = ["I SET", "II SET", "III SET", "TOTAL"];
       const labelW = 42;
       const colW = (halfWidth - labelW) / 2;
       const titleRowH = 9;
 
-      fillRect(panelX, cursorY - titleRowH, halfWidth, titleRowH, 0.12);
-      text("RESULTADO", panelX + 3, cursorY - titleRowH + 2.5, "F2", 6, [1, 1, 1]);
-      centerText("Equipe A", panelX + labelW + colW / 2, cursorY - titleRowH + 2.5, "F2", 6, [1, 1, 1]);
-      centerText("Equipe B", panelX + labelW + colW + colW / 2, cursorY - titleRowH + 2.5, "F2", 6, [1, 1, 1]);
+      fillRect(panelX, resultTop - titleRowH, halfWidth, titleRowH, 0.15);
+      text("RESULTADO", panelX + 3, resultTop - titleRowH + 2.3, "F2", 6, [1, 1, 1]);
+      centerText("Equipe A", panelX + labelW + colW / 2, resultTop - titleRowH + 2.3, "F2", 6, [1, 1, 1]);
+      centerText("Equipe B", panelX + labelW + colW + colW / 2, resultTop - titleRowH + 2.3, "F2", 6, [1, 1, 1]);
 
       const rowH = (resultH - titleRowH) / rowLabels.length;
-      let rowTop = cursorY - titleRowH;
+      let rowTop = resultTop - titleRowH;
       rowLabels.forEach((label) => {
         rect(panelX, rowTop - rowH, labelW, rowH);
         rect(panelX + labelW, rowTop - rowH, colW, rowH);
         rect(panelX + labelW + colW, rowTop - rowH, colW, rowH);
-        text(label, panelX + 3, rowTop - rowH + 2.5, "F1", 6);
+        text(label, panelX + 3, rowTop - rowH + 2, "F1", 6);
         rowTop -= rowH;
       });
-      cursorY -= resultH;
-    }
-    cursorY -= 3;
 
-    {
-      const signH = 33;
-      const rowH = signH / 3;
+      // Assinaturas
+      const signTop = resultTop - resultH - 4;
+      const signH = 54;
+      const rowSH = signH / 3;
       const capW = halfWidth / 2;
-      const top = cursorY;
-      rect(panelX, top - signH, halfWidth, signH);
-      line(panelX, top - rowH, panelX + halfWidth, top - rowH);
-      line(panelX, top - rowH * 2, panelX + halfWidth, top - rowH * 2);
 
-      const row0Y = top - rowH + 3;
-      text("Vencedor:", panelX + 4, row0Y, "F2", 6.5);
-      line(panelX + 42, row0Y - 1.5, panelX + halfWidth - 4, row0Y - 1.5);
+      rect(panelX, signTop - signH, halfWidth, signH);
+      line(panelX, signTop - rowSH, panelX + halfWidth, signTop - rowSH);
+      line(panelX, signTop - rowSH * 2, panelX + halfWidth, signTop - rowSH * 2);
 
-      const row1Y = top - rowH * 2 + 3;
-      text("Capitao A:", panelX + 4, row1Y, "F2", 6.5);
-      line(panelX + 44, row1Y - 1.5, panelX + capW - 4, row1Y - 1.5);
-      text("Capitao B:", panelX + capW + 4, row1Y, "F2", 6.5);
-      line(panelX + capW + 44, row1Y - 1.5, panelX + halfWidth - 4, row1Y - 1.5);
+      const r0Y = signTop - rowSH + 3;
+      text("Vencedor:", panelX + 4, r0Y, "F2", 6.5);
+      line(panelX + 42, r0Y - 1.5, panelX + halfWidth - 4, r0Y - 1.5);
 
-      const row2Y = top - signH + 3;
-      text("Arbitro:", panelX + 4, row2Y, "F2", 6.5);
-      line(panelX + 36, row2Y - 1.5, panelX + capW - 4, row2Y - 1.5);
-      text("Anotador:", panelX + capW + 4, row2Y, "F2", 6.5);
-      line(panelX + capW + 42, row2Y - 1.5, panelX + halfWidth - 4, row2Y - 1.5);
+      const r1Y = signTop - rowSH * 2 + 3;
+      text("Capitao A:", panelX + 4, r1Y, "F2", 6.5);
+      line(panelX + 44, r1Y - 1.5, panelX + capW - 4, r1Y - 1.5);
+      text("Capitao B:", panelX + capW + 4, r1Y, "F2", 6.5);
+      line(panelX + capW + 44, r1Y - 1.5, panelX + halfWidth - 4, r1Y - 1.5);
 
-      cursorY -= signH;
+      const r2Y = signTop - signH + 3;
+      text("Arbitro:", panelX + 4, r2Y, "F2", 6.5);
+      line(panelX + 36, r2Y - 1.5, panelX + capW - 4, r2Y - 1.5);
+      text("Anotador:", panelX + capW + 4, r2Y, "F2", 6.5);
+      line(panelX + capW + 42, r2Y - 1.5, panelX + halfWidth - 4, r2Y - 1.5);
     }
+
+    // ─── Penalidades + Observacoes (abaixo do Set 3) ───
+    {
+      const penTop = bottomTop - set3Height - 4;
+      const penH = bottomRowHeight - set3Height - 4;
+      const penColW = halfWidth * 0.16;
+      const obsW = halfWidth - penColW;
+
+      const penTitleH = 8;
+      fillRect(marginX, penTop - penTitleH, penColW, penTitleH, 0.15);
+      text("PENAL.", marginX + 2, penTop - penTitleH + 2, "F2", 5, [1, 1, 1]);
+      fillRect(marginX + penColW, penTop - penTitleH, obsW, penTitleH, 0.15);
+      text("Observacoes / Ocorrencias:", marginX + penColW + 3, penTop - penTitleH + 2, "F2", 5.5, [1, 1, 1]);
+
+      const bodyH = penH - penTitleH;
+      const penCols = ["A", "P", "E", "D", "EQ", "S"];
+      const penSubColW = penColW / penCols.length;
+      penCols.forEach((label, i) => {
+        const cx = marginX + i * penSubColW;
+        rect(cx, penTop - penTitleH - bodyH, penSubColW, bodyH);
+        centerText(label, cx + penSubColW / 2, penTop - penTitleH - 6, "F2", 5);
+      });
+      rect(marginX + penColW, penTop - penTitleH - bodyH, obsW, bodyH);
+
+      const obsLines = 6;
+      const obsLineH = bodyH / obsLines;
+      for (let i = 1; i < obsLines; i++) {
+        line(
+          marginX + penColW + 4,
+          penTop - penTitleH - i * obsLineH + 3,
+          marginX + halfWidth - 4,
+          penTop - penTitleH - i * obsLineH + 3
+        );
+      }
+    }
+
+    cursorY = bottomTop - bottomRowHeight;
   }
 
   if (commands.length > 0) pages.push(commands);
@@ -467,7 +598,7 @@ function buildVolleyMatchSheetPages(input: BuildVolleyMatchSheetsPdfInput): stri
 
 export function buildVolleyMatchSheetsPdf(input: BuildVolleyMatchSheetsPdfInput): Buffer {
   const pages = buildVolleyMatchSheetPages(input);
-  const safePages = pages.length > 0 ? pages : [["0.6 w", "0 0 0 RG", "0 0 0 rg"]];
+  const safePages = pages.length > 0 ? pages : [["0.5 w", "0 0 0 RG", "0 0 0 rg"]];
 
   const pageWidth = PAGE_WIDTH;
   const pageHeight = PAGE_HEIGHT;
