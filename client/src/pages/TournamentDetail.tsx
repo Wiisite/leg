@@ -1672,6 +1672,15 @@ export default function TournamentDetail() {
     anchor.click();
   };
 
+  const handleExportSchedulePdf = () => {
+    const pdfUrl = `/api/tournaments/${tournamentId}/schedule/pdf`;
+    const anchor = document.createElement("a");
+    anchor.href = pdfUrl;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.click();
+  };
+
   const handleExportSumulas = (matchId?: number) => {
     const pdfUrl = matchId
       ? `/api/tournaments/${tournamentId}/sumulas/pdf?matchId=${matchId}`
@@ -1868,6 +1877,15 @@ export default function TournamentDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 border-border hover:border-red/50 hover:text-red text-xs px-2.5"
+              onClick={handleExportSchedulePdf}
+            >
+              <FileDown className="w-3.5 h-3.5 mr-1" />
+              PDF
+            </Button>
             <Button
               size="sm"
               variant="outline"

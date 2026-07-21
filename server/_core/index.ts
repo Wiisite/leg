@@ -466,6 +466,73 @@ async function startServer() {
     }
   });
 
+  app.get("/api/tournaments/:id/schedule/pdf", async (req, res) => {
+    try {
+      const tournamentId = Number(req.params.id);
+      if (!Number.isFinite(tournamentId) || tournamentId <= 0) {
+        res.status(400).json({ message: "ID de torneio inválido" });
+        return;
+      }
+
+      const { getTournamentById, getTeamsByTournament, getMatchesByTournament } = await import("../db");
+      const tournament = await getTournamentById(tournamentId);
+      if (!tournament) {
+        res.status(404).json({ message: "Torneio não encontrado" });
+        return;
+      }
+
+      const teams = await getTeamsByTournament(tournamentId);
+      const teamById = new Map(teams.map((team) => [team.id, team]));
+      const matches = await getMatchesByTournament(tournamentId);
+
+      const rows = matches.map((match) => {
+        const parsedDate = parseIsoDate(match.date);
+        return {
+          round: match.round || 1,
+          formattedDate: parsedDate
+            ? `${String(parsedDate.day).padStart(2, "0")}/${String(parsedDate.month).padStart(2, "0")}`
+            : "-",
+          time: String(match.time || "").trim() || "-",
+          category: tournament.category,
+          quadra: String(match.location || "").trim() || "-",
+          homeTeam: teamById.get(match.homeTeamId)?.name || `Equipe ${match.homeTeamId}`,
+          awayTeam: teamById.get(match.awayTeamId)?.name || `Equipe ${match.awayTeamId}`,
+          homeScore: match.homeScore,
+          awayScore: match.awayScore,
+        };
+      });
+
+      const pdfBuffer = buildModalitySchedulePdf({
+        modalityLabel: MODALITY_LABELS[String(tournament.modality || "").toLowerCase()] || tournament.modality,
+        monthLabel: "",
+        year: new Date().getFullYear(),
+        rows,
+        titleOverride: `LEG - Tabelao de Jogos - ${tournament.name}`,
+        subtitleOverride: `Categoria: ${tournament.category}  |  Modalidade: ${tournament.modality}  |  Gerado em: ${new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}`,
+      });
+
+      const safeName = String(tournament.name || `torneio-${tournamentId}`)
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-zA-Z0-9-_]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase();
+
+      const fileName = `${safeName || `torneio-${tournamentId}`}-tabelao.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Length", String(pdfBuffer.length));
+      res.status(200).send(pdfBuffer);
+    } catch (error) {
+      console.error("[Tournament Schedule PDF] Erro ao gerar PDF:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Erro interno ao gerar PDF do tabelao" });
+      }
+    }
+  });
+
   app.get("/api/modality/:modality/schedule/pdf", async (req, res) => {
     try {
       const modality = String(req.params.modality || "").toLowerCase();

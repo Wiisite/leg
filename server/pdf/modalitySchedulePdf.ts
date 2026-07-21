@@ -16,6 +16,8 @@ type BuildModalitySchedulePdfInput = {
   year: number;
   rows: ModalitySchedulePdfRow[];
   generatedAt?: Date;
+  titleOverride?: string;
+  subtitleOverride?: string;
 };
 
 const YELLOW: [number, number, number] = [1, 0.92, 0.15];
@@ -104,7 +106,7 @@ function groupRows(rows: ModalitySchedulePdfRow[]): RowGroup[] {
 }
 
 export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): Buffer {
-  const { modalityLabel, monthLabel, year, rows, generatedAt = new Date() } = input;
+  const { modalityLabel, monthLabel, year, rows, generatedAt = new Date(), titleOverride, subtitleOverride } = input;
 
   const generatedLabel = generatedAt.toLocaleString("pt-BR", {
     day: "2-digit",
@@ -171,8 +173,14 @@ export function buildModalitySchedulePdf(input: BuildModalitySchedulePdfInput): 
   newPage();
 
   const metadataLines = [
-    { text: "LEG - Tabelao de Jogos", font: "F2" as const, size: 13 },
-    { text: `Modalidade: ${modalityLabel}  |  Referencia: ${monthLabel}/${year}  |  Gerado em: ${generatedLabel}`, font: "F1" as const, size: 9 },
+    { text: titleOverride ?? "LEG - Tabelao de Jogos", font: "F2" as const, size: 13 },
+    {
+      text:
+        subtitleOverride ??
+        `Modalidade: ${modalityLabel}  |  Referencia: ${monthLabel}/${year}  |  Gerado em: ${generatedLabel}`,
+      font: "F1" as const,
+      size: 9,
+    },
   ];
 
   for (const line of metadataLines) {
