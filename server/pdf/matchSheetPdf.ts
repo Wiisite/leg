@@ -40,36 +40,32 @@ type MatchEventLike = {
   minute?: number | null;
 };
 
+type ContactLike = {
+  officialEmail?: string | null;
+  phone?: string | null;
+  address?: string | null;
+};
+
 type BuildMatchSheetsPdfInput = {
   tournament: TournamentLike;
   teams: TeamLike[];
   matches: MatchLike[];
   athletesByTeam: Record<number, AthleteLike[]>;
   eventsByMatch?: Record<number, MatchEventLike[]>;
+  contact?: ContactLike | null;
   generatedAt?: Date;
-};
-
-const PHASE_LABELS: Record<MatchLike["phase"], string> = {
-  group: "Fase de Grupos",
-  quarterfinal: "Quartas de Final",
-  semifinal: "Semifinal",
-  third_place: "Disputa de 3o Lugar",
-  final: "Final",
 };
 
 const PHASE_ORDER: MatchLike["phase"][] = ["group", "quarterfinal", "semifinal", "third_place", "final"];
 
-const MODALITY_LABELS: Record<string, string> = {
-  futsal: "Futsal",
-  basquete: "Basquete",
-  volei: "Voleibol",
-  handebol: "Handebol",
-};
+type RGB = [number, number, number];
+const BLUE: RGB = [0.09, 0.32, 0.64];
+const GRAY_TEXT: RGB = [0.45, 0.45, 0.45];
 
 function normalizeForPdfText(value: string): string {
   return value
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[º°]/g, "o")
     .replace(/[ª]/g, "a")
     .replace(/[–—]/g, "-")
@@ -111,41 +107,15 @@ function formatDate(value?: string | null): string {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-function parseIsoDate(value?: string | null): { year: number; month: number; day: number } | null {
-  const raw = String(value || "").trim();
-  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return null;
-  return {
-    year: Number(match[1]),
-    month: Number(match[2]),
-    day: Number(match[3]),
-  };
-}
-
-function getPortugueseWeekDay(dateStr?: string | null): string {
-  if (!dateStr) return "";
-  try {
-    const parsed = parseIsoDate(dateStr);
-    if (!parsed) return "";
-    const date = new Date(parsed.year, parsed.month - 1, parsed.day);
-    const days = ["Domingo", "Segunda-feira", "Terca-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sabado"];
-    return days[date.getDay()];
-  } catch {
-    return "";
-  }
-}
-
 function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
-  const { tournament, teams, matches, athletesByTeam, eventsByMatch } = input;
+  const { tournament, teams, matches, athletesByTeam, contact } = input;
   const teamById = new Map(teams.map((t) => [t.id, t]));
-  const modalityLabel = MODALITY_LABELS[String(tournament.modality || "").toLowerCase()] ?? tournament.modality;
 
   const pageWidth = 595;
   const pageHeight = 842;
   const marginX = 10;
   const topMargin = 10;
-  const bottomMargin = 10;
-  const contentWidth = pageWidth - marginX * 2;
+  const contentWidth = pageWidth - marginX * 2; // 575
 
   const pages: string[][] = [];
   let commands: string[] = [];
@@ -157,12 +127,22 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     cursorY = pageHeight - topMargin;
   };
 
-  const text = (value: string, x: number, y: number, font: "F1" | "F2", size: number) => {
+  const text = (value: string, x: number, y: number, font: "F1" | "F2", size: number, color?: RGB) => {
+    if (color) commands.push(`${color[0]} ${color[1]} ${color[2]} rg`);
     commands.push("BT");
     commands.push(`/${font} ${size} Tf`);
     commands.push(`1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm`);
     commands.push(`(${escapePdfString(value)}) Tj`);
     commands.push("ET");
+    if (color) commands.push("0 0 0 rg");
+  };
+
+  const estimateWidth = (value: string, font: "F1" | "F2", size: number): number =>
+    normalizeForPdfText(value).length * size * (font === "F2" ? 0.58 : 0.5);
+
+  const centerText = (value: string, cx: number, y: number, font: "F1" | "F2", size: number, color?: RGB) => {
+    const w = estimateWidth(value, font, size);
+    text(value, cx - w / 2, y, font, size, color);
   };
 
   const rect = (x: number, y: number, w: number, h: number) => {
@@ -175,175 +155,217 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
     commands.push("0 0 0 rg");
   };
 
-  type Cell = { width: number; label?: string; value?: string; valueFont?: "F1" | "F2"; valueSize?: number };
-
-  const drawRow = (cells: Cell[], rowHeight: number) => {
-    const top = cursorY;
-    const bottom = top - rowHeight;
-    let x = marginX;
-    for (const cell of cells) {
-      rect(x, bottom, cell.width, rowHeight);
-      if (cell.label) text(cell.label, x + 4, top - 9.5, "F2", 6.5);
-      if (cell.value !== undefined && cell.value !== "") {
-        const valueSize = cell.valueSize ?? 8;
-        // Quando há rótulo, o valor fica numa segunda linha ancorada a partir
-        // da base da célula (não do topo), para nunca ultrapassar a borda
-        // inferior em linhas mais baixas.
-        const valueY = cell.label ? bottom + 3 : top - (rowHeight / 2 + valueSize / 2 - 1);
-        const maxChars = Math.floor((cell.width - 8) / (valueSize * 0.52));
-        text(fitCellText(cell.value, maxChars), x + 4, valueY, cell.valueFont ?? "F1", valueSize);
-      }
-      x += cell.width;
-    }
-    cursorY = bottom;
+  const line = (x1: number, y1: number, x2: number, y2: number) => {
+    commands.push(`${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S`);
   };
 
-  const drawTeamTable = (team: TeamLike | undefined, label: string, matchId: number) => {
-    const teamName = team?.name || "A definir";
-    const roster = team ? (athletesByTeam[team.id] || []) : [];
+  // ── Bloco "Dados/Contagem/Arbitragem/Horários" (4 zonas lado a lado) ──
+  const drawInfoGrid = (match: MatchLike) => {
+    const blockHeight = 58;
+    const blockTop = cursorY;
+    const blockBottom = blockTop - blockHeight;
 
-    // ── Equipe title bar ──
-    const titleHeight = 13;
-    fillRect(marginX, cursorY - titleHeight, contentWidth, titleHeight, 0.12);
-    commands.push("1 1 1 rg");
-    text(`${label}: ${teamName.toUpperCase()}`, marginX + 4, cursorY - 9, "F2", 8);
-    commands.push("0 0 0 rg");
-    cursorY -= titleHeight;
+    const dadosW = 190;
+    const contagemW = 90;
+    const arbitragemW = 135;
+    const horariosW = 160; // soma = 575
 
-    // ── Player table columns ──
-    const playerCols = [
-      { key: "reg", label: "Registro", width: 32 },
-      { key: "name", label: "Jogadores", width: 165 },
-      { key: "num", label: "Nº", width: 20 },
-      { key: "g1", label: "G1º", width: 20 },
-      { key: "g2", label: "G2º", width: 20 },
-      { key: "g3", label: "G3º", width: 20 },
-      { key: "pen", label: "PEN", width: 20 },
-      { key: "yellow", label: "Amar.", width: 26 },
-      { key: "red", label: "Verm.", width: 26 },
-    ];
-    const playerWidth = 32 + 165 + 20 + 20 + 20 + 20 + 20 + 26 + 26; // 369
-    const sideWidth = contentWidth - playerWidth; // 206
+    const dadosX = marginX;
+    const contagemX = dadosX + dadosW;
+    const arbitragemX = contagemX + contagemW;
+    const horariosX = arbitragemX + arbitragemW;
 
-    // ── Header row (2 linhas: "1º tempo" e depois ":" / "Professor") ──
-    const headerRowHeight = 11;
-    const headerHeight = headerRowHeight * 2;
+    rect(marginX, blockBottom, contentWidth, blockHeight);
+    line(contagemX, blockTop, contagemX, blockBottom);
+    line(arbitragemX, blockTop, arbitragemX, blockBottom);
+    line(horariosX, blockTop, horariosX, blockBottom);
+
+    // Zona Dados (4 linhas: Competição / Data / Categoria / Ginásio)
     {
-      const top = cursorY;
-      const bottom = top - headerHeight;
-      fillRect(marginX, bottom, contentWidth, headerHeight, 0.85);
-      let x = marginX;
-      for (const col of playerCols) {
-        rect(x, bottom, col.width, headerHeight);
-        text(col.label, x + 2, top - headerHeight / 2 + 2, "F2", 6.5);
-        x += col.width;
-      }
-      // Side header, 2 linhas: "1º tempo" na primeira, ":" + "Professor" na segunda
-      rect(x, top - headerRowHeight, sideWidth, headerRowHeight);
-      text("1º tempo", x + 4, top - 8, "F2", 6.5);
-      rect(x, bottom, sideWidth, headerRowHeight);
-      text(":", x + 4, bottom + 3, "F1", 6.5);
-      text("Professor", x + 60, bottom + 3, "F2", 6.5);
-      cursorY = bottom;
+      const rows: [string, string][] = [
+        ["Competicao", tournament.name],
+        ["Data", formatDate(match.date)],
+        ["Categoria", tournament.category],
+        ["Ginasio", (match.location || "").trim()],
+      ];
+      const rowH = blockHeight / rows.length;
+      const labelW = 55;
+      const valueMaxChars = Math.floor((dadosW - labelW - 6) / (7 * 0.5));
+      rows.forEach(([label, value], i) => {
+        const rowTop = blockTop - i * rowH;
+        if (i > 0) line(dadosX, rowTop, dadosX + dadosW, rowTop);
+        text(label, dadosX + 4, rowTop - rowH + 4, "F2", 6.5);
+        text(fitCellText(value, valueMaxChars), dadosX + labelW, rowTop - rowH + 4, "F1", 7);
+      });
     }
 
-    // ── Athlete rows ──
-    // Coluna lateral (tempos / faltas coletivas / capitão) segue exatamente o
-    // modelo oficial da APEFI usado no Excel: cada período (1º/2º/3º tempo)
-    // tem seu separador ":", o rótulo "COLET. Nº" e a contagem de 1 a 5
-    // faltas coletivas (a partir da 6ª falta o time sofre tiro livre sem
-    // barreira). As marcas "A"/"S"/":" (Árbitro/Súmula) aparecem em dois
-    // pontos da planilha, junto ao 1º e ao 3º tempo.
-    type SideRow = {
-      colet?: string;
-      tempoLabel?: string;
-      separator?: boolean;
-      num?: string;
-      captain?: boolean;
-      mark?: string;
-    };
-    const sideRows: SideRow[] = [
-      { colet: "COLET. 1º", mark: "A" },
-      { num: "1", mark: "S" },
-      { num: "2", mark: ":" },
-      { num: "3" },
-      { num: "4" },
-      { num: "5" },
-      { tempoLabel: "2º tempo" },
-      { separator: true },
-      { colet: "COLET. 2º" },
-      { num: "1" },
-      { num: "2" },
-      { num: "3", captain: true },
-      { num: "4", mark: "A" },
-      { num: "5", mark: "S" },
-      { tempoLabel: "3º tempo", mark: "S" },
-      { separator: true },
-      { num: "1" },
-      { num: "2" },
-      { num: "3" },
-      { num: "4" },
-      { num: "5" },
-    ];
+    // Zona Contagem (titulo + cabecalho A/B + 1º/2º/3º/Total)
+    {
+      const labelW = 42;
+      const colW = (contagemW - labelW) / 2;
+      const colAx = contagemX + labelW;
+      const colBx = colAx + colW;
+      const rowsLabels = ["1o Per.", "2o Per.", "3o Per.", "Total"];
+      const rowH = blockHeight / (rowsLabels.length + 2);
 
-    const rowHeight = 11;
-    const totalRows = sideRows.length;
-    for (let i = 0; i < totalRows; i++) {
+      line(colAx, blockTop, colAx, blockBottom);
+      line(colBx, blockTop, colBx, blockBottom);
+
+      const titleRowTop = blockTop;
+      text("Contagem", contagemX + 4, titleRowTop - rowH + 2, "F2", 6.5);
+      line(contagemX, titleRowTop - rowH, contagemX + contagemW, titleRowTop - rowH);
+
+      const headerRowTop = titleRowTop - rowH;
+      centerText("A", colAx + colW / 2, headerRowTop - rowH + 2, "F2", 6.5);
+      centerText("B", colBx + colW / 2, headerRowTop - rowH + 2, "F2", 6.5);
+      line(contagemX, headerRowTop - rowH, contagemX + contagemW, headerRowTop - rowH);
+
+      rowsLabels.forEach((label, i) => {
+        const rowTop = headerRowTop - rowH - i * rowH;
+        if (i > 0) line(contagemX, rowTop, contagemX + contagemW, rowTop);
+        text(label, contagemX + 3, rowTop - rowH + 4, "F1", 6.5);
+      });
+    }
+
+    // Zona Arbitragem (titulo + Arbitro / Arbitro / Anotador)
+    {
+      const rowsLabels = ["Arbitro", "Arbitro", "Anotador"];
+      const rowH = blockHeight / (rowsLabels.length + 1);
+      const labelW = 50;
+
+      text("Arbitragem", arbitragemX + 4, blockTop - rowH + 2, "F2", 6.5);
+      line(arbitragemX, blockTop - rowH, arbitragemX + arbitragemW, blockTop - rowH);
+
+      rowsLabels.forEach((label, i) => {
+        const rowTop = blockTop - rowH - i * rowH;
+        if (i > 0) line(arbitragemX, rowTop, arbitragemX + arbitragemW, rowTop);
+        text(label, arbitragemX + 4, rowTop - rowH + 4, "F1", 6.5);
+        line(arbitragemX + labelW, rowTop - rowH + 3, arbitragemX + arbitragemW - 4, rowTop - rowH + 3);
+      });
+    }
+
+    // Zona Horários (titulo + cabecalho Inicio/Termino + 1º/2º/P.Extra)
+    {
+      const labelW = 44;
+      const colW = (horariosW - labelW) / 2;
+      const colInicioX = horariosX + labelW;
+      const colTerminoX = colInicioX + colW;
+      const rowsLabels = ["1o Per.", "2o Per.", "P. Extra"];
+      const rowH = blockHeight / (rowsLabels.length + 2);
+
+      line(colInicioX, blockTop, colInicioX, blockBottom);
+      line(colTerminoX, blockTop, colTerminoX, blockBottom);
+
+      const titleRowTop = blockTop;
+      text("Horarios", horariosX + 4, titleRowTop - rowH + 2, "F2", 6.5);
+      line(horariosX, titleRowTop - rowH, horariosX + horariosW, titleRowTop - rowH);
+
+      const headerRowTop = titleRowTop - rowH;
+      centerText("Inicio", colInicioX + colW / 2, headerRowTop - rowH + 2, "F2", 6.5);
+      centerText("Termino", colTerminoX + colW / 2, headerRowTop - rowH + 2, "F2", 6.5);
+      line(horariosX, headerRowTop - rowH, horariosX + horariosW, headerRowTop - rowH);
+
+      rowsLabels.forEach((label, i) => {
+        const rowTop = headerRowTop - rowH - i * rowH;
+        if (i > 0) line(horariosX, rowTop, horariosX + horariosW, rowTop);
+        text(label, horariosX + 3, rowTop - rowH + 4, "F1", 6.5);
+      });
+    }
+
+    cursorY = blockBottom;
+  };
+
+  // ── Roster de uma equipe (tabela de jogadores) ──
+  const playerCols = [
+    { key: "reg", label: "Reg.", width: 22 },
+    { key: "name", label: "Jogadores", width: 143 },
+    { key: "num", label: "Nº", width: 16 },
+    { key: "g1", label: "G1º", width: 16 },
+    { key: "g2", label: "G2º", width: 16 },
+    { key: "g3", label: "G3º", width: 16 },
+    { key: "pen", label: "PEN", width: 16 },
+    { key: "yellow", label: "Amar.", width: 20 },
+    { key: "red", label: "Verm.", width: 20 },
+  ];
+  const ROSTER_ROWS = 22;
+  const ROW_H = 13;
+
+  const drawRosterTable = (x: number, width: number, label: string, team: TeamLike | undefined) => {
+    const teamName = team?.name || "A definir";
+    const roster = team ? athletesByTeam[team.id] || [] : [];
+
+    const titleH = 12;
+    fillRect(x, cursorY - titleH, width, titleH, 0.12);
+    text(`${label} - ${teamName.toUpperCase()}`, x + 4, cursorY - 8.5, "F2", 8, [1, 1, 1]);
+    const titleBottom = cursorY - titleH;
+
+    const headerH = 10;
+    const headerBottom = titleBottom - headerH;
+    fillRect(x, headerBottom, width, headerH, 0.85);
+    let cx = x;
+    for (const col of playerCols) {
+      rect(cx, headerBottom, col.width, headerH);
+      text(col.label, cx + 2, headerBottom + headerH / 2 - 2, "F2", 6);
+      cx += col.width;
+    }
+
+    let rowTop = headerBottom;
+    for (let i = 0; i < ROSTER_ROWS; i++) {
       const athlete = roster[i];
-      const topRow = cursorY;
-      const bottomRow = topRow - rowHeight;
-      let xRow = marginX;
-
-      // Player cells
+      const rowBottom = rowTop - ROW_H;
+      let colX = x;
       for (const col of playerCols) {
-        rect(xRow, bottomRow, col.width, rowHeight);
+        rect(colX, rowBottom, col.width, ROW_H);
         if (athlete) {
           if (col.key === "reg") {
-            text(String(i + 1), xRow + 4, topRow - 7.5, "F1", 7);
+            text(String(i + 1), colX + 3, rowTop - ROW_H / 2 - 2, "F1", 6.5);
           } else if (col.key === "name") {
-            const maxChars = Math.floor((col.width - 4) / (7 * 0.52));
-            text(fitCellText(athlete.name, maxChars), xRow + 3, topRow - 7.5, "F1", 7);
+            const maxChars = Math.floor((col.width - 4) / (6.5 * 0.5));
+            text(fitCellText(athlete.name, maxChars), colX + 2, rowTop - ROW_H / 2 - 2, "F1", 6.5);
           } else if (col.key === "num" && athlete.number != null) {
-            text(String(athlete.number), xRow + 4, topRow - 7.5, "F2", 7);
+            text(String(athlete.number), colX + 3, rowTop - ROW_H / 2 - 2, "F2", 6.5);
           }
         }
-        xRow += col.width;
+        colX += col.width;
       }
-
-      // Side cell (tempos / faltas coletivas / capitão)
-      rect(xRow, bottomRow, sideWidth, rowHeight);
-      const sx = xRow;
-      const side = sideRows[i];
-      if (side.colet) {
-        text(side.colet, sx + 4, topRow - 7.5, "F2", 6.5);
-      } else if (side.tempoLabel) {
-        text(side.tempoLabel, sx + 4, topRow - 7.5, "F2", 6.5);
-      } else if (side.separator) {
-        text(":", sx + 4, topRow - 7.5, "F1", 6.5);
-      } else if (side.num) {
-        text(side.num, sx + 4, topRow - 7.5, "F1", 7);
-        if (side.captain) text("Capitão", sx + 30, topRow - 7.5, "F2", 6.5);
-      }
-      if (side.mark) text(side.mark, sx + sideWidth - 12, topRow - 7.5, "F1", 7);
-
-      cursorY = bottomRow;
+      rowTop = rowBottom;
     }
 
-    // ── Tec / Aux / Professor row ──
-    const footHeight = 12;
-    {
-      const top = cursorY;
-      const bottom = top - footHeight;
-      rect(marginX, bottom, 75, footHeight);
-      text("Tec:", marginX + 3, top - 8.5, "F2", 7);
-      rect(marginX + 75, bottom, 75, footHeight);
-      text("Aux:", marginX + 78, top - 8.5, "F2", 7);
-      rect(marginX + 150, bottom, contentWidth - 150, footHeight);
-      text("Professor:", marginX + 153, top - 8.5, "F2", 7);
-      cursorY = bottom;
-    }
+    return titleH + headerH + ROSTER_ROWS * ROW_H;
+  };
 
-    cursorY -= 4;
+  // ── Falta coletiva (1º e 2º tempo) para uma equipe ──
+  const drawFaltaColetiva = (x: number, width: number) => {
+    const subW = width / 2;
+    const labelH = 10;
+    const valueH = 10;
+    const top = cursorY;
+
+    [["Falta Coletiva 1o", x], ["Falta Coletiva 2o", x + subW]].forEach(([label, sx]) => {
+      const boxX = sx as number;
+      rect(boxX, top - labelH - valueH, subW, labelH + valueH);
+      line(boxX, top - labelH, boxX + subW, top - labelH);
+      centerText(label as string, boxX + subW / 2, top - labelH / 2 - 2.5, "F2", 6.5);
+      centerText("1 | 2 | 3 | 4 | 5 | 6 | 7", boxX + subW / 2, top - labelH - valueH / 2 - 2.5, "F1", 6.5);
+    });
+
+    return labelH + valueH;
+  };
+
+  // ── Linha "1º tempo" / "2º tempo" com placeholder de horário ──
+  const drawTempoRow = (x: number, width: number) => {
+    const subW = width / 2;
+    const h = 14;
+    const top = cursorY;
+
+    [["1o tempo", x], ["2o tempo", x + subW]].forEach(([label, sx]) => {
+      const boxX = sx as number;
+      rect(boxX, top - h, subW, h);
+      text(label as string, boxX + 4, top - h / 2 - 2, "F2", 7);
+      text(":", boxX + subW - 22, top - h / 2 - 2, "F1", 9);
+    });
+
+    return h;
   };
 
   for (const match of [...matches].sort((a, b) => {
@@ -369,100 +391,110 @@ function buildMatchSheetPages(input: BuildMatchSheetsPdfInput): string[][] {
 
     const homeTeam = teamById.get(match.homeTeamId);
     const awayTeam = teamById.get(match.awayTeamId);
+    const homeName = (homeTeam?.name || "A definir").toUpperCase();
+    const awayName = (awayTeam?.name || "A definir").toUpperCase();
 
+    // ─── Título ───
+    centerText(`Sumula - ${homeName} x ${awayName}`, marginX + contentWidth / 2, cursorY - 10, "F2", 11);
+    cursorY -= 16;
 
-    // ─── Matchup row ───
-    const half = (contentWidth - 24) / 2;
-    drawRow(
-      [
-        { width: 55, label: "Equipe A", value: homeTeam?.name || "", valueFont: "F2", valueSize: 9 },
-        { width: 24, value: "x", valueFont: "F2", valueSize: 12 },
-        { width: 55, label: "Equipe B", value: awayTeam?.name || "", valueFont: "F2", valueSize: 9 },
-        { width: contentWidth - 55 - 24 - 55, label: "Contagens", value: "1º Per. |   |  2º Per. |   |  3º Per. |   |  P. Extra |   |  Final |   |", valueFont: "F1", valueSize: 7.5 },
-      ],
-      22,
-    );
+    // ─── Bloco da competição / contato ───
+    centerText(tournament.name.toUpperCase(), marginX + contentWidth / 2, cursorY - 9, "F2", 10);
+    cursorY -= 12;
+    const contactParts = [contact?.officialEmail, contact?.phone, contact?.address]
+      .map((v) => (v || "").trim())
+      .filter(Boolean);
+    if (contactParts.length > 0) {
+      centerText(contactParts.join("  /  "), marginX + contentWidth / 2, cursorY - 6, "F1", 6.5, GRAY_TEXT);
+      cursorY -= 10;
+    }
+    cursorY -= 4;
 
-    drawRow(
-      [
-        { width: contentWidth * 0.35, label: "Competição", value: tournament.name, valueFont: "F2", valueSize: 8.5 },
-        { width: contentWidth * 0.65, label: "", value: "" },
-      ],
-      22,
-    );
+    // ─── Equipe A x Equipe B ───
+    {
+      const boxH = 30;
+      const midW = 30;
+      const sideW = (contentWidth - midW) / 2;
+      const top = cursorY;
+      const bottom = top - boxH;
+      const midX = marginX + sideW;
+      const rightX = midX + midW;
 
-    const weekDay = getPortugueseWeekDay(match.date);
-    drawRow(
-      [
-        { width: contentWidth * 0.25, label: "Data", value: formatDate(match.date), valueFont: "F2" },
-        { width: contentWidth * 0.25, label: "Horário", value: (match.time || "").trim(), valueFont: "F2" },
-        { width: contentWidth * 0.25, label: "Categoria", value: tournament.category, valueFont: "F2" },
-        { width: contentWidth * 0.25, label: "Semana", value: weekDay || "Sábado", valueFont: "F2" },
-      ],
-      22,
-    );
+      rect(marginX, bottom, contentWidth, boxH);
+      line(midX, top, midX, bottom);
+      line(rightX, top, rightX, bottom);
 
-    drawRow(
-      [
-        { width: contentWidth * 0.55, label: "Ginásio", value: (match.location || "").trim(), valueFont: "F1", valueSize: 8.5 },
-        { width: contentWidth * 0.45, label: "Cidade", value: "", valueFont: "F1" },
-      ],
-      22,
-    );
-    cursorY -= 1;
+      text("EQUIPE A", marginX + 4, top - 8, "F2", 6.5, GRAY_TEXT);
+      centerText(homeName, marginX + sideW / 2, top - 22, "F2", 11, BLUE);
 
-    // ─── Arbitragem / Horário ───
-    const arbHeight = 48;
-    const topArb = cursorY;
-    const bottomArb = cursorY - arbHeight;
-    rect(marginX, bottomArb, contentWidth, arbHeight);
+      centerText("x", midX + midW / 2, top - 19, "F2", 12);
 
-    text("Arbitragem", marginX + 4, topArb - 9, "F2", 7);
-    text("Árbitro:", marginX + 4, topArb - 22, "F1", 7);
-    text("Anotador:", marginX + 4, topArb - 35, "F1", 7);
+      text("EQUIPE B", rightX + 4, top - 8, "F2", 6.5, GRAY_TEXT);
+      centerText(awayName, rightX + sideW / 2, top - 22, "F2", 11, BLUE);
 
-    commands.push(`0.5 w`);
-    commands.push(`${(marginX + 45).toFixed(2)} ${(topArb - 22).toFixed(2)} m ${(marginX + 230).toFixed(2)} ${(topArb - 22).toFixed(2)} l S`);
-    commands.push(`${(marginX + 45).toFixed(2)} ${(topArb - 35).toFixed(2)} m ${(marginX + 230).toFixed(2)} ${(topArb - 35).toFixed(2)} l S`);
-    commands.push(`0.7 w`);
+      cursorY = bottom;
+    }
+    cursorY -= 4;
 
-    // Right side: Horário grid
-    commands.push(`${(marginX + 250).toFixed(2)} ${topArb.toFixed(2)} m ${(marginX + 250).toFixed(2)} ${bottomArb.toFixed(2)} l S`);
-    const xGrid = marginX + 250;
-    const wGrid = contentWidth - 250;
-    const wCol = wGrid / 3;
+    // ─── Dados / Contagem / Arbitragem / Horários ───
+    drawInfoGrid(match);
+    cursorY -= 4;
 
-    fillRect(xGrid, topArb - 10, wGrid, 10, 0.9);
-    rect(xGrid, topArb - 10, wGrid, 10);
-    text("Horário", xGrid + 4, topArb - 8, "F2", 6.5);
-    text("Início", xGrid + wCol + 4, topArb - 8, "F2", 6.5);
-    text("Término", xGrid + wCol * 2 + 4, topArb - 8, "F2", 6.5);
+    // ─── Rosters lado a lado ───
+    const gap = 5;
+    const halfWidth = (contentWidth - gap) / 2;
+    const leftX = marginX;
+    const rightX = marginX + halfWidth + gap;
 
-    const drawArbPeriodRow = (label: string, y: number) => {
-      rect(xGrid, y, wGrid, 10);
-      text(label, xGrid + 4, y + 2, "F1", 7);
-      commands.push(`${(xGrid + wCol).toFixed(2)} ${(y + 10).toFixed(2)} m ${(xGrid + wCol).toFixed(2)} ${y.toFixed(2)} l S`);
-      commands.push(`${(xGrid + wCol * 2).toFixed(2)} ${(y + 10).toFixed(2)} m ${(xGrid + wCol * 2).toFixed(2)} ${y.toFixed(2)} l S`);
-    };
+    const rosterTop = cursorY;
+    drawRosterTable(leftX, halfWidth, "Equipe A", homeTeam);
+    cursorY = rosterTop;
+    const rosterHeight = drawRosterTable(rightX, halfWidth, "Equipe B", awayTeam);
+    cursorY = rosterTop - rosterHeight;
 
-    drawArbPeriodRow("1º Per.", topArb - 20);
-    drawArbPeriodRow("2º Per.", topArb - 30);
-    drawArbPeriodRow("P. Extra", topArb - 40);
+    // ─── Falta coletiva ───
+    const faltaTop = cursorY;
+    drawFaltaColetiva(leftX, halfWidth);
+    cursorY = faltaTop;
+    const faltaHeight = drawFaltaColetiva(rightX, halfWidth);
+    cursorY = faltaTop - faltaHeight;
 
-    cursorY = bottomArb - 4;
+    // ─── 1º tempo / 2º tempo ───
+    const tempoTop = cursorY;
+    drawTempoRow(leftX, halfWidth);
+    cursorY = tempoTop;
+    const tempoHeight = drawTempoRow(rightX, halfWidth);
+    cursorY = tempoTop - tempoHeight;
+    cursorY -= 4;
 
-    // ─── Team rosters ───
-    drawTeamTable(homeTeam, "EQUIPE A", match.id);
-    drawTeamTable(awayTeam, "EQUIPE B", match.id);
+    // ─── Rodapé: Equipe A / Equipe B + Professor / Capitão ───
+    {
+      const titleH = 10;
+      fillRect(leftX, cursorY - titleH, halfWidth, titleH, 0.12);
+      text(`Equipe A - ${homeName}`, leftX + 4, cursorY - titleH + 3, "F2", 7, [1, 1, 1]);
+      fillRect(rightX, cursorY - titleH, halfWidth, titleH, 0.12);
+      text(`Equipe B - ${awayName}`, rightX + 4, cursorY - titleH + 3, "F2", 7, [1, 1, 1]);
+      cursorY -= titleH;
 
-    // ─── Footer Notes / Observations ───
-    const obsHeight = 28;
-    rect(marginX, bottomMargin, contentWidth, obsHeight);
-    text("Observacoes / Ocorrencias:", marginX + 4, bottomMargin + obsHeight - 7, "F2", 7);
-    commands.push(`0.5 w`);
-    commands.push(`${(marginX + 2).toFixed(2)} ${(bottomMargin + 12).toFixed(2)} m ${(marginX + contentWidth - 2).toFixed(2)} ${(bottomMargin + 12).toFixed(2)} l S`);
-    commands.push(`${(marginX + 2).toFixed(2)} ${(bottomMargin + 4).toFixed(2)} m ${(marginX + contentWidth - 2).toFixed(2)} ${(bottomMargin + 4).toFixed(2)} l S`);
-    commands.push(`0.7 w`);
+      const fieldsH = 16;
+      [leftX, rightX].forEach((sx) => {
+        rect(sx, cursorY - fieldsH, halfWidth, fieldsH);
+        text("Professor:", sx + 4, cursorY - fieldsH / 2 - 2, "F2", 7);
+        line(sx + 48, cursorY - fieldsH / 2 - 4, sx + halfWidth * 0.62, cursorY - fieldsH / 2 - 4);
+        text("Capitao:", sx + halfWidth * 0.62 + 6, cursorY - fieldsH / 2 - 2, "F2", 7);
+        line(sx + halfWidth * 0.62 + 48, cursorY - fieldsH / 2 - 4, sx + halfWidth - 4, cursorY - fieldsH / 2 - 4);
+      });
+      cursorY -= fieldsH;
+    }
+    cursorY -= 4;
+
+    // ─── Observações ───
+    const obsHeight = 32;
+    rect(marginX, cursorY - obsHeight, contentWidth, obsHeight);
+    text("Observacoes / Ocorrencias:", marginX + 4, cursorY - 9, "F2", 7);
+    line(marginX + 2, cursorY - 18, marginX + contentWidth - 2, cursorY - 18);
+    line(marginX + 2, cursorY - 27, marginX + contentWidth - 2, cursorY - 27);
+    cursorY -= obsHeight;
   }
 
   if (commands.length > 0) pages.push(commands);

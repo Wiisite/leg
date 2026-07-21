@@ -349,16 +349,25 @@ async function startServer() {
         return;
       }
 
-      const { getTournamentById, getTeamsByTournament, getMatchesByTournament, getAthletesByTeam, getMatchEvents } =
-        await import("../db");
+      const {
+        getTournamentById,
+        getTeamsByTournament,
+        getMatchesByTournament,
+        getAthletesByTeam,
+        getMatchEvents,
+        getSiteSettings,
+      } = await import("../db");
       const tournament = await getTournamentById(tournamentId);
       if (!tournament) {
         res.status(404).json({ message: "Torneio não encontrado" });
         return;
       }
 
-      const teams = await getTeamsByTournament(tournamentId);
-      const matches = await getMatchesByTournament(tournamentId);
+      const [teams, matches, siteSettings] = await Promise.all([
+        getTeamsByTournament(tournamentId),
+        getMatchesByTournament(tournamentId),
+        getSiteSettings(),
+      ]);
 
       const athletesByTeam: Record<number, Awaited<ReturnType<typeof getAthletesByTeam>>> = {};
       await Promise.all(
@@ -387,6 +396,7 @@ async function startServer() {
         matches: matchesForPdf,
         athletesByTeam,
         eventsByMatch,
+        contact: siteSettings.contactConfig,
       });
 
       const safeName = String(tournament.name || `torneio-${tournamentId}`)
